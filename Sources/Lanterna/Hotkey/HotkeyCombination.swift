@@ -133,8 +133,11 @@ struct HotkeyBinding: Equatable, Sendable {
   }
 
   /// One binding per key of every invocation action, in a fixed
-  /// order: show, then reverse, then filter.
-  static func bindings(for table: KeyBindingTable) -> [HotkeyBinding] {
+  /// order: show, then reverse, then filter, then the parallel pair.
+  /// A switched-off parallel switcher asks for no bindings, so its keys
+  /// stay with the front application; the table itself keeps them for
+  /// the day it is switched back on.
+  static func bindings(for table: KeyBindingTable, parallelEnabled: Bool = true) -> [HotkeyBinding] {
     let actions: [(HotkeyCombination, KeyBindingAction)] = [
       (.forward, .show),
       (.reverse, .showReverse),
@@ -142,6 +145,7 @@ struct HotkeyBinding: Equatable, Sendable {
       (.parallelForward, .showParallel),
       (.parallelReverse, .showParallelReverse),
     ]
+    .filter { parallelEnabled || $0.0.switcher == .main }
     return actions.flatMap { combination, action in
       table[action].enumerated().map { slot, key in
         HotkeyBinding(

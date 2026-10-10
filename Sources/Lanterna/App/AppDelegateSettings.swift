@@ -178,6 +178,8 @@ extension AppDelegate {
   ) -> SettingsSaveOutcome {
     let switcherSettingsChanged = values.mainSwitcher != currentValues.mainSwitcher
       || values.parallelOverrides != currentValues.parallelOverrides
+    let parallelEnabledChanged = values.parallelOverrides.isEnabled
+      != currentValues.parallelOverrides.isEnabled
     let scopeChanged = values.romajiScope != currentValues.romajiScope
     let checkContextChanged = values.updateCheckEnabled != currentValues.updateCheckEnabled
       || values.updateChannel != currentValues.updateChannel
@@ -228,7 +230,8 @@ extension AppDelegate {
     let valuesForSave = appliedKeyBindingValues(
       values,
       previous: previousValues,
-      changed: keyBindingsChanged
+      changed: keyBindingsChanged || parallelEnabledChanged,
+      parallelEnabled: values.parallelOverrides.isEnabled
     )
     guideWindows?.update(appearanceMode: values.appearanceMode)
     // Reopening rebuilds the engine, so only a scope change pays
@@ -337,10 +340,17 @@ extension AppDelegate {
   private func appliedKeyBindingValues(
     _ values: SettingsValues,
     previous: SettingsValues,
-    changed: Bool
+    changed: Bool,
+    parallelEnabled: Bool
   ) -> SettingsValues {
     guard changed else { return values }
-    guard didApplyKeyBindings(values.keyBindings, previous: previous.keyBindings) else {
+    guard
+      didApplyKeyBindings(
+        values.keyBindings,
+        previous: previous.keyBindings,
+        parallelEnabled: parallelEnabled
+      )
+    else {
       return values
     }
     currentValues.keyBindings = previous.keyBindings
@@ -393,7 +403,11 @@ extension AppDelegate {
   /// everything previous and puts the old keys back, so the panel
   /// still opens. Split out when `applySettings` stood at the
   /// length limit.
-  private func didApplyKeyBindings(_ bindings: KeyBindingTable, previous: KeyBindingTable) -> Bool {
+  private func didApplyKeyBindings(
+    _ bindings: KeyBindingTable,
+    previous: KeyBindingTable,
+    parallelEnabled: Bool
+  ) -> Bool {
     hotkeys?.unregister()
     // The panel takes the table even with no manager, so a missing
     // manager never blocks what the panel shows.
@@ -409,7 +423,10 @@ extension AppDelegate {
     if let line = SystemSwitcherShortcuts.summaryLine(restoring: restoreFailures) {
       Diagnostics.writeLine(LogLine(.warning, .hotkey, line))
     }
-    let outcome = hotkeys.register(bindings: HotkeyBinding.bindings(for: bindings))
+    let outcome = hotkeys.register(
+      bindings: HotkeyBinding.bindings(for: bindings, parallelEnabled: parallelEnabled),
+      parallelEnabled: parallelEnabled
+    )
     Diagnostics.writeLine(LogLine(outcome.logLevel, .hotkey, outcome.summaryLine))
     for detail in hotkeys.refusedDetails {
       Diagnostics.writeLine(LogLine(.warning, .hotkey, detail))
@@ -419,7 +436,10 @@ extension AppDelegate {
     guard !outcome.isTotalFailure else {
       Diagnostics.writeLine(LogLine(.error, .hotkey, "new keybindings registered nothing; keeping the previous table"))
       hotkeys.unregister()
-      let recovery = hotkeys.register(bindings: HotkeyBinding.bindings(for: previous))
+      let recovery = hotkeys.register(
+        bindings: HotkeyBinding.bindings(for: previous, parallelEnabled: parallelEnabled),
+        parallelEnabled: parallelEnabled
+      )
       Diagnostics.writeLine(LogLine(recovery.logLevel, .hotkey, recovery.summaryLine))
       return false
     }

@@ -26,22 +26,26 @@ struct HotkeyRegistrationOutcome: Sendable {
   init(
     registered: [HotkeyCombination],
     failures: [Failure],
-    displayNames: [HotkeyCombination: String] = [:]
+    displayNames: [HotkeyCombination: String] = [:],
+    unrequested: [HotkeyCombination] = []
   ) {
     // Two clauses because each catches a case the other passes: a
     // duplicate standing in for a missing combination keeps the count
     // right and is caught only by the set, while a duplicate on top of
     // full coverage keeps the set whole and is caught only by the count.
-    // A plain omission trips both.
-    let accounted = registered + failures.map(\.combination)
+    // A plain omission trips both. Unrequested combinations — a
+    // switched-off parallel switcher asks for none — read on neither
+    // list, so they stand on a third one rather than weakening the check.
+    let accounted = registered + failures.map(\.combination) + unrequested
     assert(
       Set(accounted) == Set(HotkeyCombination.all)
         && accounted.count == HotkeyCombination.all.count,
-      "every combination must be registered or failed, exactly once"
+      "every combination must be registered, failed, or unrequested, exactly once"
     )
     self.registered = registered
     self.failures = failures
     self.displayNames = displayNames
+    self.unrequested = unrequested
   }
 
   // MARK: Internal
@@ -68,6 +72,10 @@ struct HotkeyRegistrationOutcome: Sendable {
   /// names, so outcomes built without custom keys read exactly as
   /// before.
   let displayNames: [HotkeyCombination: String]
+  /// Combinations nothing was asked for: a switched-off parallel
+  /// switcher leaves its keys with the front application. Read on no
+  /// line, so switching off reads as quiet rather than as failing.
+  let unrequested: [HotkeyCombination]
 
   /// Nothing was registered, so there is no way left to reach the switcher
   /// and no reason to stay running.
@@ -157,7 +165,10 @@ final class HotkeyManager {
   /// reads as a total failure — or accept them a second time and fire
   /// `onPress` twice for one press. `unregister()` is what lets a later
   /// call start over.
-  func register(bindings: [HotkeyBinding] = HotkeyBinding.defaults) -> HotkeyRegistrationOutcome {
+  func register(
+    bindings: [HotkeyBinding] = HotkeyBinding.defaults,
+    parallelEnabled: Bool = true
+  ) -> HotkeyRegistrationOutcome {
     if let registrationOutcome {
       return registrationOutcome
     }
@@ -166,10 +177,16 @@ final class HotkeyManager {
       // A hotkey with no handler behind it would swallow the press and
       // do nothing with it, which is worse than not claiming it, so none
       // is claimed.
+      let requested = HotkeyCombination.all.filter {
+        parallelEnabled || $0.switcher == .main
+      }
       let outcome = HotkeyRegistrationOutcome(
         registered: [],
-        failures: HotkeyCombination.all.map {
+        failures: requested.map {
           HotkeyRegistrationOutcome.Failure(combination: $0, status: status)
+        },
+        unrequested: HotkeyCombination.all.filter {
+          !parallelEnabled && $0.switcher == .parallel
         }
       )
       registrationOutcome = outcome
@@ -181,7 +198,7 @@ final class HotkeyManager {
     for binding in bindings {
       attempt(binding, taken: &taken, refused: &refused)
     }
-    let outcome = assembleOutcome(taken: taken, refused: refused)
+    let outcome = assembleOutcome(taken: taken, refused: refused, parallelEnabled: parallelEnabled)
     registrationOutcome = outcome
     return outcome
   }
@@ -260,12 +277,23 @@ final class HotkeyManager {
   /// only has room for one status per combination.
   private func assembleOutcome(
     taken: [HotkeyCombination: [String]],
-    refused: [HotkeyCombination: [(name: String, status: OSStatus)]]
+    refused: [HotkeyCombination: [(name: String, status: OSStatus)]],
+    parallelEnabled: Bool
   ) -> HotkeyRegistrationOutcome {
     var registered = [HotkeyCombination]()
     var failures = [HotkeyRegistrationOutcome.Failure]()
     var displayNames = [HotkeyCombination: String]()
-    for combination in HotkeyCombination.all {
+    // Only combinations something was asked for: a switched-off parallel
+    // switcher lands on neither list and reads as quiet rather than as
+    // failing. An emptied row still counts as requested, so losing its
+    // last key keeps its "no key is bound" line.
+    let requested = Set(
+      parallelEnabled
+        ? HotkeyCombination.all
+        : HotkeyCombination.all.filter { $0.switcher == .main }
+    )
+    let unrequested = HotkeyCombination.all.filter { !requested.contains($0) }
+    for combination in HotkeyCombination.all where requested.contains(combination) {
       if let names = taken[combination], !names.isEmpty {
         registered.append(combination)
         displayNames[combination] = names.joined(separator: ", ")
@@ -289,7 +317,8 @@ final class HotkeyManager {
     return HotkeyRegistrationOutcome(
       registered: registered,
       failures: failures,
-      displayNames: displayNames
+      displayNames: displayNames,
+      unrequested: unrequested
     )
   }
 

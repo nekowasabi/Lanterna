@@ -42,4 +42,23 @@ struct ParallelHotkeyTests {
     #expect(SystemSwitcherShortcuts.systemCounterparts == [.forward, .reverse, .filter])
   }
 
+  @Test
+  func switchedOffParallelAsksForNoBindings() {
+    let bindings = HotkeyBinding.bindings(for: .defaults, parallelEnabled: false)
+    #expect(bindings.allSatisfy { $0.combination.switcher == .main })
+    #expect(bindings.map(\.combination) == [.forward, .reverse, .filter])
+  }
+
+  @Test
+  func unrequestedCombinationsReadAsQuiet() {
+    let outcome = HotkeyRegistrationOutcome(
+      registered: [.forward, .reverse, .filter],
+      failures: [],
+      unrequested: [.parallelForward, .parallelReverse]
+    )
+    #expect(!outcome.isTotalFailure)
+    #expect(outcome.logLevel == .info)
+    #expect(outcome.summaryLine == "registered Cmd+Tab (main), Shift+Cmd+Tab (main), Cmd+Space (main)")
+  }
+
 }
