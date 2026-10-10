@@ -51,6 +51,58 @@ local function isKeyBindings(prop: reflect.Property): Boolean =
       && (inner as reflect.DeclaredType).referent.name == "KeyBindings"
   else false
 
+/// Whether the property is the switchers section (a nullable class).
+///
+/// Matched by shape rather than by name, so a rename still renders.
+local function isSwitchers(prop: reflect.Property): Boolean =
+  if (prop.type is reflect.NullableType)
+    let (inner = (prop.type as reflect.NullableType).member)
+    inner is reflect.DeclaredType
+      && (inner as reflect.DeclaredType).referent.name == "Switchers"
+  else false
+
+/// One parallel-switcher value beside its "inherit" escape hatch: the
+/// value reads as usual, and "inherit" follows the main switcher.
+local function inheritWrapper(inner: Dynamic, doc: String): Dynamic = new {
+  description = doc
+  ["oneOf"] = new Listing<Dynamic> {
+    inner
+    new { ["const"] = "inherit" }
+  }
+}
+
+/// The two switcher sections side by side. The main section renders each
+/// key as usual; the parallel section wraps each panel key in the
+/// "inherit" escape hatch, while its switch and the shared keys render
+/// as usual (the shared ones staying description-only, as at top level).
+local function switchersFragment(prop: reflect.Property): Dynamic = new {
+  ["type"] = "object"
+  description = prop.docComment
+  ["properties"] = new {
+    ["main"] = new {
+      ["type"] = "object"
+      description = "The main switcher's panel settings."
+      ["properties"] = new {
+        for (name, sub in reflect.Module(schema).classes["SwitcherMain"].properties) {
+          [name] = fragment(sub)
+        }
+      }
+      ["additionalProperties"] = false
+    }
+    ["parallel"] = new {
+      ["type"] = "object"
+      description = "The parallel switcher's panel settings."
+      ["properties"] = new {
+        for (name, sub in reflect.Module(schema).classes["SwitcherParallel"].properties) {
+          [name] = if (name == "enabled") fragment(sub) else inheritWrapper(fragment(sub), sub.docComment)
+        }
+      }
+      ["additionalProperties"] = false
+    }
+  }
+  ["additionalProperties"] = false
+}
+
 /// Whether the property holds a number, nullable or not.
 ///
 /// Matched by shape rather than by name, so a rename still renders.
@@ -93,7 +145,8 @@ local function keyBindingsFragment(prop: reflect.Property): Dynamic = new {
       "commit"; "cancel"; "toggleScope"; "deleteBackward"; "clearQuery";
       "closeWindow"; "quitApplication"; "hideApplication"; "minimizeWindow";
       "numberJump"; "moveRowUp"; "moveRowDown";
-      "startFiltering"; "openSettings"
+      "startFiltering"; "openSettings";
+      "showParallel"; "showParallelReverse"
     }) {
       [action] = new {
         ["type"] = "array"
@@ -181,6 +234,8 @@ local function fragment(prop: reflect.Property): Dynamic =
     }
   else if (isKeyBindings(prop))
     keyBindingsFragment(prop)
+  else if (isSwitchers(prop))
+    switchersFragment(prop)
   else if (isNumber(prop))
     new {
       ["type"] = "number"
