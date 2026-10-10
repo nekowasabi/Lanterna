@@ -195,7 +195,9 @@ struct SettingsValues: Equatable, Sendable {
   func configuration(
     version: Int,
     sampleCount: Int?,
-    stopMonitorEverySeconds: Int?
+    stopMonitorEverySeconds: Int?,
+    diskHasSwitcherSections: Bool = false,
+    switcherSettingsChanged: Bool = false
   ) -> ValidConfiguration {
     var config = ValidConfiguration(
       version: version,
@@ -285,6 +287,11 @@ struct SettingsValues: Equatable, Sendable {
     } else {
       config.keyBindingSection = Self.customizedSection(keyBindings)
     }
+    shapeSwitcherSections(
+      into: &config,
+      diskHasSections: diskHasSwitcherSections,
+      settingsChanged: switcherSettingsChanged
+    )
     return config
   }
 
@@ -318,6 +325,45 @@ struct SettingsValues: Equatable, Sendable {
         RawKeyBinding(keyCode: Int($0.keyCode), modifiers: $0.modifierWords)
       })
     })
+  }
+
+  /// Spells the switcher sections for saving, or leaves the top-level
+  /// shape alone. The sections win when the disk already holds them,
+  /// when either switcher's settings changed in this save, or when the
+  /// parallel switcher spells anything at all.
+  private func shapeSwitcherSections(
+    into config: inout ValidConfiguration,
+    diskHasSections: Bool,
+    settingsChanged: Bool
+  ) {
+    let parallel = AppConfiguration.spelledParallelSection(parallelOverrides)
+    guard diskHasSections || settingsChanged || !parallel.isEmpty else { return }
+    let main = AppConfiguration.spelledMainSection(mainSwitcher)
+    guard !main.isEmpty || !parallel.isEmpty else { return }
+    config.otherSpaceMode = nil
+    config.hiddenAppMode = nil
+    config.minimizedMode = nil
+    config.fullscreenMode = nil
+    config.windowlessAppMode = nil
+    config.fuzzyMatchEnabled = nil
+    config.resultOrder = nil
+    config.textScale = nil
+    config.displayTarget = nil
+    config.panelWidth = nil
+    config.showDelayMs = nil
+    config.hoverSelect = nil
+    config.scrollSelect = nil
+    config.numberJump = nil
+    config.numberReorder = nil
+    config.numberScope = nil
+    config.hintsMode = nil
+    config.windowScope = nil
+    config.grouping = nil
+    config.subgroupPlacements = [:]
+    config.groupCount = nil
+    config.groupHeadingStyle = nil
+    config.mainSection = main.isEmpty ? nil : main
+    config.parallelSection = parallel.isEmpty ? nil : parallel
   }
 
 }

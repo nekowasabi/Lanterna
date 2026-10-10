@@ -170,6 +170,8 @@ extension AppDelegate {
     _ values: SettingsValues,
     replacingInvalidFile: Bool
   ) -> SettingsSaveOutcome {
+    let switcherSettingsChanged = values.mainSwitcher != currentValues.mainSwitcher
+      || values.parallelOverrides != currentValues.parallelOverrides
     let scopeChanged = values.romajiScope != currentValues.romajiScope
     let checkContextChanged = values.updateCheckEnabled != currentValues.updateCheckEnabled
       || values.updateChannel != currentValues.updateChannel
@@ -243,7 +245,11 @@ extension AppDelegate {
     {
       Diagnostics.writeLine(LogLine(report.level, .config, report.line))
     }
-    return saveSettings(valuesForSave, replacingInvalidFile: replacingInvalidFile)
+    return saveSettings(
+      valuesForSave,
+      replacingInvalidFile: replacingInvalidFile,
+      switcherSettingsChanged: switcherSettingsChanged
+    )
   }
 
   // MARK: Private
@@ -355,7 +361,8 @@ extension AppDelegate {
   /// length limit.
   private func saveSettings(
     _ values: SettingsValues,
-    replacingInvalidFile: Bool
+    replacingInvalidFile: Bool,
+    switcherSettingsChanged: Bool = false
   ) -> SettingsSaveOutcome {
     guard let configFileURL else {
       return .failed(reason: "cannot resolve directory")
@@ -364,7 +371,9 @@ extension AppDelegate {
     let config = values.configuration(
       version: AppConfiguration.currentVersion,
       sampleCount: preserved?.sampleCount,
-      stopMonitorEverySeconds: preserved?.stopMonitorEverySeconds
+      stopMonitorEverySeconds: preserved?.stopMonitorEverySeconds,
+      diskHasSwitcherSections: preserved?.hasSwitchersSection ?? false,
+      switcherSettingsChanged: switcherSettingsChanged
     )
     return SettingsSaver.save(
       config,

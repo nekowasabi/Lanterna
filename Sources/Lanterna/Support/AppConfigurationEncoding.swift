@@ -1,6 +1,28 @@
 import AppKit
 import Foundation
 
+// MARK: - SectionValue
+
+/// One spelled switcher-section entry's raw value.
+enum SectionValue: Equatable, Sendable {
+  case word(String)
+  case flag(Bool)
+  case count(Int)
+  case amount(Double)
+
+  // MARK: Internal
+
+  /// The canonical spelling: words quoted, the rest bare.
+  var rendered: String {
+    switch self {
+    case .word(let text): "\"\(text)\""
+    case .flag(let enabled): enabled ? "true" : "false"
+    case .count(let number): "\(number)"
+    case .amount(let number): "\(number)"
+    }
+  }
+}
+
 /// Encoding side of the config file, split out when the decoding file
 /// reached the file-length limit. Decoding stays in `AppConfiguration`;
 /// everything that writes lives here.
@@ -155,6 +177,178 @@ extension AppConfiguration {
     return entries
   }
 
+  /// The switchers section lines, from the spelled sections rather than
+  /// the flat fields, so a save keeps the sectioned shape. Absent or
+  /// empty sections mean no lines, so untouched files encode unchanged.
+  static func switcherSectionEntries(_ config: ValidConfiguration) -> [String] {
+    var sections = [String]()
+    if let main = config.mainSection, !main.isEmpty {
+      sections.append(sectionBlock(name: "main", values: main))
+    }
+    if let parallel = config.parallelSection, !parallel.isEmpty {
+      sections.append(sectionBlock(name: "parallel", values: parallel))
+    }
+    guard !sections.isEmpty else { return [] }
+    return ["  \"switchers\": {\n" + sections.joined(separator: ",\n") + "\n  }"]
+  }
+
+  /// The main switcher's items differing from the long-standing
+  /// defaults, as the section spells them.
+  static func spelledMainSection(_ main: SwitcherSettings) -> [String: SectionValue] {
+    let defaults = SwitcherSettings.mainDefaults
+    var out = [String: SectionValue]()
+    if main.windowScope != defaults.windowScope {
+      out["windowScope"] = .word(main.windowScope.rawValue)
+    }
+    let modes = [
+      ("otherSpaceMode", main.displayModes.otherSpace, defaults.displayModes.otherSpace),
+      ("hiddenAppMode", main.displayModes.hiddenApp, defaults.displayModes.hiddenApp),
+      ("minimizedMode", main.displayModes.minimized, defaults.displayModes.minimized),
+      ("fullscreenMode", main.displayModes.fullscreen, defaults.displayModes.fullscreen),
+      ("windowlessAppMode", main.displayModes.windowlessApp, defaults.displayModes.windowlessApp),
+    ]
+    for (key, mode, fallback) in modes where mode != fallback {
+      out[key] = .word(mode.rawValue)
+    }
+    if main.resultOrder != defaults.resultOrder {
+      out["resultOrder"] = .word(main.resultOrder.rawValue)
+    }
+    if main.groupingMode != defaults.groupingMode {
+      out["grouping"] = .word(main.groupingMode.rawValue)
+    }
+    for (key, subgroup) in placementKeys {
+      let placement = main.subgroupPlacements[subgroup] ?? .endOfList
+      if placement != .endOfList {
+        out[key] = .word(placement.rawValue)
+      }
+    }
+    if main.groupCount != defaults.groupCount {
+      out["groupCount"] = .count(main.groupCount)
+    }
+    if main.groupHeadingStyle != defaults.groupHeadingStyle {
+      out["groupHeadingStyle"] = .word(main.groupHeadingStyle.rawValue)
+    }
+    if main.displayTarget != defaults.displayTarget {
+      out["displayTarget"] = .word(main.displayTarget.rawValue)
+    }
+    if main.panelWidth != defaults.panelWidth {
+      out["panelWidth"] = .amount(main.panelWidth.factor)
+    }
+    if main.textScale != defaults.textScale {
+      out["textScale"] = .amount(main.textScale.factor)
+    }
+    if let showDelayMs = main.showDelayMs, showDelayMs > 0 {
+      out["showDelayMs"] = .amount(showDelayMs)
+    }
+    if main.hintsMode != defaults.hintsMode {
+      out["hintsMode"] = .word(main.hintsMode.rawValue)
+    }
+    if main.numberJump != defaults.numberJump {
+      out["numberJump"] = .flag(main.numberJump)
+    }
+    if main.numberReorder != defaults.numberReorder {
+      out["numberReorder"] = .flag(main.numberReorder)
+    }
+    if main.numberScope != defaults.numberScope {
+      out["numberScope"] = .word(main.numberScope.rawValue)
+    }
+    if main.hoverSelect != defaults.hoverSelect {
+      out["hoverSelect"] = .flag(main.hoverSelect)
+    }
+    if main.scrollSelect != defaults.scrollSelect {
+      out["scrollSelect"] = .flag(main.scrollSelect)
+    }
+    if main.fuzzyMatchEnabled != defaults.fuzzyMatchEnabled {
+      out["fuzzyMatchEnabled"] = .flag(main.fuzzyMatchEnabled)
+    }
+    return out
+  }
+
+  /// The parallel switcher's spelled keys: owned items, the window
+  /// scope's explicit following, and the switch when off. Following
+  /// items and the front-application scope stay omitted.
+  static func spelledParallelSection(_ overrides: ParallelOverrides) -> [String: SectionValue] {
+    var out = [String: SectionValue]()
+    switch overrides.windowScope {
+    case .follow:
+      out["windowScope"] = .word("inherit")
+    case .own(let scope) where scope != .frontApp:
+      out["windowScope"] = .word(scope.rawValue)
+    case .own:
+      break
+    }
+    let modes = [
+      ("otherSpaceMode", overrides.otherSpaceMode),
+      ("hiddenAppMode", overrides.hiddenAppMode),
+      ("minimizedMode", overrides.minimizedMode),
+      ("fullscreenMode", overrides.fullscreenMode),
+      ("windowlessAppMode", overrides.windowlessAppMode),
+    ]
+    for (key, choice) in modes {
+      if case .own(let mode) = choice {
+        out[key] = .word(mode.rawValue)
+      }
+    }
+    if case .own(let order) = overrides.resultOrder {
+      out["resultOrder"] = .word(order.rawValue)
+    }
+    if case .own(let mode) = overrides.groupingMode {
+      out["grouping"] = .word(mode.rawValue)
+    }
+    let placements = [
+      ("otherSpacePlacement", overrides.otherSpacePlacement),
+      ("hiddenAppPlacement", overrides.hiddenAppPlacement),
+      ("minimizedPlacement", overrides.minimizedPlacement),
+      ("fullscreenPlacement", overrides.fullscreenPlacement),
+      ("windowlessAppPlacement", overrides.windowlessAppPlacement),
+    ]
+    for (key, choice) in placements {
+      if case .own(let placement) = choice {
+        out[key] = .word(placement.rawValue)
+      }
+    }
+    if case .own(let count) = overrides.groupCount {
+      out["groupCount"] = .count(count)
+    }
+    if case .own(let style) = overrides.groupHeadingStyle {
+      out["groupHeadingStyle"] = .word(style.rawValue)
+    }
+    if case .own(let target) = overrides.displayTarget {
+      out["displayTarget"] = .word(target.rawValue)
+    }
+    if case .own(let width) = overrides.panelWidth {
+      out["panelWidth"] = .amount(width.factor)
+    }
+    if case .own(let scale) = overrides.textScale {
+      out["textScale"] = .amount(scale.factor)
+    }
+    if case .own(let milliseconds) = overrides.showDelayMs, let milliseconds, milliseconds > 0 {
+      out["showDelayMs"] = .amount(milliseconds)
+    }
+    if case .own(let hints) = overrides.hintsMode {
+      out["hintsMode"] = .word(hints.rawValue)
+    }
+    let switches = [
+      ("numberJump", overrides.numberJump),
+      ("numberReorder", overrides.numberReorder),
+      ("hoverSelect", overrides.hoverSelect),
+      ("scrollSelect", overrides.scrollSelect),
+      ("fuzzyMatchEnabled", overrides.fuzzyMatchEnabled),
+    ]
+    for (key, choice) in switches {
+      if case .own(let enabled) = choice {
+        out[key] = .flag(enabled)
+      }
+    }
+    if case .own(let scope) = overrides.numberScope {
+      out["numberScope"] = .word(scope.rawValue)
+    }
+    if !overrides.isEnabled {
+      out["enabled"] = .flag(false)
+    }
+    return out
+  }
+
   // MARK: Private
 
   /// The keybindings section lines, from the stored customized section
@@ -225,6 +419,14 @@ extension AppConfiguration {
   /// One `"key": true` line, indented two spaces.
   private static func encodedBool(key: String, value: Bool) -> String {
     "  \"\(key)\": \(value)"
+  }
+
+  /// One named section block, keys sorted like the top-level lines.
+  private static func sectionBlock(name: String, values: [String: SectionValue]) -> String {
+    let rows = values.keys.sorted().map { key in
+      "      \"\(key)\": \(values[key]?.rendered ?? "null")"
+    }
+    return "    \"\(name)\": {\n" + rows.joined(separator: ",\n") + "\n    }"
   }
 
 }
