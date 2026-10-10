@@ -258,7 +258,14 @@ struct SettingsKeyboardView: View {
       break
 
     case .needsModifiers:
-      notice = "\(key.displayName) needs Cmd, Ctrl or Opt for \(row)."
+      // Parallel invocations commit on releasing Command or Option, so a
+      // key holding neither leaves no release to commit on.
+      notice =
+        if action.requiresCommandOrOption {
+          "\(key.displayName) needs Cmd or Opt for \(row)."
+        } else {
+          "\(key.displayName) needs Cmd, Ctrl or Opt for \(row)."
+        }
       stopCapture()
       return
 
