@@ -33,7 +33,7 @@ enum KeyBindingCategory: CaseIterable, Equatable, Hashable, Sendable {
   /// The actions under the category, in file order.
   var actions: [KeyBindingAction] {
     switch self {
-    case .switcher: [.show, .showReverse, .showFilter]
+    case .switcher: [.show, .showReverse, .showFilter, .showParallel, .showParallelReverse]
     case .navigation: [.next, .previous, .commit, .cancel, .openSettings, .toggleScope, .numberJump, .moveRowUp, .moveRowDown]
     case .query: [.startFiltering, .deleteBackward, .clearQuery]
     case .windowActions: [.closeWindow, .quitApplication, .hideApplication, .minimizeWindow]
@@ -46,6 +46,8 @@ enum KeyBindingCategory: CaseIterable, Equatable, Hashable, Sendable {
     case .show: "Show"
     case .showReverse: "Show in reverse"
     case .showFilter: "Show for filtering"
+    case .showParallel: "Show parallel"
+    case .showParallelReverse: "Show parallel in reverse"
     case .next: "Next"
     case .previous: "Previous"
     case .commit: "Commit"

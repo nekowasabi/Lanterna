@@ -25,6 +25,8 @@ enum KeyBindingAction: String, CaseIterable, Equatable, Sendable {
   case show
   case showReverse
   case showFilter
+  case showParallel
+  case showParallelReverse
   case next
   case previous
   case commit
@@ -44,11 +46,26 @@ enum KeyBindingAction: String, CaseIterable, Equatable, Sendable {
 
   // MARK: Internal
 
+  /// Whether an assignment must hold Command or Option. The parallel
+  /// invocations commit on releasing one of the two, so a key holding
+  /// neither leaves no release to commit on.
+  var requiresCommandOrOption: Bool {
+    switch self {
+    case .showParallel,
+         .showParallelReverse:
+      true
+    default:
+      false
+    }
+  }
+
   var mode: BindingMode {
     switch self {
     case .show,
          .showReverse,
-         .showFilter:
+         .showFilter,
+         .showParallel,
+         .showParallelReverse:
       .global
     case .closeWindow,
          .quitApplication,
@@ -378,6 +395,12 @@ struct KeyBindingTable: Equatable, Sendable {
         ResolvedKey(keyCode: UInt16(kVK_Tab), modifiers: [.command, .shift])
       ],
       .showFilter: [ResolvedKey(keyCode: UInt16(kVK_Space), modifiers: .command)],
+      // The parallel invocations answer Option-held Tab: the second
+      // switcher beside the Command-held one.
+      .showParallel: [ResolvedKey(keyCode: UInt16(kVK_Tab), modifiers: .option)],
+      .showParallelReverse: [
+        ResolvedKey(keyCode: UInt16(kVK_Tab), modifiers: [.option, .shift])
+      ],
       // Bare letters answer only while not filtering; while filtering
       // they type into the query.
       .next: [
@@ -451,7 +474,7 @@ struct KeyBindingTable: Equatable, Sendable {
     to action: KeyBindingAction,
     in table: KeyBindingTable
   ) -> KeyAssignmentRefusal? {
-    guard allows(modifiers: key.modifiers, mode: action.mode) else {
+    guard allows(modifiers: key.modifiers, for: action) else {
       return .needsModifiers
     }
     let effective = table.fillingEmptiesWithDefaults()
@@ -478,6 +501,19 @@ struct KeyBindingTable: Equatable, Sendable {
     case .bare:
       true
     }
+  }
+
+  /// Whether these modifiers may drive the action at all. The mode's
+  /// answer first; parallel invocations additionally need Command or
+  /// Option, since Control alone leaves no release to commit on.
+  static func allows(modifiers: NSEvent.ModifierFlags, for action: KeyBindingAction) -> Bool {
+    guard allows(modifiers: modifiers, mode: action.mode) else {
+      return false
+    }
+    guard action.requiresCommandOrOption else {
+      return true
+    }
+    return modifiers.contains(.command) || modifiers.contains(.option)
   }
 
   subscript(_ action: KeyBindingAction) -> [ResolvedKey] {

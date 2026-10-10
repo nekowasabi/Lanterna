@@ -19,6 +19,8 @@ struct KeyBindingCategoryTests {
       .show,
       .showReverse,
       .showFilter,
+      .showParallel,
+      .showParallelReverse,
       .next,
       .previous,
       .commit,
@@ -45,6 +47,8 @@ struct KeyBindingCategoryTests {
       "Show",
       "Show in reverse",
       "Show for filtering",
+      "Show parallel",
+      "Show parallel in reverse",
       "Next",
       "Previous",
       "Commit",
@@ -69,7 +73,7 @@ struct KeyBindingCategoryTests {
     let found = KeyBindingCategory.matches("sh")
     #expect(found?.count == 1)
     #expect(found?.first?.category == .switcher)
-    #expect(found?.first?.actions == [.show, .showReverse, .showFilter])
+    #expect(found?.first?.actions == [.show, .showReverse, .showFilter, .showParallel, .showParallelReverse])
   }
 
   @Test
@@ -109,7 +113,7 @@ struct KeyBindingCategoryTests {
   func paddedQueryIsTrimmed() {
     let found = KeyBindingCategory.matches(" sh ")
     #expect(found?.map(\.category) == [.switcher])
-    #expect(found?.first?.actions == [.show, .showReverse, .showFilter])
+    #expect(found?.first?.actions == [.show, .showReverse, .showFilter, .showParallel, .showParallelReverse])
   }
 
 }
