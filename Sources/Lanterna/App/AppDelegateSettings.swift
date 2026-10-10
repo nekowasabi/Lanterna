@@ -146,6 +146,8 @@ extension AppDelegate {
     )
     presenter.windowScope = currentValues.windowScope
     presenter.grouping = currentValues.grouping
+    presenter.mainSwitcher = currentValues.mainSwitcher
+    presenter.parallelSwitcher = currentValues.parallelSwitcher
     presenter.hoverSelect = options.hoverSelect
     presenter.scrollSelect = options.scrollSelect
     presenter.numberJump = options.numberJump

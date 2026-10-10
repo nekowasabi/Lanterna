@@ -35,6 +35,8 @@ struct SettingsValues: Equatable, Sendable {
     showDelayMs: nil,
     windowScope: .allApps,
     grouping: GroupingPolicy(),
+    parallelOverrides: .defaults,
+    hasSwitchersSection: false,
     keyBindings: .defaults,
     keyBindingSection: nil,
     loadedKeyBindings: .defaults
@@ -101,6 +103,10 @@ struct SettingsValues: Equatable, Sendable {
   /// How the list groups its rows. Absent in the file means one list,
   /// with every parked section at the end.
   var grouping: GroupingPolicy
+  /// What the parallel switcher spells beside the main one.
+  var parallelOverrides: ParallelOverrides
+  /// Whether the loaded file held a switchers section.
+  var hasSwitchersSection: Bool
   /// The resolved key bindings. Never partial: absent in the file
   /// means all defaults.
   var keyBindings: KeyBindingTable
@@ -110,6 +116,36 @@ struct SettingsValues: Equatable, Sendable {
   /// The table as loaded, for telling an untouched round trip apart
   /// from an edited table.
   var loadedKeyBindings: KeyBindingTable
+
+  /// The main switcher's resolved panel settings, read off the shared
+  /// fields below. Computed so the two never drift apart.
+  var mainSwitcher: SwitcherSettings {
+    SwitcherSettings(
+      windowScope: windowScope,
+      displayModes: displayModes,
+      resultOrder: resultOrder,
+      groupingMode: grouping.mode,
+      subgroupPlacements: grouping.placements,
+      groupCount: grouping.groupCount,
+      groupHeadingStyle: grouping.headingStyle,
+      displayTarget: displayTarget,
+      panelWidth: panelWidth,
+      textScale: textScale,
+      showDelayMs: showDelayMs,
+      hintsMode: hintsMode,
+      numberJump: numberJump,
+      numberReorder: numberReorder,
+      numberScope: numberScope,
+      hoverSelect: hoverSelect,
+      scrollSelect: scrollSelect,
+      fuzzyMatchEnabled: fuzzyMatchEnabled
+    )
+  }
+
+  /// The parallel switcher's resolved panel settings.
+  var parallelSwitcher: SwitcherSettings {
+    SwitcherSettings.parallel(main: mainSwitcher, overrides: parallelOverrides)
+  }
 
   /// The values for one run: present keys win, absent keys mean
   /// the defaults.
@@ -146,6 +182,8 @@ struct SettingsValues: Equatable, Sendable {
         names: config.groupNames,
         assignments: config.groupAssignments
       ),
+      parallelOverrides: config.parallelOverrides,
+      hasSwitchersSection: config.hasSwitchersSection,
       keyBindings: config.keyBindings,
       keyBindingSection: config.keyBindingSection,
       loadedKeyBindings: config.keyBindings

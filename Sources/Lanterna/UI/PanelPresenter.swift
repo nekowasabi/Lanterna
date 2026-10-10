@@ -213,6 +213,13 @@ final class PanelPresenter {
   /// Where opening the settings goes. Set by whoever owns the file.
   var onOpenSettings: (@MainActor () -> Void)?
 
+  /// The main switcher's resolved panel settings. Each appearance reads
+  /// its own switcher's settings; the per-appearance use lands later.
+  var mainSwitcher = SwitcherSettings.mainDefaults
+
+  /// The parallel switcher's resolved panel settings, beside the main one.
+  var parallelSwitcher = SwitcherSettings.parallel(main: .mainDefaults, overrides: .defaults)
+
   /// Whether digits with a jump modifier name rows. Read on every
   /// press, the same timing as above.
   var numberJump = false {
