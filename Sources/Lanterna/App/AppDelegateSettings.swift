@@ -149,7 +149,10 @@ extension AppDelegate {
     )
     presenter.windowScope = currentValues.windowScope
     presenter.grouping = currentValues.grouping
-    presenter.mainSwitcher = currentValues.mainSwitcher
+    presenter.displayTarget = currentValues.displayTarget
+    presenter.panelWidth = currentValues.panelWidth
+    presenter.textScale = currentValues.textScale
+    presenter.hintsMode = currentValues.hintsMode
     presenter.parallelSwitcher = currentValues.parallelSwitcher
     presenter.hoverSelect = options.hoverSelect
     presenter.scrollSelect = options.scrollSelect
@@ -185,25 +188,24 @@ extension AppDelegate {
     if checkContextChanged {
       settingsWindow?.checkDisplay.resultText = nil
     }
-    panel?.displayModes = values.displayModes
+    // The appearance is shared, so it lands at once; every per-switcher
+    // panel setting reaches the panel through the per-appearance handover
+    // at show time instead, so a panel that is up keeps its own switcher's
+    // values until it closes.
     panel?.appearance = values.appearanceMode.nsAppearance
-    panel?.textScale = values.textScale
-    panel?.displayTarget = values.displayTarget
-    panel?.panelWidth = values.panelWidth
-    panel?.hoverSelect = values.hoverSelect
-    panel?.scrollSelect = values.scrollSelect
-    panel?.hintsMode = values.hintsMode
     let searchSettings = SearchSettings(
       fuzzyMatchEnabled: values.fuzzyMatchEnabled,
       shortcutMemoryLength: values.shortcutMemoryLength,
       ordering: values.resultOrder
     )
-    panel?.searchSettings = searchSettings
     presenter?.displayModes = values.displayModes
     presenter?.searchSettings = searchSettings
     presenter?.windowScope = values.windowScope
     presenter?.grouping = values.grouping
-    presenter?.mainSwitcher = values.mainSwitcher
+    presenter?.displayTarget = values.displayTarget
+    presenter?.panelWidth = values.panelWidth
+    presenter?.textScale = values.textScale
+    presenter?.hintsMode = values.hintsMode
     presenter?.parallelSwitcher = values.parallelSwitcher
     presenter?.hoverSelect = values.hoverSelect
     presenter?.scrollSelect = values.scrollSelect
@@ -212,7 +214,6 @@ extension AppDelegate {
     presenter?.numberScope = values.numberScope
     presenter?.rowOrder = values.rowOrder
     presenter?.showDelayMs = values.showDelayMs
-    panel?.grouping = values.grouping
     if let panel, let composite = presenter?.surface as? MirroredPanelSurface {
       composite.displayTarget = values.displayTarget
       composite.syncMirrors(from: panel)

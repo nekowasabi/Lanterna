@@ -218,9 +218,20 @@ final class PanelPresenter {
   /// Where opening the settings goes. Set by whoever owns the file.
   var onOpenSettings: (@MainActor () -> Void)?
 
-  /// The main switcher's resolved panel settings. Each appearance reads
-  /// its own switcher's settings; the per-appearance use lands later.
-  var mainSwitcher = SwitcherSettings.mainDefaults
+  /// Which display the panel opens on. The panel holds its own copy;
+  /// this one feeds the main switcher's resolved settings alone.
+  var displayTarget = DisplayTarget.primary
+
+  /// The panel width step. Beside the display target for the same reason.
+  var panelWidth = PanelWidth.standard
+
+  /// The panel text and icon scale step. Beside the display target for
+  /// the same reason.
+  var textScale = TextScaleLevel.standard
+
+  /// How the left edge of each row reads. Beside the display target for
+  /// the same reason.
+  var hintsMode = HintsMode.prefix
 
   /// The parallel switcher's resolved panel settings, beside the main one.
   var parallelSwitcher = SwitcherSettings.parallel(main: .mainDefaults, overrides: .defaults)
@@ -229,6 +240,32 @@ final class PanelPresenter {
   /// after it closes. Read by the commit and the diagnostics; each
   /// appearance sets it as it goes up.
   private(set) var activeSwitcher = SwitcherIdentity.main
+
+  /// The main switcher's resolved panel settings, read off the shared
+  /// fields below. Computed so the two never drift apart: every staging
+  /// of a legacy field lands here with it.
+  var mainSwitcher: SwitcherSettings {
+    SwitcherSettings(
+      windowScope: windowScope,
+      displayModes: displayModes,
+      resultOrder: searchSettings.ordering,
+      groupingMode: grouping.mode,
+      subgroupPlacements: grouping.placements,
+      groupCount: grouping.groupCount,
+      groupHeadingStyle: grouping.headingStyle,
+      displayTarget: displayTarget,
+      panelWidth: panelWidth,
+      textScale: textScale,
+      showDelayMs: showDelayMs,
+      hintsMode: hintsMode,
+      numberJump: numberJump,
+      numberReorder: numberReorder,
+      numberScope: numberScope,
+      hoverSelect: hoverSelect,
+      scrollSelect: scrollSelect,
+      fuzzyMatchEnabled: searchSettings.fuzzyMatchEnabled
+    )
+  }
 
   /// Whether digits with a jump modifier name rows. Read on every
   /// press, the same timing as above.
@@ -577,7 +614,12 @@ final class PanelPresenter {
 
   /// The resolved settings behind one invocation's switcher.
   private func settings(for combination: HotkeyCombination) -> SwitcherSettings {
-    switch combination.switcher {
+    settings(for: combination.switcher)
+  }
+
+  /// The resolved settings behind one switcher.
+  private func settings(for switcher: SwitcherIdentity) -> SwitcherSettings {
+    switch switcher {
     case .main: mainSwitcher
     case .parallel: parallelSwitcher
     }
@@ -595,15 +637,17 @@ final class PanelPresenter {
   /// Set on every appearance, so a surface grown later hears the same
   /// handlers through the sync below it.
   private func wirePointerHandlers() {
+    // Each appearance answers to its own switcher's switches: the
+    // identity only moves when the next appearance goes up.
     surface.onHoverRow = { [weak self] id in
-      guard let self, hoverSelect else { return }
+      guard let self, settings(for: activeSwitcher).hoverSelect else { return }
       selection.select(id)
     }
     surface.onClickRow = { [weak self] id in
       self?.keyCommands.commitClickedRow(id)
     }
     surface.onScrollStep = { [weak self] step in
-      guard let self, scrollSelect else { return }
+      guard let self, settings(for: activeSwitcher).scrollSelect else { return }
       selection.step(by: step)
     }
   }
@@ -763,7 +807,7 @@ final class PanelPresenter {
       surface.showNumberedRows(keyCommands.numberedRows().map(\.id))
       return
     }
-    guard numberJump else {
+    guard settings(for: activeSwitcher).numberJump else {
       surface.showNumberedRows([])
       return
     }
@@ -820,6 +864,15 @@ final class PanelPresenter {
     let settings = settings(for: combination)
     keyCommands.updateWindowScope(settings.windowScope)
     keyCommands.updateDisplayModes(settings.displayModes)
+    // Grouping and search fold the shared halves in, so each appearance
+    // reads its own switcher with the same names and memory both share.
+    // Number switches ride the same ports their settings window writes.
+    let applied = AppliedPanelSettings.resolve(settings, sharedGrouping: grouping, sharedSearch: searchSettings)
+    keyCommands.updateGrouping(applied.grouping)
+    keyCommands.updateSearchSettings(applied.searchSettings)
+    keyCommands.updateNumberJump(settings.numberJump)
+    keyCommands.updateReorder(settings.numberReorder)
+    keyCommands.updateNumberScope(settings.numberScope)
     keyCommands.beginFiltering(fullWindows: ordered, filtering: combination == .filter)
     let layout = keyCommands.shownLayout
     let shown = layout.rows
@@ -829,7 +882,7 @@ final class PanelPresenter {
     replayDelayedPresses(replay)
     operations.begin(windows: ordered)
     wirePointerHandlers()
-    surface.applyPanelSettings(.resolve(settings, sharedGrouping: grouping, sharedSearch: searchSettings))
+    surface.applyPanelSettings(applied)
     surface.present(windows: shown, selecting: selection.chosenID, filterActive: keyCommands.isFilteringActive)
     // The tap reports changes only, so the modifiers this press
     // opened under would otherwise leave the numbers down until the

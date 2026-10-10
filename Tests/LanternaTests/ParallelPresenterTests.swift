@@ -300,15 +300,15 @@ struct ParallelPresenterTests {
       parallelRow(3, owner: safari, app: "Safari", title: "Reading list"),
     ]
     let parallel = Fixture(store: WindowListStore(fixed: rows), windows: rows)
-    parallel.presenter.mainSwitcher.windowScope = .allApps
-    parallel.presenter.mainSwitcher.displayModes.minimized = .separateAtBottom
+    parallel.presenter.windowScope = .allApps
+    parallel.presenter.displayModes.minimized = .separateAtBottom
     parallel.presenter.parallelSwitcher.windowScope = .allApps
     parallel.presenter.parallelSwitcher.displayModes.minimized = .show
     parallel.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
     #expect(parallel.surface.presentedLists.last?.map(\.id) == rows.map(\.id))
 
     let main = Fixture(store: WindowListStore(fixed: rows), windows: rows)
-    main.presenter.mainSwitcher.windowScope = .allApps
+    main.presenter.windowScope = .allApps
     main.presenter.handleHotkey(.forward, deliveryDelay: nil)
     #expect(main.surface.presentedLists.last?.map(\.id) == [rows[0].id, rows[2].id, rows[1].id])
   }
@@ -355,8 +355,8 @@ struct ParallelPresenterTests {
       parallelRow(2, owner: safari, app: "Safari", title: "Downloads", minimized: true),
     ]
     let fixture = Fixture(store: WindowListStore(fixed: rows), windows: rows)
-    fixture.presenter.mainSwitcher.windowScope = .allApps
-    fixture.presenter.mainSwitcher.displayModes.minimized = .hide
+    fixture.presenter.windowScope = .allApps
+    fixture.presenter.displayModes.minimized = .hide
     fixture.presenter.parallelSwitcher = .parallel(
       main: fixture.presenter.mainSwitcher,
       overrides: ParallelOverrides.defaults
@@ -418,7 +418,7 @@ struct ParallelPresenterTests {
       parallelRow(2, owner: finder, app: "Finder", title: "Documents"),
     ]
     let fixture = Fixture(store: WindowListStore(fixed: rows), windows: rows)
-    fixture.presenter.mainSwitcher.fuzzyMatchEnabled = true
+    fixture.presenter.searchSettings.fuzzyMatchEnabled = true
     var overrides = ParallelOverrides.defaults
     overrides.windowScope = .own(.allApps)
     overrides.fuzzyMatchEnabled = .own(false)
@@ -466,8 +466,8 @@ struct ParallelPresenterTests {
       windowlessParallelRow(),
     ]
     let fixture = Fixture(store: WindowListStore(fixed: rows), windows: rows)
-    fixture.presenter.mainSwitcher.windowScope = .allApps
-    fixture.presenter.mainSwitcher.displayModes.windowlessApp = .show
+    fixture.presenter.windowScope = .allApps
+    fixture.presenter.displayModes.windowlessApp = .show
     var overrides = ParallelOverrides.defaults
     overrides.windowScope = .own(.allApps)
     overrides.windowlessAppMode = .own(.show)
@@ -477,8 +477,8 @@ struct ParallelPresenterTests {
     #expect(fixture.presenter.keyCommands.numberedRows().count == 3)
 
     let main = Fixture(store: WindowListStore(fixed: rows), windows: rows)
-    main.presenter.mainSwitcher.windowScope = .allApps
-    main.presenter.mainSwitcher.displayModes.windowlessApp = .show
+    main.presenter.windowScope = .allApps
+    main.presenter.displayModes.windowlessApp = .show
     main.presenter.handleHotkey(.forward, deliveryDelay: nil)
     #expect(main.presenter.keyCommands.numberedRows().count == 2)
   }
