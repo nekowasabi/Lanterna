@@ -109,7 +109,8 @@ struct HotkeyBinding: Equatable, Sendable {
 
   // MARK: Internal
 
-  /// The long-standing three bindings.
+  /// The bindings an unchanged file resolves to: the main three
+  /// invocations beside the parallel pair.
   static var defaults: [HotkeyBinding] {
     bindings(for: .defaults)
   }
