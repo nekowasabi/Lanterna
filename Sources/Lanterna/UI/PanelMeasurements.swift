@@ -89,6 +89,7 @@ struct HotkeyMeasurement: Sendable {
     if let mru {
       line += "; " + mru.phrase
     }
+    line += "; \(combination.switcher.diagnosticsName) switcher"
     return line
   }
 
@@ -266,7 +267,8 @@ struct PanelExitMeasurement: Sendable {
          (.nothingToCommit, .commitKey):
       return "committed nothing \(timing) (the list was empty)" + filterSuffix
 
-    case (.pressCalledOff, .commandRelease):
+    case (.pressCalledOff, .commandRelease),
+         (.pressCalledOff, .optionRelease):
       return "press called off \(timing), before the panel appeared" + filterSuffix
 
     // Shares no word with any of the commit wordings, so one pattern tells
@@ -288,7 +290,6 @@ struct PanelExitMeasurement: Sendable {
          (.nothingToCommit, .settingsKey),
          (.pressCalledOff, .commitKey),
          (.pressCalledOff, .cancelKey),
-         (.pressCalledOff, .optionRelease),
          (.pressCalledOff, .settingsKey),
          (.cancelled, .commandRelease),
          (.cancelled, .optionRelease),

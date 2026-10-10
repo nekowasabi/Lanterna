@@ -354,8 +354,8 @@ final class PanelPresenter {
         writeLine(LogLine(
           .info,
           .panel,
-          "turned away \(combination.name); \(key) was already up by the time "
-            + "the press arrived"
+          "turned away \(combination.name) (\(combination.switcher.diagnosticsName)); "
+            + "\(key) was already up by the time the press arrived"
         ))
         return
       }
@@ -539,6 +539,7 @@ final class PanelPresenter {
       guard pendingShow.waitingCommitOnCommand == key else { return true }
       guard let waiting = pendingShow.take() else { return true }
       pendingPress.callOff()
+      wayOut.switcherIdentity = waiting.presses.first?.switcher ?? .main
       guard let items = waiting.items else {
         wayOut.recordPressCalledOff(since: startedAt, trigger: trigger(forCommitOnCommand: key))
         return true
@@ -556,6 +557,7 @@ final class PanelPresenter {
     }
     if pendingPress.isWaiting {
       guard pendingPress.waitingCommitOnCommand == key else { return true }
+      wayOut.switcherIdentity = pendingPress.waitingSwitcher ?? .main
       pendingPress.callOff()
       wayOut.recordPressCalledOff(since: startedAt, trigger: trigger(forCommitOnCommand: key))
       return true
@@ -814,6 +816,7 @@ final class PanelPresenter {
     // for the commit and the diagnostics to name. A panel that is up
     // keeps its own until it closes; the next appearance seeds again.
     activeSwitcher = combination.switcher
+    wayOut.switcherIdentity = combination.switcher
     let settings = settings(for: combination)
     keyCommands.updateWindowScope(settings.windowScope)
     keyCommands.updateDisplayModes(settings.displayModes)

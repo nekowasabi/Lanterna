@@ -124,7 +124,7 @@ struct PanelSelectionTests {
     #expect(
       fixture.log.lines.first(where: { $0.hasPrefix("committed ") })
         == "committed \(fourth.appName) — \(fourth.displayTitle) "
-        + "(\(fourth.id.logWord)) 4.8 ms after Command was released"
+        + "(\(fourth.id.logWord)) 4.8 ms after Command was released; main switcher"
     )
   }
 

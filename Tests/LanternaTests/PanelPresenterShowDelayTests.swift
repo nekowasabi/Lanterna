@@ -97,7 +97,7 @@ struct PanelPresenterShowDelayTests {
     #expect(
       fixture.log.lines == [
         "press called off 4.8 ms after Command was released, "
-          + "before the panel appeared"
+          + "before the panel appeared; main switcher"
       ]
     )
   }

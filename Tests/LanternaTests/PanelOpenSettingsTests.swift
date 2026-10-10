@@ -59,9 +59,9 @@ struct PanelOpenSettingsTests {
   /// The line names the key the press came in on: each default comma by its
   /// own modifier, and a customized key by position.
   @Test(arguments: [
-    (kVK_ANSI_Comma, NSEvent.ModifierFlags.command, false, " after Cmd+Comma"),
-    (kVK_ANSI_Comma, .option, false, " after Opt+Comma"),
-    (kVK_ANSI_Semicolon, .command, true, " after key 41"),
+    (kVK_ANSI_Comma, NSEvent.ModifierFlags.command, false, " after Cmd+Comma; main switcher"),
+    (kVK_ANSI_Comma, .option, false, " after Opt+Comma; main switcher"),
+    (kVK_ANSI_Semicolon, .command, true, " after key 41; main switcher"),
   ])
   func leavingNamesTheKeyPressed(
     keyCode: Int,

@@ -65,6 +65,11 @@ final class PanelExit {
   /// operations swap it only for a list the panel draws in the same step.
   var presentedWindows = [WindowItem]()
 
+  /// Which switcher the appearance on screen belongs to, for the lines
+  /// to name. Set as the panel goes up — and for a silent ending, from
+  /// the waiting press — so a customized key still says whose panel it was.
+  var switcherIdentity = SwitcherIdentity.main
+
   /// Takes down the list an appearance is showing.
   ///
   /// `startedAt` is the clock read the appearance began with, handed in
@@ -489,7 +494,10 @@ final class PanelExit {
       elapsed: elapsed,
       filterSummary: filterSummary
     )
-    writeLine(LogLine(.info, .panel, measurement.summaryLine, context: measurement.context))
+    let line = measurement.summaryLine + "; \(switcherIdentity.diagnosticsName) switcher"
+    var context = measurement.context
+    context["switcher"] = .string(switcherIdentity.diagnosticsName)
+    writeLine(LogLine(.info, .panel, line, context: context))
   }
 
 }

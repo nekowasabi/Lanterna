@@ -68,8 +68,8 @@ struct PanelExitTests {
     _ = byEscape.presenter.handleKeyStroke(press(kVK_Escape))
 
     #expect(!byEscape.surface.isPresented)
-    #expect(byPeriod.log.lines.last == "cancelled 4.8 ms after Cmd+Period")
-    #expect(byEscape.log.lines.last == "cancelled 4.8 ms after Escape")
+    #expect(byPeriod.log.lines.last == "cancelled 4.8 ms after Cmd+Period; main switcher")
+    #expect(byEscape.log.lines.last == "cancelled 4.8 ms after Escape; main switcher")
   }
 
   /// A bare full stop is somebody typing, and typing must not close the
@@ -137,7 +137,7 @@ struct PanelExitTests {
 
     _ = fixture.presenter.handleKeyStroke(press(kVK_ANSI_Period))
 
-    #expect(fixture.log.lines.last == "cancelled 9.6 ms after Cmd+Period")
+    #expect(fixture.log.lines.last == "cancelled 9.6 ms after Cmd+Period; main switcher")
   }
 
   /// The Escape that reaches a panel on a stock machine is the bare one:
@@ -158,7 +158,7 @@ struct PanelExitTests {
     #expect(fixture.presenter.handleKeyStroke(bareEscape) == .absorbed)
 
     #expect(!fixture.surface.isPresented)
-    #expect(fixture.log.lines.last == "cancelled 4.8 ms after Escape")
+    #expect(fixture.log.lines.last == "cancelled 4.8 ms after Escape; main switcher")
   }
 
   /// Cancelling works on a run with no monitor, where the bare Escape is
@@ -182,7 +182,7 @@ struct PanelExitTests {
     #expect(fixture.presenter.handleKeyStroke(bareEscape) == .absorbed)
 
     #expect(!fixture.surface.isPresented)
-    #expect(fixture.log.lines.last == "cancelled 4.8 ms after Escape")
+    #expect(fixture.log.lines.last == "cancelled 4.8 ms after Escape; main switcher")
   }
 
   /// The gesture ends with Command coming up, and by then the panel is
@@ -261,7 +261,7 @@ struct PanelExitTests {
     #expect(
       fixture.log.lines.first(where: { $0.hasPrefix("committed ") })
         == "committed \(third.appName) — \(third.displayTitle) "
-        + "(\(third.id.logWord)) 4.8 ms after Return"
+        + "(\(third.id.logWord)) 4.8 ms after Return; main switcher"
     )
     #expect(!fixture.log.lines.contains(where: { $0.hasPrefix("cancelled ") }))
   }
@@ -325,11 +325,11 @@ struct PanelExitTests {
 
     #expect(
       byReturn.log.lines.last
-        == "committed nothing 4.8 ms after Return (the list was empty)"
+        == "committed nothing 4.8 ms after Return (the list was empty); main switcher"
     )
     #expect(
       byKeypad.log.lines.last
-        == "committed nothing 4.8 ms after keypad Enter (the list was empty)"
+        == "committed nothing 4.8 ms after keypad Enter (the list was empty); main switcher"
     )
     for lines in [byReturn.log.lines, byKeypad.log.lines] {
       #expect(lines.last?.hasPrefix("committed ") == true)
@@ -417,7 +417,7 @@ struct PanelExitTests {
     }
     let startedAt = fixture.clock.read()
     fixture.presenter.wayOut.leaveForSettings(by: .commandComma, since: startedAt)
-    #expect(fixture.log.lines.last == "left for settings 9.6 ms after Cmd+Comma")
+    #expect(fixture.log.lines.last == "left for settings 9.6 ms after Cmd+Comma; main switcher")
   }
 
   @Test

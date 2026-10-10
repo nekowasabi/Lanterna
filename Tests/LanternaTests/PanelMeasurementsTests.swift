@@ -19,6 +19,7 @@ struct HotkeyMeasurementTests {
     #expect(
       Self.measurement().summaryLine
         == "panel shown 4.8 ms after Cmd+Tab (12 entries)" + Self.notTakingKeys
+        + "; main switcher"
     )
   }
 
@@ -30,7 +31,7 @@ struct HotkeyMeasurementTests {
   func whetherTheKeyboardArrivedIsAlwaysSaid() {
     #expect(
       Self.measurement(becameKey: true).summaryLine
-        == "panel shown 4.8 ms after Cmd+Tab (12 entries); taking keys"
+        == "panel shown 4.8 ms after Cmd+Tab (12 entries); taking keys; main switcher"
     )
   }
 
@@ -39,7 +40,7 @@ struct HotkeyMeasurementTests {
     #expect(
       Self.measurement(deliveryDelay: .microseconds(1900)).summaryLine
         == "panel shown 4.8 ms after Cmd+Tab (12 entries); delivery 1.9 ms"
-        + Self.notTakingKeys
+        + Self.notTakingKeys + "; main switcher"
     )
   }
 
@@ -52,6 +53,7 @@ struct HotkeyMeasurementTests {
       Self.measurement(gatheredOnDemand: true).summaryLine
         == "panel shown 4.8 ms after Cmd+Tab (12 entries)"
         + "; gathered on the spot (no list held yet)" + Self.notTakingKeys
+        + "; main switcher"
     )
   }
 
@@ -62,6 +64,7 @@ struct HotkeyMeasurementTests {
         .summaryLine
         == "panel shown 4.8 ms after Cmd+Tab (12 entries); delivery 1.9 ms"
         + "; gathered on the spot (no list held yet)" + Self.notTakingKeys
+        + "; main switcher"
     )
   }
 
@@ -70,6 +73,7 @@ struct HotkeyMeasurementTests {
     #expect(
       Self.measurement(combination: .reverse).summaryLine
         == "panel shown 4.8 ms after Shift+Cmd+Tab (12 entries)" + Self.notTakingKeys
+        + "; main switcher"
     )
   }
 
@@ -83,7 +87,7 @@ struct HotkeyMeasurementTests {
     ).summaryLine
     #expect(
       line == "panel shown 71.3 ms after Cmd+Tab (12 entries); delivery 0.0 ms"
-        + Self.notTakingKeys
+        + Self.notTakingKeys + "; main switcher"
     )
   }
 

@@ -44,6 +44,12 @@ final class PendingPressHold {
     pending?.commitOnCommand
   }
 
+  /// Which switcher the waiting press opens. Nil when no press is
+  /// waiting, so a called-off line still names whose press it was.
+  var waitingSwitcher: SwitcherIdentity? {
+    pending?.switcher
+  }
+
   /// Takes the press and arranges for a panel once there is a list.
   ///
   /// The task below carries none of the press with it; it is a standing
@@ -96,6 +102,11 @@ final class PendingPressHold {
     /// arrived, so a release landing mid-wait answers the gesture that
     /// started it rather than the fingers as they are now.
     let commitOnCommand: Bool
+
+    /// Which switcher the press opens, for the lines to name.
+    var switcher: SwitcherIdentity {
+      combination.switcher
+    }
   }
 
   /// The press that is waiting.

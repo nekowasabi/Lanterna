@@ -89,12 +89,12 @@ struct HotkeyRegistrationOutcome: Sendable {
     if !registered.isEmpty {
       segments.append(
         "registered "
-          + registered.lazy.map { displayNames[$0] ?? $0.name }.joined(separator: ", ")
+          + registered.lazy.map { tagged($0, name: displayNames[$0] ?? $0.name) }.joined(separator: ", ")
       )
     }
     if !failures.isEmpty {
       let reasons = failures.map { failure in
-        let name = failure.displayName ?? failure.combination.name
+        let name = tagged(failure.combination, name: failure.displayName ?? failure.combination.name)
         if failure.status == noErr {
           return "\(name) (no key is bound)"
         }
@@ -106,6 +106,14 @@ struct HotkeyRegistrationOutcome: Sendable {
       segments.append("no hotkey registered, exiting")
     }
     return segments.joined(separator: "; ")
+  }
+
+  // MARK: Private
+
+  /// One combination mention with its switcher, so a customized key
+  /// still says whose invocation it opens.
+  private func tagged(_ combination: HotkeyCombination, name: String) -> String {
+    "\(name) (\(combination.switcher.diagnosticsName))"
   }
 
 }

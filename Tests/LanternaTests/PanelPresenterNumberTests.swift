@@ -91,7 +91,7 @@ struct PanelPresenterNumberTests {
     }))
     #expect(fixture.log.lines.contains(
       "committed \(named.appName) — \(named.displayTitle) "
-        + "(\(named.id.logWord)) 4.8 ms after Option was released"
+        + "(\(named.id.logWord)) 4.8 ms after Option was released; main switcher"
     ))
   }
 

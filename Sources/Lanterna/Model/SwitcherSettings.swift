@@ -9,6 +9,16 @@ import Foundation
 enum SwitcherIdentity: Equatable, Sendable {
   case main
   case parallel
+
+  // MARK: Internal
+
+  /// The word diagnostics lines name it by.
+  var diagnosticsName: String {
+    switch self {
+    case .main: "main"
+    case .parallel: "parallel"
+    }
+  }
 }
 
 // MARK: - FollowOrOwn
