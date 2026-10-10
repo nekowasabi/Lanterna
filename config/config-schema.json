@@ -1557,183 +1557,63 @@
             },
             "appearanceMode": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "romajiScope": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "launchAtLogin": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "logLevel": {
               "description": "Retired; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Retired; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "saveLogsToDisk": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "updateCheckEnabled": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "updateChannel": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "exclusions": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "shortcutMemoryLength": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "keybindings": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "sampleCount": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "stopMonitorEvery": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "rowOrder": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "groupNames": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             },
             "groupAssignments": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
-              "oneOf": [
-                {
-                  "description": "Shared by both switchers; write it at the top level. Ignored here.",
-                  "deprecated": true
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
+              "deprecated": true
             }
           },
           "additionalProperties": false

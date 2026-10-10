@@ -71,6 +71,16 @@ local function inheritWrapper(inner: Dynamic, doc: String): Dynamic = new {
   }
 }
 
+/// The keys both switchers share, spelled out by hand like the keybinding
+/// actions above. A new top-level key lands here when it is shared, and
+/// the schema parity test holds the list to `knownKeys`.
+local sharedSwitcherKeys = new Listing<String> {
+  "appearanceMode"; "romajiScope"; "launchAtLogin"; "logLevel";
+  "saveLogsToDisk"; "updateCheckEnabled"; "updateChannel"; "exclusions";
+  "shortcutMemoryLength"; "keybindings"; "sampleCount"; "stopMonitorEvery";
+  "rowOrder"; "groupNames"; "groupAssignments"
+}
+
 /// The two switcher sections side by side. The main section renders each
 /// key as usual; the parallel section wraps each panel key in the
 /// "inherit" escape hatch, while its switch and the shared keys render
@@ -94,7 +104,9 @@ local function switchersFragment(prop: reflect.Property): Dynamic = new {
       description = "The parallel switcher's panel settings."
       ["properties"] = new {
         for (name, sub in reflect.Module(schema).classes["SwitcherParallel"].properties) {
-          [name] = if (name == "enabled") fragment(sub) else inheritWrapper(fragment(sub), sub.docComment)
+          [name] =
+            if (name == "enabled" || sharedSwitcherKeys.contains(name)) fragment(sub)
+            else inheritWrapper(fragment(sub), sub.docComment)
         }
       }
       ["additionalProperties"] = false
