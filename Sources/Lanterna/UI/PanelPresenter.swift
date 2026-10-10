@@ -22,6 +22,9 @@ final class PanelPresenter {
     commandIsHeld: @escaping @MainActor () -> Bool = {
       CGEventSource.flagsState(.combinedSessionState).contains(.maskCommand)
     },
+    optionIsHeld: @escaping @MainActor () -> Bool = {
+      CGEventSource.flagsState(.combinedSessionState).contains(.maskAlternate)
+    },
     modifierFlags: @escaping @MainActor () -> CGEventFlags = {
       CGEventSource.flagsState(.combinedSessionState)
     },
@@ -46,6 +49,7 @@ final class PanelPresenter {
     self.writeLine = writeLine
     self.closesOnCommandRelease = closesOnCommandRelease
     self.commandIsHeld = commandIsHeld
+    self.optionIsHeld = optionIsHeld
     self.modifierFlags = modifierFlags
     self.commandWatchInterval = commandWatchInterval
     self.keyStatusWatchInterval = keyStatusWatchInterval
@@ -458,6 +462,13 @@ final class PanelPresenter {
   /// this answer, and a decision that cannot be put either way from a test
   /// is a decision nothing checks.
   private let commandIsHeld: @MainActor () -> Bool
+
+  /// Whether Option is down on the keyboard at this instant.
+  ///
+  /// Injected for the same reason as the Command question above: the
+  /// commit key of an Option-held appearance is Option, and a test
+  /// process holds no real keys.
+  private let optionIsHeld: @MainActor () -> Bool
 
   /// The modifiers held right now, read where they are used rather
   /// than decided elsewhere: a test process holds no real keys, so

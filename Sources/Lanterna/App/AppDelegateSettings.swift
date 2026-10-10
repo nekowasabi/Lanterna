@@ -141,6 +141,9 @@ extension AppDelegate {
       searchSettings: options.searchSettings,
       keyBindings: options.keyBindings,
       closesOnCommandRelease: { [weak self] in self?.monitor?.isMonitoring ?? false },
+      optionIsHeld: {
+        CGEventSource.flagsState(.combinedSessionState).contains(.maskAlternate)
+      },
       showDelayMs: options.showDelayMs,
       switcher: OwnWindowSwitcher(wrapped: LiveWindowSwitcher())
     )
