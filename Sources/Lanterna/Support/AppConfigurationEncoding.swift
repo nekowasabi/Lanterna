@@ -79,6 +79,7 @@ extension AppConfiguration {
     entries.append(contentsOf: updateCheckEntries(config))
     entries.append(encodedInt(key: "version", value: config.version))
     entries.append(contentsOf: listingEntries(config))
+    entries.append(contentsOf: switcherSectionEntries(config))
     // Every line opens with two spaces and its quoted key, so sorting
     // the lines sorts the keys. Helpers may append in any order.
     return Data(("{\n" + entries.sorted().joined(separator: ",\n") + "\n}\n").utf8)
