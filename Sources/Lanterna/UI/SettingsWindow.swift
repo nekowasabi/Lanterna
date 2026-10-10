@@ -10,6 +10,7 @@ enum SettingsTab: CaseIterable {
   case filter
   case groups
   case keyboard
+  case parallel
 
   // MARK: Internal
 
@@ -20,6 +21,7 @@ enum SettingsTab: CaseIterable {
     case .filter: "Filter"
     case .groups: "Groups"
     case .keyboard: "Keyboard"
+    case .parallel: "Parallel"
     }
   }
 
@@ -30,6 +32,7 @@ enum SettingsTab: CaseIterable {
     case .filter: "line.3.horizontal.decrease.circle"
     case .groups: "square.3.layers.3d"
     case .keyboard: "keyboard"
+    case .parallel: "rectangle.on.rectangle"
     }
   }
 }
@@ -118,7 +121,20 @@ final class SettingsWindow: NSWindow {
     )))
     keyboardHost.preferredContentSize = NSSize(width: Self.contentWidth, height: contentHeight)
     keyboardHost.sizingOptions = []
-    let hosts: [NSHostingController<AnyView>] = [generalHost, appearanceHost, filterHost, groupsHost, keyboardHost]
+    let parallelHost = NSHostingController(rootView: AnyView(SettingsTabRoot(
+      model: model,
+      content: { SettingsParallelView(values: $0) }
+    )))
+    parallelHost.preferredContentSize = NSSize(width: Self.contentWidth, height: contentHeight)
+    parallelHost.sizingOptions = []
+    let hosts: [NSHostingController<AnyView>] = [
+      generalHost,
+      appearanceHost,
+      filterHost,
+      groupsHost,
+      keyboardHost,
+      parallelHost,
+    ]
     for (tab, host) in zip(SettingsTab.allCases, hosts) {
       let item = NSTabViewItem(viewController: host)
       item.label = tab.title
