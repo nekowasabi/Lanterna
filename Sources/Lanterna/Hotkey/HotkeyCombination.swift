@@ -14,6 +14,11 @@ enum HotkeyCombination: Sendable, CaseIterable, Hashable {
   /// `HotkeyManager` and the disable/restore discipline iterate `all`, so
   /// adding the case is what reaches them.
   case filter
+  /// The parallel switcher's invocations. Registered like the main three;
+  /// the window server holds no counterpart, so the disable/restore
+  /// discipline leaves these two alone.
+  case parallelForward
+  case parallelReverse
 
   // MARK: Lifecycle
 
@@ -28,8 +33,8 @@ enum HotkeyCombination: Sendable, CaseIterable, Hashable {
 
   // MARK: Internal
 
-  /// Everything that gets registered. Registration is all-or-each: the two
-  /// are registered separately and either can fail on its own.
+  /// Everything that gets registered. Registration is all-or-each: each
+  /// combination is registered separately and any one can fail on its own.
   static var all: [HotkeyCombination] {
     allCases
   }
@@ -42,13 +47,17 @@ enum HotkeyCombination: Sendable, CaseIterable, Hashable {
     case .forward: 1
     case .reverse: 2
     case .filter: 3
+    case .parallelForward: 4
+    case .parallelReverse: 5
     }
   }
 
   var keyCode: UInt32 {
     switch self {
     case .forward,
-         .reverse: UInt32(kVK_Tab)
+         .reverse,
+         .parallelForward,
+         .parallelReverse: UInt32(kVK_Tab)
     case .filter: UInt32(kVK_Space)
     }
   }
@@ -58,6 +67,8 @@ enum HotkeyCombination: Sendable, CaseIterable, Hashable {
     case .forward,
          .filter: UInt32(cmdKey)
     case .reverse: UInt32(cmdKey | shiftKey)
+    case .parallelForward: UInt32(optionKey)
+    case .parallelReverse: UInt32(optionKey | shiftKey)
     }
   }
 
@@ -68,6 +79,8 @@ enum HotkeyCombination: Sendable, CaseIterable, Hashable {
     case .forward: "Cmd+Tab"
     case .reverse: "Shift+Cmd+Tab"
     case .filter: "Cmd+Space"
+    case .parallelForward: "Opt+Tab"
+    case .parallelReverse: "Shift+Opt+Tab"
     }
   }
 }
@@ -114,6 +127,8 @@ struct HotkeyBinding: Equatable, Sendable {
       (.forward, .show),
       (.reverse, .showReverse),
       (.filter, .showFilter),
+      (.parallelForward, .showParallel),
+      (.parallelReverse, .showParallelReverse),
     ]
     return actions.flatMap { combination, action in
       table[action].enumerated().map { slot, key in

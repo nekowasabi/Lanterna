@@ -580,9 +580,11 @@ final class PanelPresenter {
   private func replayDelayedPresses(_ presses: [HotkeyCombination]) {
     for press in presses {
       switch press {
-      case .forward:
+      case .forward,
+           .parallelForward:
         selection.moveToNext()
-      case .reverse:
+      case .reverse,
+           .parallelReverse:
         selection.moveToPrevious()
       case .filter:
         keyCommands.activateFiltering()
@@ -620,9 +622,11 @@ final class PanelPresenter {
       return
     }
     switch combination {
-    case .forward:
+    case .forward,
+         .parallelForward:
       selection.moveToNext()
-    case .reverse:
+    case .reverse,
+         .parallelReverse:
       selection.moveToPrevious()
     case .filter:
       switchToFiltering()

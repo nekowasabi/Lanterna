@@ -7,9 +7,9 @@ struct HotkeyBindingTests {
   @Test
   func defaultsKeepLegacyNamesAndIDs() {
     let bindings = HotkeyBinding.defaults
-    #expect(bindings.count == 3)
-    #expect(bindings.map(\.name) == ["Cmd+Tab", "Shift+Cmd+Tab", "Cmd+Space"])
-    #expect(bindings.map(\.combination) == [.forward, .reverse, .filter])
+    #expect(bindings.count == 5)
+    #expect(bindings.map(\.name) == ["Cmd+Tab", "Shift+Cmd+Tab", "Cmd+Space", "Opt+Tab", "Shift+Opt+Tab"])
+    #expect(bindings.map(\.combination) == [.forward, .reverse, .filter, .parallelForward, .parallelReverse])
   }
 
   @Test
