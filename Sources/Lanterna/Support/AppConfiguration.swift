@@ -63,6 +63,7 @@ enum AppConfiguration {
     "groupHeadingStyle",
     "groupNames",
     "groupAssignments",
+    "switchers",
   ]
 
   /// The scaffold written when no file exists (FR-012).
@@ -120,7 +121,9 @@ struct ValidConfiguration: Equatable, Sendable {
     groupNames: [Int: String] = [:],
     groupAssignments: [GroupAssignment] = [],
     keyBindings: KeyBindingTable = .defaults,
-    keyBindingSection: [KeyBindingAction: [RawKeyBinding]]? = nil
+    keyBindingSection: [KeyBindingAction: [RawKeyBinding]]? = nil,
+    parallelOverrides: ParallelOverrides = .defaults,
+    hasSwitchersSection: Bool = false
   ) {
     self.version = version
     self.sampleCount = sampleCount
@@ -160,6 +163,8 @@ struct ValidConfiguration: Equatable, Sendable {
     self.groupAssignments = groupAssignments
     self.keyBindings = keyBindings
     self.keyBindingSection = keyBindingSection
+    self.parallelOverrides = parallelOverrides
+    self.hasSwitchersSection = hasSwitchersSection
   }
 
   // MARK: Internal
@@ -250,6 +255,13 @@ struct ValidConfiguration: Equatable, Sendable {
   /// The customized section as spelled, kept so saving writes back what
   /// lost rather than what won. Nil means absent, meaning all defaults.
   var keyBindingSection: [KeyBindingAction: [RawKeyBinding]]?
+  /// What the parallel switcher spells beside the main one, normalized
+  /// so absent keys read as their defaults. Kept so saving writes back
+  /// following versus owned per item.
+  var parallelOverrides: ParallelOverrides
+  /// Whether the file held a switchers section at all. Saving consults
+  /// the disk again, but resolution reads this for the run's own shape.
+  var hasSwitchersSection: Bool
 
 }
 
@@ -310,6 +322,8 @@ struct DecodedConfiguration: Equatable, Sendable {
   var groupAssignmentIssues = [GroupAssignmentIssue]()
   /// One entry per skipped row-order entry, for the diagnostics lines.
   var rowOrderIssues = [RowOrderIssue]()
+  /// One line per switcher-section fallback, for the diagnostics lines.
+  var switcherNotes = [String]()
 }
 
 // MARK: - ConfigLoadOutcome
@@ -393,6 +407,7 @@ extension AppConfiguration {
       return resolvedKeyBindings(dict, data: data, config: config, assumed: assumed)
         .flatMap { withGroupAssignments(dict, decoded: $0) }
         .flatMap { withRowOrder(dict, decoded: $0) }
+        .flatMap { withSwitcherSections(dict, decoded: $0) }
 
     case .failure(let error):
       return .failure(error)
