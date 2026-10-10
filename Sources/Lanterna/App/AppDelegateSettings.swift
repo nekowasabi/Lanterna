@@ -154,6 +154,7 @@ extension AppDelegate {
     presenter.textScale = currentValues.textScale
     presenter.hintsMode = currentValues.hintsMode
     presenter.parallelSwitcher = currentValues.parallelSwitcher
+    presenter.parallelEnabled = currentValues.parallelOverrides.isEnabled
     presenter.hoverSelect = options.hoverSelect
     presenter.scrollSelect = options.scrollSelect
     presenter.numberJump = options.numberJump
@@ -209,6 +210,7 @@ extension AppDelegate {
     presenter?.textScale = values.textScale
     presenter?.hintsMode = values.hintsMode
     presenter?.parallelSwitcher = values.parallelSwitcher
+    presenter?.parallelEnabled = values.parallelOverrides.isEnabled
     presenter?.hoverSelect = values.hoverSelect
     presenter?.scrollSelect = values.scrollSelect
     presenter?.numberJump = values.numberJump

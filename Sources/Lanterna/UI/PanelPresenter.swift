@@ -236,6 +236,11 @@ final class PanelPresenter {
   /// The parallel switcher's resolved panel settings, beside the main one.
   var parallelSwitcher = SwitcherSettings.parallel(main: .mainDefaults, overrides: .defaults)
 
+  /// Whether the parallel invocations reach the panel at all. Carbon
+  /// stops delivering them once the switch is off, so a press arriving
+  /// anyway is a race between the switch and the press, and is left alone.
+  var parallelEnabled = true
+
   /// Which switcher opened the appearance on screen, or the last one
   /// after it closes. Read by the commit and the diagnostics; each
   /// appearance sets it as it goes up.
@@ -357,6 +362,12 @@ final class PanelPresenter {
     // away writes no line at all, so charging it a clock read costs
     // nothing.
     let startedAt = now()
+    // A switched-off parallel switcher owns no press: Carbon stops
+    // delivering its invocations with the switch, so one arriving now
+    // went out before the switch did. It moves nothing and opens nothing.
+    if combination.switcher == .parallel, !parallelEnabled {
+      return
+    }
     if surface.isPresented {
       handlePressWhilePresented(combination)
       return

@@ -526,6 +526,30 @@ struct ParallelPresenterTests {
   }
 
   @Test
+  func switchedOffParallelPressOpensNothing() {
+    let fixture = twoAppFixture(front: safari)
+    fixture.presenter.parallelEnabled = false
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+
+    #expect(!fixture.surface.isPresented)
+    #expect(fixture.surface.presentedLists.isEmpty)
+    #expect(fixture.log.lines.isEmpty)
+  }
+
+  @Test
+  func switchedOffParallelPressMovesNothing() {
+    let fixture = twoAppFixture(front: safari)
+    fixture.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    let first = fixture.surface.shownSelections.last
+    fixture.presenter.parallelEnabled = false
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+
+    #expect(fixture.surface.isPresented)
+    #expect(fixture.surface.presentedLists.count == 1)
+    #expect(fixture.surface.shownSelections.last == first)
+  }
+
+  @Test
   func mirrorsReceiveTheSameSettings() {
     let first = FakeSurface()
     let second = FakeSurface()
