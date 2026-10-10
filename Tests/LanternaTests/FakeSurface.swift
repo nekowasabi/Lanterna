@@ -77,6 +77,8 @@ final class FakeSurface: SwitcherSurface {
 
   /// Every band asked for, in order; nil asked for no band.
   private(set) var scopeBands = [ScopeBand?]()
+  /// Every appearance's panel settings, in order.
+  private(set) var appliedSettings = [AppliedPanelSettings]()
 
   /// Every numbered order asked for, in order; empty asked for no numbers.
   private(set) var numberedRowOrders = [[WindowItem.Identifier]]()
@@ -118,6 +120,10 @@ final class FakeSurface: SwitcherSurface {
   /// orderings the call log pins down are about the list and the keys.
   func showScope(_ band: ScopeBand?) {
     scopeBands.append(band)
+  }
+
+  func applyPanelSettings(_ settings: AppliedPanelSettings) {
+    appliedSettings.append(settings)
   }
 
   /// Kept out of `calls` for the same reason as the band above.

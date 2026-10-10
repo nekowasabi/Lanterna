@@ -829,6 +829,7 @@ final class PanelPresenter {
     replayDelayedPresses(replay)
     operations.begin(windows: ordered)
     wirePointerHandlers()
+    surface.applyPanelSettings(.resolve(settings, sharedGrouping: grouping, sharedSearch: searchSettings))
     surface.present(windows: shown, selecting: selection.chosenID, filterActive: keyCommands.isFilteringActive)
     // The tap reports changes only, so the modifiers this press
     // opened under would otherwise leave the numbers down until the

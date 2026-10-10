@@ -183,6 +183,13 @@ final class MirroredPanelSurface: SwitcherSurface {
     keyPanelIndex = min(keyPanelIndex, panels.count - 1)
   }
 
+  func applyPanelSettings(_ settings: AppliedPanelSettings) {
+    displayTarget = settings.displayTarget
+    for panel in panels {
+      panel.applyPanelSettings(settings)
+    }
+  }
+
   /// Copies the content-affecting state onto the mirrors, so every
   /// panel sizes and filters alike. Which display each panel sits on is
   /// handed out on `present`, not copied.

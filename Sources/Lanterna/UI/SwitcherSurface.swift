@@ -1,3 +1,52 @@
+// MARK: - AppliedPanelSettings
+
+/// One appearance's panel settings: one switcher's values with the
+/// shared halves folded in, so the panel draws every appearance alike
+/// however the switchers divide the settings between them.
+struct AppliedPanelSettings: Equatable, Sendable {
+  var displayModes: DisplayModes
+  var searchSettings: SearchSettings
+  var textScale: TextScaleLevel
+  var displayTarget: DisplayTarget
+  var panelWidth: PanelWidth
+  var hoverSelect: Bool
+  var scrollSelect: Bool
+  var hintsMode: HintsMode
+  var grouping: GroupingPolicy
+
+  /// Folds one switcher's values over the shared halves: the manual
+  /// group names and assignments, and the shortcut memory length, ride
+  /// along from the shared settings however the switchers divide the rest.
+  static func resolve(
+    _ settings: SwitcherSettings,
+    sharedGrouping: GroupingPolicy,
+    sharedSearch: SearchSettings
+  ) -> AppliedPanelSettings {
+    AppliedPanelSettings(
+      displayModes: settings.displayModes,
+      searchSettings: SearchSettings(
+        fuzzyMatchEnabled: settings.fuzzyMatchEnabled,
+        shortcutMemoryLength: sharedSearch.shortcutMemoryLength,
+        ordering: settings.resultOrder
+      ),
+      textScale: settings.textScale,
+      displayTarget: settings.displayTarget,
+      panelWidth: settings.panelWidth,
+      hoverSelect: settings.hoverSelect,
+      scrollSelect: settings.scrollSelect,
+      hintsMode: settings.hintsMode,
+      grouping: GroupingPolicy(
+        mode: settings.groupingMode,
+        placements: settings.subgroupPlacements,
+        groupCount: settings.groupCount,
+        headingStyle: settings.groupHeadingStyle,
+        names: sharedGrouping.names,
+        assignments: sharedGrouping.assignments
+      )
+    )
+  }
+}
+
 // MARK: - SwitcherSurface
 
 /// The panel as the code deciding when to show it sees it: something that can
@@ -100,8 +149,25 @@ protocol SwitcherSurface: AnyObject {
   )
 
   func dismiss()
+
+  /// Hands one appearance's panel settings over before it goes up. The
+  /// panel that is up keeps its own until it closes; the next appearance
+  /// hands its own again.
+  func applyPanelSettings(_ settings: AppliedPanelSettings)
 }
 
 // MARK: - SwitcherPanel + SwitcherSurface
 
-extension SwitcherPanel: SwitcherSurface { }
+extension SwitcherPanel: SwitcherSurface {
+  func applyPanelSettings(_ settings: AppliedPanelSettings) {
+    displayModes = settings.displayModes
+    searchSettings = settings.searchSettings
+    textScale = settings.textScale
+    displayTarget = settings.displayTarget
+    panelWidth = settings.panelWidth
+    hoverSelect = settings.hoverSelect
+    scrollSelect = settings.scrollSelect
+    hintsMode = settings.hintsMode
+    grouping = settings.grouping
+  }
+}

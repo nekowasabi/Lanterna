@@ -10,7 +10,8 @@ private func parallelRow(
   _ windowID: CGWindowID,
   owner: pid_t,
   app: String,
-  title: String
+  title: String,
+  minimized: Bool = false
 ) -> WindowItem {
   WindowItem(
     id: WindowItem.Identifier(windowID: windowID),
@@ -19,7 +20,7 @@ private func parallelRow(
     bundleIdentifier: nil,
     windowTitle: title,
     kind: .standard,
-    isMinimized: false,
+    isMinimized: minimized,
     icon: NSImage(size: NSSize(width: 1, height: 1))
   )
 }
@@ -291,6 +292,254 @@ struct ParallelPresenterTests {
     #expect(filter.log.lines.contains(where: { $0.hasPrefix("panel shown") && $0.contains("main") }))
   }
 
+  @Test
+  func displayModesReachParallelAppearance() {
+    let rows = [
+      parallelRow(1, owner: safari, app: "Safari", title: "Front page"),
+      parallelRow(2, owner: safari, app: "Safari", title: "Downloads", minimized: true),
+      parallelRow(3, owner: safari, app: "Safari", title: "Reading list"),
+    ]
+    let parallel = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    parallel.presenter.mainSwitcher.windowScope = .allApps
+    parallel.presenter.mainSwitcher.displayModes.minimized = .separateAtBottom
+    parallel.presenter.parallelSwitcher.windowScope = .allApps
+    parallel.presenter.parallelSwitcher.displayModes.minimized = .show
+    parallel.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    #expect(parallel.surface.presentedLists.last?.map(\.id) == rows.map(\.id))
+
+    let main = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    main.presenter.mainSwitcher.windowScope = .allApps
+    main.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    #expect(main.surface.presentedLists.last?.map(\.id) == [rows[0].id, rows[2].id, rows[1].id])
+  }
+
+  @Test
+  func panelItemsReachParallelAppearance() {
+    var overrides = ParallelOverrides.defaults
+    overrides.windowScope = .own(.allApps)
+    overrides.displayTarget = .own(.cursor)
+    overrides.panelWidth = .own(.wide)
+    overrides.textScale = .own(.large)
+    overrides.hoverSelect = .own(true)
+    overrides.scrollSelect = .own(true)
+    overrides.hintsMode = .own(.numbers)
+    overrides.groupCount = .own(3)
+    overrides.groupHeadingStyle = .own(.name)
+    overrides.otherSpacePlacement = .own(.withinGroup)
+    overrides.minimizedPlacement = .own(.withinGroup)
+    overrides.resultOrder = .own(.score)
+    overrides.groupingMode = .own(.manual)
+    overrides.fuzzyMatchEnabled = .own(false)
+    overrides.numberJump = .own(true)
+    overrides.numberReorder = .own(true)
+    overrides.numberScope = .own(.allRows)
+    overrides.showDelayMs = .own(150)
+    let fixture = twoAppFixture(front: safari)
+    fixture.presenter.parallelSwitcher = .parallel(main: .mainDefaults, overrides: overrides)
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+
+    let expected = AppliedPanelSettings.resolve(
+      fixture.presenter.parallelSwitcher,
+      sharedGrouping: GroupingPolicy(),
+      sharedSearch: SearchSettings()
+    )
+    #expect(fixture.surface.appliedSettings.last == expected)
+    #expect(expected.displayTarget == .cursor)
+    #expect(expected.grouping.groupCount == 3)
+  }
+
+  @Test
+  func followTracksMainChanges() {
+    let rows = [
+      parallelRow(1, owner: safari, app: "Safari", title: "Front page"),
+      parallelRow(2, owner: safari, app: "Safari", title: "Downloads", minimized: true),
+    ]
+    let fixture = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    fixture.presenter.mainSwitcher.windowScope = .allApps
+    fixture.presenter.mainSwitcher.displayModes.minimized = .hide
+    fixture.presenter.parallelSwitcher = .parallel(
+      main: fixture.presenter.mainSwitcher,
+      overrides: ParallelOverrides.defaults
+    )
+    fixture.presenter.parallelSwitcher.windowScope = .allApps
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    #expect(fixture.surface.presentedLists.last?.map(\.id) == [rows[0].id])
+    fixture.presenter.modifierFlagsChanged([])
+    fixture.presenter.handleOptionRelease()
+    #expect(!fixture.surface.isPresented)
+
+    var owned = ParallelOverrides.defaults
+    owned.minimizedMode = .own(.show)
+    fixture.presenter.parallelSwitcher = .parallel(main: fixture.presenter.mainSwitcher, overrides: owned)
+    fixture.presenter.parallelSwitcher.windowScope = .allApps
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    #expect(fixture.surface.presentedLists.last?.map(\.id) == rows.map(\.id))
+  }
+
+  @Test
+  func groupingManualReachesParallelAppearance() {
+    let rows = manualRows()
+    let fixture = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    fixture.presenter.grouping.assignments = [GroupAssignment(bundleID: "com.example.front", group: 2)]
+    fixture.presenter.grouping.groupCount = 2
+    var overrides = ParallelOverrides.defaults
+    overrides.windowScope = .own(.allApps)
+    overrides.groupingMode = .own(.manual)
+    overrides.groupCount = .own(2)
+    fixture.presenter.parallelSwitcher = .parallel(main: .mainDefaults, overrides: overrides)
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    #expect(fixture.surface.presentedLists.last?.map(\.id) == [rows[2].id, rows[3].id, rows[0].id, rows[1].id])
+
+    let main = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    main.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    #expect(main.surface.presentedLists.last?.map(\.id) == rows.map(\.id))
+  }
+
+  @Test
+  func groupCountReachesParallelAppearance() {
+    let rows = manualRows()
+    let fixture = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    fixture.presenter.grouping.mode = .manual
+    fixture.presenter.grouping.groupCount = 2
+    fixture.presenter.grouping.assignments = [GroupAssignment(bundleID: "com.example.front", group: 2)]
+    var overrides = ParallelOverrides.defaults
+    overrides.windowScope = .own(.allApps)
+    overrides.groupingMode = .own(.manual)
+    overrides.groupCount = .own(1)
+    fixture.presenter.parallelSwitcher = .parallel(main: .mainDefaults, overrides: overrides)
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    #expect(fixture.surface.presentedLists.last?.map(\.id) == rows.map(\.id))
+  }
+
+  @Test
+  func fuzzyMatchReachesParallelAppearance() {
+    let rows = [
+      parallelRow(1, owner: safari, app: "Safari", title: "Front page"),
+      parallelRow(2, owner: finder, app: "Finder", title: "Documents"),
+    ]
+    let fixture = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    fixture.presenter.mainSwitcher.fuzzyMatchEnabled = true
+    var overrides = ParallelOverrides.defaults
+    overrides.windowScope = .own(.allApps)
+    overrides.fuzzyMatchEnabled = .own(false)
+    fixture.presenter.parallelSwitcher = .parallel(main: .mainDefaults, overrides: overrides)
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    fixture.presenter.switchToFiltering()
+    for character in "Frp" {
+      _ = fixture.presenter.handleKeyStroke(pressForTyping(String(character)))
+    }
+    #expect(fixture.surface.updatedLists.last?.isEmpty == true)
+
+    let main = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    main.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    main.presenter.switchToFiltering()
+    for character in "Frp" {
+      _ = main.presenter.handleKeyStroke(pressForTyping(String(character)))
+    }
+    #expect(main.surface.updatedLists.last?.isEmpty == false)
+  }
+
+  @Test
+  func resultOrderReachesParallelAppearance() {
+    let rows = [
+      parallelRow(1, owner: safari, app: "Safari", title: "a--b"),
+      parallelRow(2, owner: safari, app: "Safari", title: "xab"),
+    ]
+    let fixture = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    var overrides = ParallelOverrides.defaults
+    overrides.windowScope = .own(.allApps)
+    overrides.resultOrder = .own(.score)
+    fixture.presenter.parallelSwitcher = .parallel(main: .mainDefaults, overrides: overrides)
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    fixture.presenter.switchToFiltering()
+    for character in "ab" {
+      _ = fixture.presenter.handleKeyStroke(pressForTyping(String(character)))
+    }
+    #expect(fixture.surface.updatedLists.last?.map(\.id) == [rows[1].id, rows[0].id])
+  }
+
+  @Test
+  func numberScopeReachesParallelAppearance() {
+    let rows = [
+      parallelRow(1, owner: safari, app: "Safari", title: "Front page"),
+      parallelRow(2, owner: safari, app: "Safari", title: "Downloads"),
+      windowlessParallelRow(),
+    ]
+    let fixture = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    fixture.presenter.mainSwitcher.windowScope = .allApps
+    fixture.presenter.mainSwitcher.displayModes.windowlessApp = .show
+    var overrides = ParallelOverrides.defaults
+    overrides.windowScope = .own(.allApps)
+    overrides.windowlessAppMode = .own(.show)
+    overrides.numberScope = .own(.allRows)
+    fixture.presenter.parallelSwitcher = .parallel(main: fixture.presenter.mainSwitcher, overrides: overrides)
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    #expect(fixture.presenter.keyCommands.numberedRows().count == 3)
+
+    let main = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    main.presenter.mainSwitcher.windowScope = .allApps
+    main.presenter.mainSwitcher.displayModes.windowlessApp = .show
+    main.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    #expect(main.presenter.keyCommands.numberedRows().count == 2)
+  }
+
+  @Test
+  func numberJumpReachesParallelAppearance() {
+    let fixture = twoAppFixture(front: safari, heldModifiers: .maskAlternate)
+    var overrides = ParallelOverrides.defaults
+    overrides.numberJump = .own(true)
+    fixture.presenter.parallelSwitcher = .parallel(main: .mainDefaults, overrides: overrides)
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    #expect(fixture.surface.numberedRowOrders.last?.isEmpty == false)
+
+    let main = twoAppFixture(front: safari)
+    main.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    #expect(main.surface.numberedRowOrders.last?.isEmpty == true)
+  }
+
+  @Test
+  func sharedStaysSharedAcrossSwitchers() {
+    let rows = manualRows()
+    let fixture = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    fixture.presenter.grouping.assignments = [GroupAssignment(bundleID: "com.example.front", group: 2)]
+    fixture.presenter.grouping.groupCount = 2
+    fixture.presenter.grouping.names = [2: "Browsing"]
+    fixture.presenter.searchSettings.shortcutMemoryLength = 3
+    var overrides = ParallelOverrides.defaults
+    overrides.windowScope = .own(.allApps)
+    overrides.groupingMode = .own(.manual)
+    overrides.groupCount = .own(2)
+    fixture.presenter.parallelSwitcher = .parallel(main: .mainDefaults, overrides: overrides)
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    let parallelApplied = fixture.surface.appliedSettings.last
+    #expect(parallelApplied?.searchSettings.shortcutMemoryLength == 3)
+    #expect(parallelApplied?.grouping.names == [2: "Browsing"])
+    #expect(parallelApplied?.grouping.assignments == [GroupAssignment(bundleID: "com.example.front", group: 2)])
+    #expect(fixture.surface.presentedLists.last?.map(\.id) == [rows[2].id, rows[3].id, rows[0].id, rows[1].id])
+
+    let main = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    main.presenter.grouping.mode = .manual
+    main.presenter.grouping.assignments = [GroupAssignment(bundleID: "com.example.front", group: 2)]
+    main.presenter.grouping.groupCount = 2
+    main.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    #expect(main.surface.presentedLists.last?.map(\.id) == [rows[2].id, rows[3].id, rows[0].id, rows[1].id])
+  }
+
+  @Test
+  func mirrorsReceiveTheSameSettings() {
+    let first = FakeSurface()
+    let second = FakeSurface()
+    let composite = MirroredPanelSurface(panels: [first, second])
+    let settings = AppliedPanelSettings.resolve(
+      .parallel(main: .mainDefaults, overrides: ParallelOverrides.defaults),
+      sharedGrouping: GroupingPolicy(),
+      sharedSearch: SearchSettings()
+    )
+    composite.applyPanelSettings(settings)
+    #expect(first.appliedSettings == [settings])
+    #expect(second.appliedSettings == [settings])
+  }
+
   // MARK: Private
 
   private let safari: pid_t = 100
@@ -298,6 +547,45 @@ struct ParallelPresenterTests {
 
   /// Five rows across two owners, with the front application injected so
   /// no window server takes part.
+  private func manualRows() -> [WindowItem] {
+    [
+      manualRow(1, bundle: "com.example.front"),
+      manualRow(2, bundle: "com.example.front"),
+      manualRow(3, bundle: "com.example.previous"),
+      manualRow(4, bundle: "com.example.previous"),
+    ]
+  }
+
+  private func manualRow(_ windowID: CGWindowID, bundle: String) -> WindowItem {
+    WindowItem(
+      id: WindowItem.Identifier(windowID: windowID),
+      ownerProcessIdentifier: pid_t(windowID),
+      appName: "App\(windowID)",
+      bundleIdentifier: bundle,
+      windowTitle: "Window",
+      kind: .standard,
+      isMinimized: false,
+      icon: NSImage(size: NSSize(width: 1, height: 1))
+    )
+  }
+
+  private func windowlessParallelRow() -> WindowItem {
+    WindowItem(
+      id: .application(321),
+      ownerProcessIdentifier: 321,
+      appName: "Music",
+      bundleIdentifier: "com.apple.Music",
+      windowTitle: "",
+      kind: .standard,
+      isMinimized: false,
+      icon: NSImage(size: NSSize(width: 1, height: 1))
+    )
+  }
+
+  private func pressForTyping(_ characters: String) -> PanelKeystroke {
+    PanelKeystroke(keyCode: UInt16(kVK_ANSI_A), modifiers: [], isARepeat: false, characters: characters)
+  }
+
   private func twoAppRows() -> [WindowItem] {
     [
       parallelRow(1, owner: safari, app: "Safari", title: "Front page"),
