@@ -523,11 +523,17 @@ enum PanelKeyInput {
       .map { $0.modifiers.intersection(schema).rawValue.nonzeroBitCount }.max()
   }
 
-  /// Whether show, showReverse or showFilter holds Tab. Only an explicit
-  /// invocation binding lifts the reservation, so any other action holding
-  /// Tab cannot answer a press Carbon already claimed for invocation.
+  /// Whether any invocation holds Tab. Only an explicit invocation
+  /// binding lifts the reservation, so any other action holding Tab
+  /// cannot answer a press Carbon already claimed for invocation. The
+  /// parallel invocations count the same way: Carbon claims their Tab
+  /// presses too, and the reservation goes by the table rather than by
+  /// whether the switcher is switched on, so a disabled parallel leaves
+  /// Tab-bound panel actions answering rather than growing an exception.
   private static func holdsTab(_ table: KeyBindingTable) -> Bool {
-    [.show, .showReverse, .showFilter].contains { table[$0].contains { $0.keyCode == kVK_Tab } }
+    [.show, .showReverse, .showFilter, .showParallel, .showParallelReverse].contains {
+      table[$0].contains { $0.keyCode == kVK_Tab }
+    }
   }
 
 }
