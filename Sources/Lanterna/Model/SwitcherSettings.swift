@@ -1,5 +1,16 @@
 import Foundation
 
+// MARK: - SwitcherIdentity
+
+/// Which switcher opened an appearance: the main one or the parallel one.
+///
+/// Carried by invocations and kept per appearance, so each showing reads
+/// its own switcher's settings and the diagnostics name it.
+enum SwitcherIdentity: Equatable, Sendable {
+  case main
+  case parallel
+}
+
 // MARK: - FollowOrOwn
 
 /// One parallel-switcher item: a value of its own, or following the main

@@ -72,6 +72,18 @@ enum HotkeyCombination: Sendable, CaseIterable, Hashable {
     }
   }
 
+  /// Which switcher this invocation opens: the parallel two open the
+  /// parallel switcher, everything else the main one.
+  var switcher: SwitcherIdentity {
+    switch self {
+    case .forward,
+         .reverse,
+         .filter: .main
+    case .parallelForward,
+         .parallelReverse: .parallel
+    }
+  }
+
   /// How the combination is spelled in the diagnostics lines the manual
   /// acceptance checks grep for.
   var name: String {

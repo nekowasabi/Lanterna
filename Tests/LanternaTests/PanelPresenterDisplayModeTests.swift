@@ -158,6 +158,7 @@ struct PanelPresenterDisplayModeTests {
       writeLine: log.write,
       switcher: FakeWindowSwitcher()
     )
+    presenter.mainSwitcher.displayModes = modes
     return (presenter, surface)
   }
 

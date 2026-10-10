@@ -203,6 +203,8 @@ extension AppDelegate {
     presenter?.searchSettings = searchSettings
     presenter?.windowScope = values.windowScope
     presenter?.grouping = values.grouping
+    presenter?.mainSwitcher = values.mainSwitcher
+    presenter?.parallelSwitcher = values.parallelSwitcher
     presenter?.hoverSelect = values.hoverSelect
     presenter?.scrollSelect = values.scrollSelect
     presenter?.numberJump = values.numberJump

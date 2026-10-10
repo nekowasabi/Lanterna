@@ -224,6 +224,11 @@ final class PanelPresenter {
   /// The parallel switcher's resolved panel settings, beside the main one.
   var parallelSwitcher = SwitcherSettings.parallel(main: .mainDefaults, overrides: .defaults)
 
+  /// Which switcher opened the appearance on screen, or the last one
+  /// after it closes. Read by the commit and the diagnostics; each
+  /// appearance sets it as it goes up.
+  private(set) var activeSwitcher = SwitcherIdentity.main
+
   /// Whether digits with a jump modifier name rows. Read on every
   /// press, the same timing as above.
   var numberJump = false {
@@ -500,6 +505,14 @@ final class PanelPresenter {
     showDelay == nil
   }
 
+  /// The resolved settings behind one invocation's switcher.
+  private func settings(for combination: HotkeyCombination) -> SwitcherSettings {
+    switch combination.switcher {
+    case .main: mainSwitcher
+    case .parallel: parallelSwitcher
+    }
+  }
+
   /// Records a rearranged row order and hands it to the file owner.
   /// The key commands already answer to the new order; setting the
   /// value again only repeats the same handover.
@@ -709,6 +722,14 @@ final class PanelPresenter {
     // position is free: it has to happen before the panel can go.
     tracker.noteSnapshotObserved(store.snapshot?.gatheredAt ?? now())
     let ordered = tracker.ordered(windows, skipping: store.snapshot?.skippedOwners ?? [])
+    // Each appearance reads its own switcher's settings: the scope and
+    // the display modes seed this showing alone, and the identity stays
+    // for the commit and the diagnostics to name. A panel that is up
+    // keeps its own until it closes; the next appearance seeds again.
+    activeSwitcher = combination.switcher
+    let settings = settings(for: combination)
+    keyCommands.updateWindowScope(settings.windowScope)
+    keyCommands.updateDisplayModes(settings.displayModes)
     keyCommands.beginFiltering(fullWindows: ordered, filtering: combination == .filter)
     let layout = keyCommands.shownLayout
     let shown = layout.rows
