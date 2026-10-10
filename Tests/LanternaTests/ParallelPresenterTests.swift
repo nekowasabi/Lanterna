@@ -109,7 +109,7 @@ struct ParallelPresenterTests {
 
   @Test
   func commandReleaseCommitsNothingWhileOptionIsHeld() {
-    let fixture = twoAppFixture(front: safari, heldModifiers: .maskAlternate)
+    let fixture = twoAppFixture(front: safari, commandIsHeld: false, heldModifiers: .maskAlternate)
     fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
 
     #expect(fixture.surface.isPresented)
@@ -228,6 +228,7 @@ struct ParallelPresenterTests {
   func delayedOtherPressKeepsTheFirstPressSettings() async {
     let waiting = waitingPresenter()
     waiting.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    waiting.commandHold.isHeld = true
     waiting.presenter.handleHotkey(.forward, deliveryDelay: nil)
     waiting.sleep.open()
     await settle()
@@ -235,7 +236,7 @@ struct ParallelPresenterTests {
     let shown = waiting.surface.presentedLists.last ?? []
     #expect(shown.count == 3)
     #expect(shown.allSatisfy { $0.ownerProcessIdentifier == safari })
-    #expect(waiting.surface.shownSelections.count == 2)
+    #expect(waiting.surface.shownSelections.count == 1)
     waiting.presenter.handleOptionRelease()
     #expect(!waiting.surface.isPresented)
     #expect(waiting.log.lines.contains(where: { $0.hasPrefix("committed ") }))
@@ -259,6 +260,7 @@ struct ParallelPresenterTests {
     )
     fixture.presenter.keyCommands.frontmostProcessIdentifier = { safari }
     fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    await fake.waitUntilCalled()
     fixture.presenter.handleHotkey(.forward, deliveryDelay: nil)
     fake.finish()
     await settle()
@@ -307,12 +309,22 @@ struct ParallelPresenterTests {
   }
 
   /// A presenter held at its show delay, so presses and releases land
-  /// while the wait is still shut.
-  private func waitingPresenter() -> (presenter: PanelPresenter, surface: FakeSurface, log: DiagnosticsLog, sleep: GatedSleep) {
+  /// while the wait is still shut. Both holds start as an Option-held
+  /// press finds them: Command up, Option down.
+  private func waitingPresenter() -> (
+    presenter: PanelPresenter,
+    surface: FakeSurface,
+    log: DiagnosticsLog,
+    sleep: GatedSleep,
+    commandHold: CommandHold,
+    optionHold: CommandHold
+  ) {
     let surface = FakeSurface()
     let log = DiagnosticsLog()
     let clock = SteppingClock(step: .microseconds(4800))
     let sleep = GatedSleep()
+    let commandHold = CommandHold(isHeld: false)
+    let optionHold = CommandHold(isHeld: true)
     let presenter = PanelPresenter(
       surface: surface,
       store: WindowListStore(fixed: twoAppRows()),
@@ -320,8 +332,8 @@ struct ParallelPresenterTests {
       now: clock.read,
       writeLine: log.write,
       closesOnCommandRelease: { true },
-      commandIsHeld: { false },
-      optionIsHeld: { true },
+      commandIsHeld: { [commandHold] in commandHold.read() },
+      optionIsHeld: { [optionHold] in optionHold.read() },
       modifierFlags: { .maskAlternate },
       commandWatchInterval: .milliseconds(1),
       keyStatusWatchInterval: .milliseconds(1),
@@ -330,7 +342,7 @@ struct ParallelPresenterTests {
       switcher: FakeWindowSwitcher()
     )
     presenter.keyCommands.frontmostProcessIdentifier = { safari }
-    return (presenter, surface, log, sleep)
+    return (presenter, surface, log, sleep, commandHold, optionHold)
   }
 
   private func twoAppFixture(

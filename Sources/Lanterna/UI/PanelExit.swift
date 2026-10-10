@@ -124,7 +124,8 @@ final class PanelExit {
     _ windows: [WindowItem],
     naming id: WindowItem.Identifier?,
     since startedAt: ContinuousClock.Instant,
-    filter filterSummary: FilterLogSummary? = nil
+    filter filterSummary: FilterLogSummary? = nil,
+    trigger: PanelExitMeasurement.Trigger = .commandRelease
   ) {
     presentedWindows = windows
     let target = row(for: id).map { Self.target(of: $0) }
@@ -136,18 +137,21 @@ final class PanelExit {
       recordCommit(take.id, take.ownerProcessIdentifier)
       let outcome = switcher.switchTo(take)
       noteSwitchReturned()
-      recordCommitPair(take, outcome, by: .commandRelease, elapsed: elapsed, filter: filterSummary)
+      recordCommitPair(take, outcome, by: trigger, elapsed: elapsed, filter: filterSummary)
 
     case .none:
-      record(.nothingToCommit, by: .commandRelease, elapsed: elapsed, filter: filterSummary)
+      record(.nothingToCommit, by: trigger, elapsed: elapsed, filter: filterSummary)
     }
     presentedWindows = []
   }
 
   /// Writes down a press given up on before it ever became a panel, apart
   /// from a commit over an empty list, which had one and found nothing.
-  func recordPressCalledOff(since startedAt: ContinuousClock.Instant) {
-    record(.pressCalledOff, by: .commandRelease, since: startedAt)
+  func recordPressCalledOff(
+    since startedAt: ContinuousClock.Instant,
+    trigger: PanelExitMeasurement.Trigger = .commandRelease
+  ) {
+    record(.pressCalledOff, by: trigger, since: startedAt)
   }
 
   /// Commits the highlighted row for a key that means take this one.

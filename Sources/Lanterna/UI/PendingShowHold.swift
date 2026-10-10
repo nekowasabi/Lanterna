@@ -31,6 +31,10 @@ final class PendingShowHold {
     var presses: [HotkeyCombination]
     var startedAt: ContinuousClock.Instant
     var deliveryDelay: Duration?
+    /// Whether the first press's commit key is Command: sampled as that
+    /// press arrived, so a release landing mid-wait answers the gesture
+    /// that started it. Later presses join the wait without changing it.
+    var commitOnCommand: Bool
     var items: [WindowItem]?
     /// Whether the wait has run out. Firing needs this and a list.
     var delayElapsed = false
@@ -45,6 +49,12 @@ final class PendingShowHold {
     pending != nil
   }
 
+  /// Whether the waiting press commits on Command. Nil when no press
+  /// is waiting, so a release finds whose wait this is before taking it.
+  var waitingCommitOnCommand: Bool? {
+    pending?.commitOnCommand
+  }
+
   /// Takes a press into the hold, or adds it to the one already there.
   ///
   /// Either way the wait starts over: a burst of presses opens one panel
@@ -55,13 +65,15 @@ final class PendingShowHold {
     _ combination: HotkeyCombination,
     deliveryDelay: Duration?,
     startedAt: ContinuousClock.Instant,
-    delay: Duration
+    delay: Duration,
+    commitOnCommand: Bool
   ) {
     if pending == nil {
       pending = PendingShow(
         presses: [combination],
         startedAt: startedAt,
         deliveryDelay: deliveryDelay,
+        commitOnCommand: commitOnCommand,
         items: nil
       )
     } else {
