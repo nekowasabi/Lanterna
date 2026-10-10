@@ -7,6 +7,10 @@ private func key(_ keyCode: Int, _ modifiers: NSEvent.ModifierFlags = []) -> Res
   ResolvedKey(keyCode: UInt16(keyCode), modifiers: modifiers)
 }
 
+private func raw(_ keyCode: Int, _ modifiers: String...) -> RawKeyBinding {
+  RawKeyBinding(keyCode: keyCode, modifiers: modifiers)
+}
+
 // MARK: - ParallelKeyBindingTests
 
 /// The parallel invocations' defaults and their modifier rule: beside the
@@ -51,6 +55,47 @@ struct ParallelKeyBindingTests {
   func mainKeysKeepTheLooserRule() {
     #expect(KeyBindingTable.allows(modifiers: .control, for: .show))
     #expect(KeyBindingTable.allows(modifiers: [.control, .shift], for: .showReverse))
+  }
+
+  @Test
+  func parallelKeysWithoutCommandOrOptionFallBack() {
+    let (table, issues) = KeyBindingResolver.resolve(
+      [.showParallel: [raw(kVK_Tab, "ctrl")]],
+      order: [.showParallel]
+    )
+    #expect(table[.showParallel] == KeyBindingTable.defaults[.showParallel])
+    #expect(issues.count == 1)
+    #expect(issues[0].action == .showParallel)
+    #expect(issues[0].reason == .invalid)
+  }
+
+  @Test
+  func emptiedParallelRowsRefillWithDefaults() {
+    let (table, issues) = KeyBindingResolver.resolve([.showParallel: []], order: [])
+    #expect(table[.showParallel] == KeyBindingTable.defaults[.showParallel])
+    #expect(issues.isEmpty)
+  }
+
+  @Test
+  func customizedParallelDisplacesUntouchedMainDefault() {
+    let (table, issues) = KeyBindingResolver.resolve(
+      [.showParallel: [raw(kVK_Tab, "cmd")]],
+      order: [.showParallel]
+    )
+    #expect(table[.showParallel] == [key(kVK_Tab, .command)])
+    #expect(!table[.show].contains(key(kVK_Tab, .command)))
+    #expect(issues.contains(where: { $0.action == .show && $0.reason == .conflict }))
+  }
+
+  @Test
+  func customizedMainDisplacesParallelDefault() {
+    let (table, issues) = KeyBindingResolver.resolve(
+      [.show: [raw(kVK_Tab, "opt")]],
+      order: [.show]
+    )
+    #expect(table[.show] == [key(kVK_Tab, .option)])
+    #expect(!table[.showParallel].contains(key(kVK_Tab, .option)))
+    #expect(issues.contains(where: { $0.action == .showParallel && $0.reason == .conflict }))
   }
 
 }
