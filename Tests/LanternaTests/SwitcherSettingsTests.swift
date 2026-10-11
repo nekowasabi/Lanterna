@@ -211,6 +211,44 @@ struct SwitcherSettingsTests {
   }
 
   @Test
+  func explicitStandardStaysOwnedAcrossReread() throws {
+    let decoded = try #require(decode(
+      #"{"version": 1, "textScale": 1.5, "panelWidth": 1.2, "switchers": {"parallel": {"textScale": 1.0, "panelWidth": 1.0}}}"#
+    ).successValue)
+    let values = SettingsValues.effective(from: decoded.config)
+
+    #expect(values.parallelOverrides.textScale == .own(.standard))
+    #expect(values.parallelOverrides.panelWidth == .own(.standard))
+    #expect(values.parallelSwitcher.textScale == .standard)
+    #expect(values.parallelSwitcher.panelWidth == .standard)
+
+    let text = try encode(values, diskHasSections: true, changed: false)
+    let reread = try #require(decode(text).successValue)
+    let reloaded = SettingsValues.effective(from: reread.config)
+    #expect(reloaded.parallelOverrides.textScale == .own(.standard))
+    #expect(reloaded.parallelOverrides.panelWidth == .own(.standard))
+  }
+
+  @Test
+  func explicitOffDelayStaysOwnedOffAcrossReread() throws {
+    let decoded = try #require(decode(
+      #"{"version": 1, "showDelayMs": 150, "switchers": {"parallel": {"showDelayMs": 0}}}"#
+    ).successValue)
+    let values = SettingsValues.effective(from: decoded.config)
+
+    #expect(values.parallelOverrides.showDelayMs == .own(nil))
+    #expect(values.parallelSwitcher.showDelayMs == nil)
+    #expect(values.mainSwitcher.showDelayMs == 150)
+
+    let text = try encode(values, diskHasSections: true, changed: false)
+    #expect(text.contains(#""showDelayMs": 0"#))
+    let reread = try #require(decode(text).successValue)
+    let reloaded = SettingsValues.effective(from: reread.config)
+    #expect(reloaded.parallelOverrides.showDelayMs == .own(nil))
+    #expect(reloaded.parallelSwitcher.showDelayMs == nil)
+  }
+
+  @Test
   func unrelatedSaveKeepsTopLevelShape() throws {
     var values = SettingsValues.defaults
     values.exclusions = [ExclusionEntry(app: "x", titlePattern: "y")]

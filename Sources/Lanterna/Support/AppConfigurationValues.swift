@@ -1113,7 +1113,12 @@ extension AppConfiguration {
       overrides.textScale = .follow
       return
     }
-    guard let factor = value else { return }
+    guard let factor = value else {
+      if section[key] != nil {
+        overrides.textScale = .own(.standard)
+      }
+      return
+    }
     overrides.textScale = .own(TextScaleLevel(factor: factor) ?? .standard)
   }
 
@@ -1134,7 +1139,12 @@ extension AppConfiguration {
       overrides.panelWidth = .follow
       return
     }
-    guard let factor = value else { return }
+    guard let factor = value else {
+      if section[key] != nil {
+        overrides.panelWidth = .own(.standard)
+      }
+      return
+    }
     overrides.panelWidth = .own(PanelWidth(factor: factor) ?? .standard)
   }
 
@@ -1155,7 +1165,12 @@ extension AppConfiguration {
       overrides.showDelayMs = .follow
       return
     }
-    guard let milliseconds = value else { return }
+    guard let milliseconds = value else {
+      if section[key] != nil {
+        overrides.showDelayMs = .own(nil)
+      }
+      return
+    }
     overrides.showDelayMs = .own(milliseconds)
   }
 

@@ -323,8 +323,12 @@ extension AppConfiguration {
     if case .own(let scale) = overrides.textScale {
       out["textScale"] = .amount(scale.factor)
     }
-    if case .own(let milliseconds) = overrides.showDelayMs, let milliseconds, milliseconds > 0 {
-      out["showDelayMs"] = .amount(milliseconds)
+    if case .own(let milliseconds) = overrides.showDelayMs {
+      if let milliseconds, milliseconds > 0 {
+        out["showDelayMs"] = .amount(milliseconds)
+      } else if milliseconds == nil {
+        out["showDelayMs"] = .amount(0)
+      }
     }
     if case .own(let hints) = overrides.hintsMode {
       out["hintsMode"] = .word(hints.rawValue)
