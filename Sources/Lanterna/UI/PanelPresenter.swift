@@ -146,7 +146,10 @@ final class PanelPresenter {
     // call is what clears it. Swift settles the argument before the
     // method runs, so the order is the language's rather than a habit.
     onUnreportedRelease: { [weak self] in
-      self?.wayOut.closeForAnUnreportedRelease(naming: self?.selection.chosenID)
+      self?.wayOut.closeForAnUnreportedRelease(
+        naming: self?.selection.chosenID,
+        commitOnCommand: self?.commitOnCommand ?? true
+      )
     }
   )
 

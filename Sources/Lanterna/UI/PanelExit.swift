@@ -253,7 +253,7 @@ final class PanelExit {
   /// Flattened by the same code a commit's is, so one row cannot be named
   /// two ways and a window titled across two lines cannot print this event
   /// as two.
-  func closeForAnUnreportedRelease(naming id: WindowItem.Identifier?) {
+  func closeForAnUnreportedRelease(naming id: WindowItem.Identifier?, commitOnCommand: Bool) {
     let named = row(for: id).map {
       PanelExitMeasurement.rowDescription(
         appName: $0.appName,
@@ -262,11 +262,12 @@ final class PanelExit {
       )
     }
     dismissPanel()
+    let key = commitOnCommand ? "Command" : "Option"
     writeLine(LogLine(
       .info,
       .activate,
       "closed the panel showing \(named ?? "nothing"); "
-        + "Command was let go and the tap never said so"
+        + "\(key) was let go and the tap never said so"
     ))
   }
 
