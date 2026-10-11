@@ -106,13 +106,7 @@ struct SettingsParallelView: View {
           selection: $values.parallelOverrides.windowlessAppMode
         )
       }
-      Section("Search") {
-        FollowPicker(
-          title: "Fuzzy matching",
-          caption: "Match subsequence queries as well as substrings, for the parallel panel.",
-          choices: [("On", true), ("Off", false)],
-          selection: $values.parallelOverrides.fuzzyMatchEnabled
-        )
+      Section("Sort order") {
         FollowPicker(
           title: "Result order",
           caption: "Recent use first, or best match first, for the parallel panel.",
@@ -215,16 +209,6 @@ struct SettingsParallelView: View {
           selection: $values.parallelOverrides.textScale
         )
         FollowPicker(
-          title: "Row hints",
-          caption: "How the left edge of each parallel row reads.",
-          choices: [
-            ("Prefix hints", HintsMode.prefix),
-            ("Row numbers", HintsMode.numbers),
-            ("Neither", HintsMode.neither),
-          ],
-          selection: $values.parallelOverrides.hintsMode
-        )
-        FollowPicker(
           title: "Show delay",
           caption: "How long a parallel press waits before the panel appears. "
             + "Off shows at once on its own, even where the main switcher waits.",
@@ -233,6 +217,18 @@ struct SettingsParallelView: View {
         )
       }
       Section("Rows") {
+        FollowPicker(
+          title: "Hover to select",
+          caption: "Move the choice with the pointer, in the parallel panel.",
+          choices: [("On", true), ("Off", false)],
+          selection: $values.parallelOverrides.hoverSelect
+        )
+        FollowPicker(
+          title: "Scroll to select",
+          caption: "Move the choice with scrolling, in the parallel panel.",
+          choices: [("On", true), ("Off", false)],
+          selection: $values.parallelOverrides.scrollSelect
+        )
         FollowPicker(
           title: "Jump to row number",
           caption: "Hold a modifier and press a row number to jump there, in the parallel panel.",
@@ -252,16 +248,22 @@ struct SettingsParallelView: View {
           selection: $values.parallelOverrides.numberScope
         )
         FollowPicker(
-          title: "Hover to select",
-          caption: "Move the choice with the pointer, in the parallel panel.",
-          choices: [("On", true), ("Off", false)],
-          selection: $values.parallelOverrides.hoverSelect
+          title: "Row hints",
+          caption: "How the left edge of each parallel row reads.",
+          choices: [
+            ("Prefix hints", HintsMode.prefix),
+            ("Row numbers", HintsMode.numbers),
+            ("Neither", HintsMode.neither),
+          ],
+          selection: $values.parallelOverrides.hintsMode
         )
+      }
+      Section("Fuzzy matching") {
         FollowPicker(
-          title: "Scroll to select",
-          caption: "Move the choice with scrolling, in the parallel panel.",
+          title: "Fuzzy matching",
+          caption: "Match subsequence queries as well as substrings, for the parallel panel.",
           choices: [("On", true), ("Off", false)],
-          selection: $values.parallelOverrides.scrollSelect
+          selection: $values.parallelOverrides.fuzzyMatchEnabled
         )
       }
     }

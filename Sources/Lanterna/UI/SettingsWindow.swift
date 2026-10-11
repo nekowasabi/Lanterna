@@ -9,8 +9,8 @@ enum SettingsTab: CaseIterable {
   case appearance
   case filter
   case groups
-  case keyboard
   case parallel
+  case keyboard
 
   // MARK: Internal
 
@@ -21,7 +21,7 @@ enum SettingsTab: CaseIterable {
     case .filter: "Filter"
     case .groups: "Groups"
     case .keyboard: "Keyboard"
-    case .parallel: "Parallel"
+    case .parallel: "Parallel switcher"
     }
   }
 
@@ -132,8 +132,8 @@ final class SettingsWindow: NSWindow {
       appearanceHost,
       filterHost,
       groupsHost,
-      keyboardHost,
       parallelHost,
+      keyboardHost,
     ]
     for (tab, host) in zip(SettingsTab.allCases, hosts) {
       let item = NSTabViewItem(viewController: host)

@@ -147,7 +147,14 @@ extension SettingsWindowTests {
   func toolbarTabsFollowFixedOrder() throws {
     let controller = try tabController()
     #expect(controller.tabStyle == .toolbar)
-    #expect(controller.tabViewItems.map(\.label) == ["General", "Appearance", "Filter", "Groups", "Keyboard", "Parallel"])
+    #expect(controller.tabViewItems.map(\.label) == [
+      "General",
+      "Appearance",
+      "Filter",
+      "Groups",
+      "Parallel switcher",
+      "Keyboard",
+    ])
   }
 
   /// Every tab shares one content size, so switching tabs never resizes.
