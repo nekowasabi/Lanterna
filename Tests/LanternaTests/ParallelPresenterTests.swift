@@ -464,6 +464,32 @@ struct ParallelPresenterTests {
   }
 
   @Test
+  func liveMainWritesKeepParallelListing() {
+    let rows = [
+      parallelRow(1, owner: safari, app: "Safari", title: "Front page"),
+      parallelRow(2, owner: finder, app: "Finder", title: "Documents"),
+    ]
+    let fixture = Fixture(store: WindowListStore(fixed: rows), windows: rows)
+    fixture.presenter.searchSettings.fuzzyMatchEnabled = true
+    var overrides = ParallelOverrides.defaults
+    overrides.windowScope = .own(.allApps)
+    overrides.fuzzyMatchEnabled = .own(false)
+    fixture.presenter.parallelSwitcher = .parallel(main: .mainDefaults, overrides: overrides)
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    fixture.presenter.switchToFiltering()
+    fixture.presenter.windowScope = .allApps
+    fixture.presenter.grouping = GroupingPolicy()
+    fixture.presenter.searchSettings = SearchSettings(fuzzyMatchEnabled: true, shortcutMemoryLength: 5, ordering: .mru)
+    fixture.presenter.numberJump = false
+    fixture.presenter.numberReorder = false
+    fixture.presenter.numberScope = .windows
+    for character in "Frp" {
+      _ = fixture.presenter.handleKeyStroke(pressForTyping(String(character)))
+    }
+    #expect(fixture.surface.updatedLists.last?.isEmpty == true)
+  }
+
+  @Test
   func resultOrderReachesParallelAppearance() {
     let rows = [
       parallelRow(1, owner: safari, app: "Safari", title: "a--b"),

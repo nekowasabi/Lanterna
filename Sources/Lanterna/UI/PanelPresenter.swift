@@ -276,6 +276,7 @@ final class PanelPresenter {
   /// press, the same timing as above.
   var numberJump = false {
     didSet {
+      guard !surface.isPresented || activeSwitcher == .main else { return }
       keyCommands.updateNumberJump(numberJump)
       pushNumberedRows()
     }
@@ -283,12 +284,18 @@ final class PanelPresenter {
 
   /// Whether reorder presses move rows. Same timing as above.
   var numberReorder = false {
-    didSet { keyCommands.updateReorder(numberReorder) }
+    didSet {
+      guard !surface.isPresented || activeSwitcher == .main else { return }
+      keyCommands.updateReorder(numberReorder)
+    }
   }
 
   /// Which rows numbers name. Same timing as above.
   var numberScope = NumberScope.windows {
-    didSet { keyCommands.updateNumberScope(numberScope) }
+    didSet {
+      guard !surface.isPresented || activeSwitcher == .main else { return }
+      keyCommands.updateNumberScope(numberScope)
+    }
   }
 
   /// The hand-arranged row orders shadowing the drawn order. Same
@@ -309,18 +316,27 @@ final class PanelPresenter {
   /// commands beside the modes. A change lands on the live filter at
   /// once, like the exclusion rules.
   var searchSettings = SearchSettings() {
-    didSet { pushSearchSettings() }
+    didSet {
+      guard !surface.isPresented || activeSwitcher == .main else { return }
+      pushSearchSettings()
+    }
   }
 
   /// Which applications' rows each appearance starts on, handed to the
   /// key commands. A panel that is up keeps its own until it closes.
   var windowScope = WindowScope.allApps {
-    didSet { keyCommands.updateWindowScope(windowScope) }
+    didSet {
+      guard !surface.isPresented || activeSwitcher == .main else { return }
+      keyCommands.updateWindowScope(windowScope)
+    }
   }
 
   /// How the rows are grouped, handed to the key commands like the modes.
   var grouping = GroupingPolicy() {
-    didSet { keyCommands.updateGrouping(grouping) }
+    didSet {
+      guard !surface.isPresented || activeSwitcher == .main else { return }
+      keyCommands.updateGrouping(grouping)
+    }
   }
 
   /// The resolved key bindings, handed to the key commands. A change
