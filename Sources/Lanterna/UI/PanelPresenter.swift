@@ -415,15 +415,14 @@ final class PanelPresenter {
     // second press would take the same path again and two would arrive.
     // A press the delay is holding is the exception: further presses
     // join its wait instead of being turned away.
-    if pendingPress.isWaiting, pendingShowHoldIsOff {
+    if pendingPress.isWaiting, pendingShowHoldIsOff(for: combination) {
       return
     }
-    if let delay = showDelay {
+    if showDelay(for: combination) != nil {
       holdForDelay(
         combination,
         deliveryDelay: deliveryDelay,
         startedAt: startedAt,
-        delay: delay,
         commitOnCommand: commitOnCommand
       )
       return
@@ -564,16 +563,20 @@ final class PanelPresenter {
 
   /// The wait one press is owed, or nothing when the delay is off.
   ///
-  /// Read at every press rather than settled at launch, the way the
-  /// other per-press answers are: a change lands on the next press.
-  private var showDelay: Duration? {
-    guard let showDelayMs, showDelayMs > 0 else { return nil }
-    return .milliseconds(max(1, Int(showDelayMs.rounded())))
+  /// Resolved per invocation from that switcher's settings, so a
+  /// parallel-only delay holds an Option press while the main press
+  /// opens at once. Read at every press rather than settled at launch,
+  /// the way the other per-press answers are: a change lands on the
+  /// next press.
+  private func showDelay(for combination: HotkeyCombination) -> Duration? {
+    let milliseconds = settings(for: combination).showDelayMs
+    guard let milliseconds, milliseconds > 0 else { return nil }
+    return .milliseconds(max(1, Int(milliseconds.rounded())))
   }
 
   /// Whether the delay holds no press back: the ordinary path.
-  private var pendingShowHoldIsOff: Bool {
-    showDelay == nil
+  private func pendingShowHoldIsOff(for combination: HotkeyCombination) -> Bool {
+    showDelay(for: combination) == nil
   }
 
   /// Answers a release for the waits, when the wait's commit key matches
@@ -671,9 +674,9 @@ final class PanelPresenter {
     _ combination: HotkeyCombination,
     deliveryDelay: Duration?,
     startedAt: ContinuousClock.Instant,
-    delay: Duration,
     commitOnCommand: Bool
   ) {
+    guard let delay = showDelay(for: combination) else { return }
     if store.snapshot == nil, !pendingPress.isWaiting {
       pendingPress.begin(
         combination,

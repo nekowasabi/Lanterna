@@ -244,6 +244,31 @@ struct ParallelPresenterTests {
   }
 
   @Test
+  func parallelOnlyDelayHoldsParallelPressAlone() async {
+    let main = waitingPresenter()
+    main.presenter.showDelayMs = nil
+    var overrides = ParallelOverrides.defaults
+    overrides.showDelayMs = .own(150)
+    main.presenter.parallelSwitcher = .parallel(main: main.presenter.mainSwitcher, overrides: overrides)
+    main.commandHold.isHeld = true
+    main.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    #expect(main.surface.presentedLists.count == 1)
+    #expect(!main.presenter.pendingShow.isWaiting)
+
+    let parallel = waitingPresenter()
+    parallel.presenter.showDelayMs = nil
+    var held = ParallelOverrides.defaults
+    held.showDelayMs = .own(150)
+    parallel.presenter.parallelSwitcher = .parallel(main: parallel.presenter.mainSwitcher, overrides: held)
+    parallel.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    #expect(parallel.surface.presentedLists.isEmpty)
+    #expect(parallel.presenter.pendingShow.isWaiting)
+    parallel.sleep.open()
+    await settle()
+    #expect(parallel.surface.presentedLists.count == 1)
+  }
+
+  @Test
   func firstListWaitDropsTheOtherPress() async {
     let rows = twoAppRows()
     let fake = HeldGather(answer: WindowListSnapshot(
@@ -333,7 +358,6 @@ struct ParallelPresenterTests {
     overrides.numberJump = .own(true)
     overrides.numberReorder = .own(true)
     overrides.numberScope = .own(.allRows)
-    overrides.showDelayMs = .own(150)
     let fixture = twoAppFixture(front: safari)
     fixture.presenter.parallelSwitcher = .parallel(main: .mainDefaults, overrides: overrides)
     fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
@@ -654,6 +678,7 @@ struct ParallelPresenterTests {
       switcher: FakeWindowSwitcher()
     )
     presenter.keyCommands.frontmostProcessIdentifier = { safari }
+    presenter.parallelSwitcher = .parallel(main: presenter.mainSwitcher, overrides: .defaults)
     return (presenter, surface, log, sleep, commandHold, optionHold)
   }
 

@@ -227,7 +227,7 @@ struct SettingsParallelView: View {
         FollowPicker(
           title: "Show delay",
           caption: "How long a parallel press waits before the panel appears. "
-            + "A shorter wait cannot switch the delay off where the main switcher waits.",
+            + "Off shows at once on its own, even where the main switcher waits.",
           choices: [("150 ms", 150.0), ("300 ms", 300.0), ("500 ms", 500.0), ("1000 ms", 1000.0)],
           selection: $values.parallelOverrides.showDelayMs
         )
