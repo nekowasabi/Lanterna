@@ -429,6 +429,19 @@ final class PanelPresenter {
     } else {
       commitOnCommand = true
     }
+    // A press the delay is holding owns every arrival while it waits:
+    // a second press joins its wait instead of opening a second panel.
+    // The wait keeps its first press's switcher and commit key, and
+    // restarts so a burst opens one panel when the burst ends.
+    if pendingShow.isWaiting {
+      holdForDelay(
+        combination,
+        deliveryDelay: deliveryDelay,
+        startedAt: startedAt,
+        commitOnCommand: commitOnCommand
+      )
+      return
+    }
     // A press is already waiting for the first list and is the one that
     // will put the panel up. The panel is not up yet, so without this a
     // second press would take the same path again and two would arrive.
@@ -588,7 +601,16 @@ final class PanelPresenter {
   /// the way the other per-press answers are: a change lands on the
   /// next press.
   private func showDelay(for combination: HotkeyCombination) -> Duration? {
-    let milliseconds = settings(for: combination).showDelayMs
+    showDelay(for: combination.switcher)
+  }
+
+  /// The wait one switcher is owed, or nothing when its delay is off.
+  ///
+  /// Read for the wait already owed when the arriving press carries no
+  /// delay of its own, so a no-delay press still joins the wait and
+  /// restarts it on the first press's delay rather than opening at once.
+  private func showDelay(for switcher: SwitcherIdentity) -> Duration? {
+    let milliseconds = settings(for: switcher).showDelayMs
     guard let milliseconds, milliseconds > 0 else { return nil }
     return .milliseconds(max(1, Int(milliseconds.rounded())))
   }
@@ -695,7 +717,9 @@ final class PanelPresenter {
     startedAt: ContinuousClock.Instant,
     commitOnCommand: Bool
   ) {
-    guard let delay = showDelay(for: combination) else { return }
+    guard let delay = showDelay(for: combination) ?? pendingShow.waitingSwitcher.flatMap({ showDelay(for: $0) }) else {
+      return
+    }
     if store.snapshot == nil, !pendingPress.isWaiting {
       pendingPress.begin(
         combination,

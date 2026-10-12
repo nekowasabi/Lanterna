@@ -269,6 +269,30 @@ struct ParallelPresenterTests {
   }
 
   @Test
+  func mixedDelaySecondPressJoinsTheWait() async {
+    let waiting = waitingPresenter()
+    waiting.presenter.showDelayMs = nil
+    var overrides = ParallelOverrides.defaults
+    overrides.showDelayMs = .own(150)
+    overrides.windowScope = .own(.frontApp)
+    waiting.presenter.parallelSwitcher = .parallel(main: waiting.presenter.mainSwitcher, overrides: overrides)
+    waiting.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    #expect(waiting.presenter.pendingShow.isWaiting)
+    #expect(waiting.surface.presentedLists.isEmpty)
+    waiting.commandHold.isHeld = true
+    waiting.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    #expect(waiting.surface.presentedLists.isEmpty)
+    #expect(waiting.presenter.pendingShow.isWaiting)
+    waiting.sleep.open()
+    await settle()
+    #expect(waiting.surface.presentedLists.count == 1)
+    let shown = waiting.surface.presentedLists.last ?? []
+    #expect(shown.count == 3)
+    #expect(shown.allSatisfy { $0.ownerProcessIdentifier == safari })
+    #expect(waiting.surface.shownSelections.count == 1)
+  }
+
+  @Test
   func firstListWaitDropsTheOtherPress() async {
     let rows = twoAppRows()
     let fake = HeldGather(answer: WindowListSnapshot(
