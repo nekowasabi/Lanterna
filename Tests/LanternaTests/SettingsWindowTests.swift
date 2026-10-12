@@ -150,9 +150,9 @@ extension SettingsWindowTests {
     #expect(controller.tabViewItems.map(\.label) == [
       "General",
       "Appearance",
+      "Switchers",
       "Filter",
       "Groups",
-      "Parallel switcher",
       "Keyboard",
     ])
   }

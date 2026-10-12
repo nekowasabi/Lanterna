@@ -7,9 +7,9 @@ import SwiftUI
 enum SettingsTab: CaseIterable {
   case general
   case appearance
+  case switchers
   case filter
   case groups
-  case parallel
   case keyboard
 
   // MARK: Internal
@@ -18,10 +18,10 @@ enum SettingsTab: CaseIterable {
     switch self {
     case .general: "General"
     case .appearance: "Appearance"
+    case .switchers: "Switchers"
     case .filter: "Filter"
     case .groups: "Groups"
     case .keyboard: "Keyboard"
-    case .parallel: "Parallel switcher"
     }
   }
 
@@ -29,10 +29,10 @@ enum SettingsTab: CaseIterable {
     switch self {
     case .general: "gearshape"
     case .appearance: "paintbrush"
+    case .switchers: "rectangle.on.rectangle"
     case .filter: "line.3.horizontal.decrease.circle"
     case .groups: "square.3.layers.3d"
     case .keyboard: "keyboard"
-    case .parallel: "rectangle.on.rectangle"
     }
   }
 }
@@ -121,18 +121,18 @@ final class SettingsWindow: NSWindow {
     )))
     keyboardHost.preferredContentSize = NSSize(width: Self.contentWidth, height: contentHeight)
     keyboardHost.sizingOptions = []
-    let parallelHost = NSHostingController(rootView: AnyView(SettingsTabRoot(
+    let switchersHost = NSHostingController(rootView: AnyView(SettingsTabRoot(
       model: model,
-      content: { SettingsParallelView(values: $0) }
+      content: { SettingsSwitchersView(values: $0) }
     )))
-    parallelHost.preferredContentSize = NSSize(width: Self.contentWidth, height: contentHeight)
-    parallelHost.sizingOptions = []
+    switchersHost.preferredContentSize = NSSize(width: Self.contentWidth, height: contentHeight)
+    switchersHost.sizingOptions = []
     let hosts: [NSHostingController<AnyView>] = [
       generalHost,
       appearanceHost,
+      switchersHost,
       filterHost,
       groupsHost,
-      parallelHost,
       keyboardHost,
     ]
     for (tab, host) in zip(SettingsTab.allCases, hosts) {
