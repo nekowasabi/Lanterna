@@ -311,8 +311,9 @@ open class GroupAssignment {
 /// one by one. Absent means every application joins the first group.
 groupAssignments: Listing<GroupAssignment>? = null
 
-/// The main switcher's panel settings: the same keys as the top level.
-/// Absent keys mean the top-level key of the same name.
+/// The main switcher's list settings: which windows the list carries and
+/// where the parked kinds go when grouped, under the same keys as the
+/// top level. Absent keys mean the top-level key of the same name.
 open class SwitcherMain {
   /// Every application's windows, or only those of the application in
   /// front when the panel opens. Absent means the top-level key.
@@ -333,19 +334,6 @@ open class SwitcherMain {
   /// Running applications with no open window. Absent means the top-level key.
   @Allowed { values { "show" "hide" "separateAtBottom" } }
   windowlessAppMode: DisplayMode? = null
-  /// The order the narrowed rows draw in. Absent means the top-level key.
-  @Allowed { values { "mru" "score" } }
-  resultOrder: ResultOrder? = null
-  /// How the switcher list groups its rows. Absent means the top-level key.
-  @Allowed { values { "none" "bySpace" "manual" } }
-  grouping: GroupingMode? = null
-  /// How many manual groups there are, 1 to 9. Absent means the top-level key.
-  @Minimum { value = 1 }
-  @Maximum { value = 9 }
-  groupCount: Int? = null
-  /// What a manual group heading says. Absent means the top-level key.
-  @Allowed { values { "number" "name" "appNames" } }
-  groupHeadingStyle: GroupHeadingStyle? = null
   /// Where the windows-on-other-spaces section goes when grouped. Absent means the top-level key.
   @Allowed { values { "endOfList" "withinGroup" } }
   otherSpacePlacement: SubgroupPlacement? = null
@@ -361,33 +349,36 @@ open class SwitcherMain {
   /// Where the apps-without-windows section goes when grouped. Absent means the top-level key.
   @Allowed { values { "endOfList" "withinGroup" } }
   windowlessAppPlacement: SubgroupPlacement? = null
-  /// Which display the panel opens on. Absent means the top-level key.
-  @Allowed { values { "primary" "cursor" "frontWindow" "all" } }
-  displayTarget: DisplayTarget? = null
-  /// The panel width as a multiplier. Absent means the top-level key.
-  panelWidth: Number? = null
-  /// The panel text and icon scale as a multiplier. Absent means the top-level key.
-  textScale: Number? = null
-  /// The panel show delay in milliseconds. Absent means the top-level key.
-  showDelayMs: Number? = null
-  /// How the left edge of each row reads. Absent means the top-level key.
-  @Allowed { values { "prefix" "numbers" "neither" } }
-  hintsMode: HintsMode? = null
-  /// Whether holding Command or Option and pressing a row number jumps to
-  /// that row. Absent means the top-level key.
-  numberJump: Boolean? = null
-  /// Whether moving the selected row by key works in grouped lists.
-  /// Absent means the top-level key.
-  numberReorder: Boolean? = null
-  /// Which rows row numbers cover. Absent means the top-level key.
-  @Allowed { values { "windows" "allRows" } }
-  numberScope: NumberScope? = null
-  /// Whether hovering a row moves the selection. Absent means the top-level key.
-  hoverSelect: Boolean? = null
-  /// Whether scrolling moves the selection. Absent means the top-level key.
-  scrollSelect: Boolean? = null
-  /// Whether the filter also matches subsequence queries. Absent means the top-level key.
-  fuzzyMatchEnabled: Boolean? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  resultOrder: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  grouping: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  groupCount: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  groupHeadingStyle: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  displayTarget: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  panelWidth: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  textScale: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  showDelayMs: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  hintsMode: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  numberJump: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  numberReorder: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  numberScope: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  hoverSelect: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  scrollSelect: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  fuzzyMatchEnabled: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   appearanceMode: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
@@ -420,7 +411,7 @@ open class SwitcherMain {
   groupAssignments: Any? = null
 }
 
-/// The parallel switcher's panel settings: the same keys as the main
+/// The parallel switcher's list settings: the same keys as the main
 /// switcher, where each key takes its value or "inherit" for following
 /// the main switcher. Absent keys follow the main switcher, except the
 /// window scope, which means the front application's windows alone.
@@ -445,19 +436,6 @@ open class SwitcherParallel {
   /// Running applications with no open window. Absent or "inherit" follows the main switcher.
   @Allowed { values { "show" "hide" "separateAtBottom" } }
   windowlessAppMode: DisplayMode? = null
-  /// The order the narrowed rows draw in. Absent or "inherit" follows the main switcher.
-  @Allowed { values { "mru" "score" } }
-  resultOrder: ResultOrder? = null
-  /// How the switcher list groups its rows. Absent or "inherit" follows the main switcher.
-  @Allowed { values { "none" "bySpace" "manual" } }
-  grouping: GroupingMode? = null
-  /// How many manual groups there are, 1 to 9. Absent or "inherit" follows the main switcher.
-  @Minimum { value = 1 }
-  @Maximum { value = 9 }
-  groupCount: Int? = null
-  /// What a manual group heading says. Absent or "inherit" follows the main switcher.
-  @Allowed { values { "number" "name" "appNames" } }
-  groupHeadingStyle: GroupHeadingStyle? = null
   /// Where the windows-on-other-spaces section goes when grouped. Absent or "inherit" follows the main switcher.
   @Allowed { values { "endOfList" "withinGroup" } }
   otherSpacePlacement: SubgroupPlacement? = null
@@ -473,35 +451,38 @@ open class SwitcherParallel {
   /// Where the apps-without-windows section goes when grouped. Absent or "inherit" follows the main switcher.
   @Allowed { values { "endOfList" "withinGroup" } }
   windowlessAppPlacement: SubgroupPlacement? = null
-  /// Which display the panel opens on. Absent or "inherit" follows the main switcher.
-  @Allowed { values { "primary" "cursor" "frontWindow" "all" } }
-  displayTarget: DisplayTarget? = null
-  /// The panel width as a multiplier. Absent or "inherit" follows the main switcher.
-  panelWidth: Number? = null
-  /// The panel text and icon scale as a multiplier. Absent or "inherit" follows the main switcher.
-  textScale: Number? = null
-  /// The panel show delay in milliseconds. Absent or "inherit" follows the main switcher.
-  showDelayMs: Number? = null
-  /// How the left edge of each row reads. Absent or "inherit" follows the main switcher.
-  @Allowed { values { "prefix" "numbers" "neither" } }
-  hintsMode: HintsMode? = null
-  /// Whether holding Command or Option and pressing a row number jumps to
-  /// that row. Absent or "inherit" follows the main switcher.
-  numberJump: Boolean? = null
-  /// Whether moving the selected row by key works in grouped lists.
-  /// Absent or "inherit" follows the main switcher.
-  numberReorder: Boolean? = null
-  /// Which rows row numbers cover. Absent or "inherit" follows the main switcher.
-  @Allowed { values { "windows" "allRows" } }
-  numberScope: NumberScope? = null
-  /// Whether hovering a row moves the selection. Absent or "inherit" follows the main switcher.
-  hoverSelect: Boolean? = null
-  /// Whether scrolling moves the selection. Absent or "inherit" follows the main switcher.
-  scrollSelect: Boolean? = null
-  /// Whether the filter also matches subsequence queries. Absent or "inherit" follows the main switcher.
-  fuzzyMatchEnabled: Boolean? = null
   /// Whether the parallel switcher answers its keys. Absent means on.
   enabled: Boolean? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  resultOrder: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  grouping: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  groupCount: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  groupHeadingStyle: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  displayTarget: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  panelWidth: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  textScale: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  showDelayMs: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  hintsMode: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  numberJump: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  numberReorder: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  numberScope: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  hoverSelect: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  scrollSelect: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  fuzzyMatchEnabled: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   appearanceMode: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.

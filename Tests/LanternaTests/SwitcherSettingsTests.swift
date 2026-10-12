@@ -211,41 +211,61 @@ struct SwitcherSettingsTests {
   }
 
   @Test
-  func explicitStandardStaysOwnedAcrossReread() throws {
+  func panelLookKeysInSectionsAreIgnoredWithNotes() throws {
+    let entries = Self.sharedPanelKeys.map(\.spelled).joined(separator: ", ")
     let decoded = try #require(decode(
-      #"{"version": 1, "textScale": 1.5, "panelWidth": 1.2, "switchers": {"parallel": {"textScale": 1.0, "panelWidth": 1.0}}}"#
+      #"{"version": 1, "textScale": 1.25, "showDelayMs": 150, "grouping": "bySpace", "#
+        + #""switchers": {"main": {\#(entries)}, "parallel": {\#(entries)}}}"#
     ).successValue)
     let values = SettingsValues.effective(from: decoded.config)
 
-    #expect(values.parallelOverrides.textScale == .own(.standard))
-    #expect(values.parallelOverrides.panelWidth == .own(.standard))
-    #expect(values.parallelSwitcher.textScale == .standard)
-    #expect(values.parallelSwitcher.panelWidth == .standard)
-
-    let text = try encode(values, diskHasSections: true, changed: false)
-    let reread = try #require(decode(text).successValue)
-    let reloaded = SettingsValues.effective(from: reread.config)
-    #expect(reloaded.parallelOverrides.textScale == .own(.standard))
-    #expect(reloaded.parallelOverrides.panelWidth == .own(.standard))
+    #expect(values.textScale == .large)
+    #expect(values.showDelayMs == 150)
+    #expect(values.grouping.mode == .bySpace)
+    #expect(values.displayTarget == .primary)
+    #expect(values.fuzzyMatchEnabled)
+    #expect(values.parallelOverrides == .defaults)
+    for key in Self.sharedPanelKeys.map(\.key) {
+      #expect(decoded.switcherNotes.contains(
+        "switchers.main.\(key) is shared by both switchers; write it at the top level"
+      ), "for main.\(key)")
+      #expect(decoded.switcherNotes.contains(
+        "switchers.parallel.\(key) is shared by both switchers; write it at the top level"
+      ), "for parallel.\(key)")
+    }
   }
 
   @Test
-  func explicitOffDelayStaysOwnedOffAcrossReread() throws {
+  func panelLookKeysStayTopLevelWhenSectioned() throws {
+    var values = SettingsValues.defaults
+    values.textScale = .large
+    values.showDelayMs = 150
+    values.grouping.mode = .bySpace
+    values.hintsMode = .numbers
+    values.windowScope = .frontApp
+    let text = try encode(values, diskHasSections: false, changed: true)
+
+    #expect(text.contains(#""main": {"#))
+    #expect(text.contains(#""windowScope": "frontApp""#))
+    let config = try #require(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
+    #expect(config["textScale"] as? Double == 1.25)
+    #expect(config["showDelayMs"] as? Double == 150)
+    #expect(config["grouping"] as? String == "bySpace")
+    #expect(config["hintsMode"] as? String == "numbers")
+    let main = try #require((config["switchers"] as? [String: Any])?["main"] as? [String: Any])
+    #expect(Set(main.keys) == ["windowScope"])
+  }
+
+  @Test
+  func parallelWithOnlySharedKeysSpellsNothing() throws {
     let decoded = try #require(decode(
-      #"{"version": 1, "showDelayMs": 150, "switchers": {"parallel": {"showDelayMs": 0}}}"#
+      #"{"version": 1, "switchers": {"parallel": {"displayTarget": "cursor"}}}"#
     ).successValue)
     let values = SettingsValues.effective(from: decoded.config)
 
-    #expect(values.parallelOverrides.showDelayMs == .own(nil))
-    #expect(values.parallelSwitcher.showDelayMs == nil)
-    #expect(values.mainSwitcher.showDelayMs == 150)
-
-    let text = try encode(values, diskHasSections: true, changed: false)
-    #expect(text.contains(#""showDelayMs": 0"#))
-    let reread = try #require(decode(text).successValue)
-    let reloaded = SettingsValues.effective(from: reread.config)
-    #expect(reloaded.parallelOverrides.showDelayMs == .own(nil))
-    #expect(reloaded.parallelSwitcher.showDelayMs == nil)
+    #expect(AppConfiguration.spelledParallelSection(values.parallelOverrides).isEmpty)
+    let text = try encode(values, diskHasSections: false, changed: false)
+    #expect(!text.contains("\"switchers\""))
   }
 
   @Test
@@ -335,51 +355,27 @@ struct SwitcherSettingsTests {
     let fileKeys = Set(AppConfiguration.knownKeys).subtracting(["version", "switchers"])
     #expect(Set(main.keys) == fileKeys)
     #expect(Set(parallel.keys) == fileKeys.union(["enabled"]))
-    let panelKeys: Set = [
+    let listKeys: Set = [
       "windowScope",
       "otherSpaceMode",
       "hiddenAppMode",
       "minimizedMode",
       "fullscreenMode",
       "windowlessAppMode",
-      "resultOrder",
-      "grouping",
-      "groupCount",
-      "groupHeadingStyle",
       "otherSpacePlacement",
       "hiddenAppPlacement",
       "minimizedPlacement",
       "fullscreenPlacement",
       "windowlessAppPlacement",
-      "displayTarget",
-      "panelWidth",
-      "textScale",
-      "showDelayMs",
-      "hintsMode",
-      "numberJump",
-      "numberReorder",
-      "numberScope",
-      "hoverSelect",
-      "scrollSelect",
-      "fuzzyMatchEnabled",
     ]
-    #expect(panelKeys.count == 26)
-    for (key, fragment) in main {
-      guard let fragment = fragment as? [String: Any] else { continue }
-      if panelKeys.contains(key) {
-        #expect(fragment["deprecated"] == nil, "for main.\(key)")
-      } else {
-        #expect(fragment["deprecated"] as? Bool == true, "for main.\(key)")
-      }
+    #expect(AppConfiguration.switcherPanelKeys == listKeys)
+    let current = { (section: [String: Any]) in
+      Set(section.compactMap { key, fragment in
+        (fragment as? [String: Any])?["deprecated"] as? Bool == true ? nil : key
+      })
     }
-    for (key, fragment) in parallel where key != "enabled" {
-      guard let fragment = fragment as? [String: Any] else { continue }
-      if panelKeys.contains(key) {
-        #expect(fragment["deprecated"] == nil, "for parallel.\(key)")
-      } else {
-        #expect(fragment["deprecated"] as? Bool == true, "for parallel.\(key)")
-      }
-    }
+    #expect(current(main) == listKeys)
+    #expect(current(parallel) == listKeys.union(["enabled"]))
   }
 
   @Test
@@ -402,6 +398,26 @@ struct SwitcherSettingsTests {
   }
 
   // MARK: Private
+
+  /// The panel's look, place, delay, gestures, ordering, matching, and
+  /// grouping: shared by both switchers, so a section ignores them.
+  private static let sharedPanelKeys: [(key: String, spelled: String)] = [
+    ("resultOrder", #""resultOrder": "score""#),
+    ("fuzzyMatchEnabled", #""fuzzyMatchEnabled": false"#),
+    ("grouping", #""grouping": "manual""#),
+    ("groupCount", #""groupCount": 3"#),
+    ("groupHeadingStyle", #""groupHeadingStyle": "name""#),
+    ("displayTarget", #""displayTarget": "cursor""#),
+    ("panelWidth", #""panelWidth": 1.2"#),
+    ("textScale", #""textScale": 1.0"#),
+    ("showDelayMs", #""showDelayMs": 0"#),
+    ("hintsMode", #""hintsMode": "numbers""#),
+    ("numberJump", #""numberJump": true"#),
+    ("numberReorder", #""numberReorder": true"#),
+    ("numberScope", #""numberScope": "allRows""#),
+    ("hoverSelect", #""hoverSelect": true"#),
+    ("scrollSelect", #""scrollSelect": true"#),
+  ]
 
   private func decode(_ text: String) -> Result<DecodedConfiguration, ConfigDecodeError> {
     AppConfiguration.decode(Data(text.utf8))

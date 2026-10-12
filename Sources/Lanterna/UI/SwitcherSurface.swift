@@ -1,49 +1,24 @@
 // MARK: - AppliedPanelSettings
 
-/// One appearance's panel settings: one switcher's values with the
-/// shared halves folded in, so the panel draws every appearance alike
-/// however the switchers divide the settings between them.
+/// One appearance's panel settings: one switcher's display modes and
+/// parked-section placements, with the shared grouping folded in.
+///
+/// The rest of what the panel draws by is shared by both switchers and
+/// reaches the panel when the settings change, not per appearance.
 struct AppliedPanelSettings: Equatable, Sendable {
   var displayModes: DisplayModes
-  var searchSettings: SearchSettings
-  var textScale: TextScaleLevel
-  var displayTarget: DisplayTarget
-  var panelWidth: PanelWidth
-  var hoverSelect: Bool
-  var scrollSelect: Bool
-  var hintsMode: HintsMode
   var grouping: GroupingPolicy
 
-  /// Folds one switcher's values over the shared halves: the manual
-  /// group names and assignments, and the shortcut memory length, ride
-  /// along from the shared settings however the switchers divide the rest.
+  /// Folds one switcher's placements into the shared grouping: how the
+  /// list groups, the group count, the heading style, and the manual
+  /// names and assignments stay the same whichever switcher opens.
   static func resolve(
     _ settings: SwitcherSettings,
-    sharedGrouping: GroupingPolicy,
-    sharedSearch: SearchSettings
+    sharedGrouping: GroupingPolicy
   ) -> AppliedPanelSettings {
-    AppliedPanelSettings(
-      displayModes: settings.displayModes,
-      searchSettings: SearchSettings(
-        fuzzyMatchEnabled: settings.fuzzyMatchEnabled,
-        shortcutMemoryLength: sharedSearch.shortcutMemoryLength,
-        ordering: settings.resultOrder
-      ),
-      textScale: settings.textScale,
-      displayTarget: settings.displayTarget,
-      panelWidth: settings.panelWidth,
-      hoverSelect: settings.hoverSelect,
-      scrollSelect: settings.scrollSelect,
-      hintsMode: settings.hintsMode,
-      grouping: GroupingPolicy(
-        mode: settings.groupingMode,
-        placements: settings.subgroupPlacements,
-        groupCount: settings.groupCount,
-        headingStyle: settings.groupHeadingStyle,
-        names: sharedGrouping.names,
-        assignments: sharedGrouping.assignments
-      )
-    )
+    var grouping = sharedGrouping
+    grouping.placements = settings.subgroupPlacements
+    return AppliedPanelSettings(displayModes: settings.displayModes, grouping: grouping)
   }
 }
 
@@ -161,13 +136,6 @@ protocol SwitcherSurface: AnyObject {
 extension SwitcherPanel: SwitcherSurface {
   func applyPanelSettings(_ settings: AppliedPanelSettings) {
     displayModes = settings.displayModes
-    searchSettings = settings.searchSettings
-    textScale = settings.textScale
-    displayTarget = settings.displayTarget
-    panelWidth = settings.panelWidth
-    hoverSelect = settings.hoverSelect
-    scrollSelect = settings.scrollSelect
-    hintsMode = settings.hintsMode
     grouping = settings.grouping
   }
 }

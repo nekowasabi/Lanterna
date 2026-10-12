@@ -221,22 +221,7 @@ final class PanelPresenter {
   /// Where opening the settings goes. Set by whoever owns the file.
   var onOpenSettings: (@MainActor () -> Void)?
 
-  /// Which display the panel opens on. The panel holds its own copy;
-  /// this one feeds the main switcher's resolved settings alone.
-  var displayTarget = DisplayTarget.primary
-
-  /// The panel width step. Beside the display target for the same reason.
-  var panelWidth = PanelWidth.standard
-
-  /// The panel text and icon scale step. Beside the display target for
-  /// the same reason.
-  var textScale = TextScaleLevel.standard
-
-  /// How the left edge of each row reads. Beside the display target for
-  /// the same reason.
-  var hintsMode = HintsMode.prefix
-
-  /// The parallel switcher's resolved panel settings, beside the main one.
+  /// The parallel switcher's resolved list settings, beside the main one.
   var parallelSwitcher = SwitcherSettings.parallel(main: .mainDefaults, overrides: .defaults)
 
   /// Whether the parallel invocations reach the panel at all. Carbon
@@ -249,29 +234,14 @@ final class PanelPresenter {
   /// appearance sets it as it goes up.
   private(set) var activeSwitcher = SwitcherIdentity.main
 
-  /// The main switcher's resolved panel settings, read off the shared
-  /// fields below. Computed so the two never drift apart: every staging
-  /// of a legacy field lands here with it.
+  /// The main switcher's resolved list settings, read off the fields
+  /// below. Computed so the two never drift apart: every staging of a
+  /// legacy field lands here with it.
   var mainSwitcher: SwitcherSettings {
     SwitcherSettings(
       windowScope: windowScope,
       displayModes: displayModes,
-      resultOrder: searchSettings.ordering,
-      groupingMode: grouping.mode,
-      subgroupPlacements: grouping.placements,
-      groupCount: grouping.groupCount,
-      groupHeadingStyle: grouping.headingStyle,
-      displayTarget: displayTarget,
-      panelWidth: panelWidth,
-      textScale: textScale,
-      showDelayMs: showDelayMs,
-      hintsMode: hintsMode,
-      numberJump: numberJump,
-      numberReorder: numberReorder,
-      numberScope: numberScope,
-      hoverSelect: hoverSelect,
-      scrollSelect: scrollSelect,
-      fuzzyMatchEnabled: searchSettings.fuzzyMatchEnabled
+      subgroupPlacements: grouping.placements
     )
   }
 
@@ -279,7 +249,6 @@ final class PanelPresenter {
   /// press, the same timing as above.
   var numberJump = false {
     didSet {
-      guard !surface.isPresented || activeSwitcher == .main else { return }
       keyCommands.updateNumberJump(numberJump)
       pushNumberedRows()
     }
@@ -287,18 +256,12 @@ final class PanelPresenter {
 
   /// Whether reorder presses move rows. Same timing as above.
   var numberReorder = false {
-    didSet {
-      guard !surface.isPresented || activeSwitcher == .main else { return }
-      keyCommands.updateReorder(numberReorder)
-    }
+    didSet { keyCommands.updateReorder(numberReorder) }
   }
 
   /// Which rows numbers name. Same timing as above.
   var numberScope = NumberScope.windows {
-    didSet {
-      guard !surface.isPresented || activeSwitcher == .main else { return }
-      keyCommands.updateNumberScope(numberScope)
-    }
+    didSet { keyCommands.updateNumberScope(numberScope) }
   }
 
   /// The hand-arranged row orders shadowing the drawn order. Same
@@ -319,10 +282,7 @@ final class PanelPresenter {
   /// commands beside the modes. A change lands on the live filter at
   /// once, like the exclusion rules.
   var searchSettings = SearchSettings() {
-    didSet {
-      guard !surface.isPresented || activeSwitcher == .main else { return }
-      pushSearchSettings()
-    }
+    didSet { pushSearchSettings() }
   }
 
   /// Which applications' rows each appearance starts on, handed to the
@@ -335,10 +295,14 @@ final class PanelPresenter {
   }
 
   /// How the rows are grouped, handed to the key commands like the modes.
+  /// The parked-section placements are the main switcher's; a panel the
+  /// parallel switcher opened keeps its own placements over the shared
+  /// rest.
   var grouping = GroupingPolicy() {
     didSet {
-      guard !surface.isPresented || activeSwitcher == .main else { return }
-      keyCommands.updateGrouping(grouping)
+      keyCommands.updateGrouping(
+        AppliedPanelSettings.resolve(settings(for: activeSwitcher), sharedGrouping: grouping).grouping
+      )
     }
   }
 
@@ -429,32 +393,20 @@ final class PanelPresenter {
     } else {
       commitOnCommand = true
     }
-    // A press the delay is holding owns every arrival while it waits:
-    // a second press joins its wait instead of opening a second panel.
-    // The wait keeps its first press's switcher and commit key, and
-    // restarts so a burst opens one panel when the burst ends.
-    if pendingShow.isWaiting {
-      holdForDelay(
-        combination,
-        deliveryDelay: deliveryDelay,
-        startedAt: startedAt,
-        commitOnCommand: commitOnCommand
-      )
-      return
-    }
     // A press is already waiting for the first list and is the one that
     // will put the panel up. The panel is not up yet, so without this a
     // second press would take the same path again and two would arrive.
     // A press the delay is holding is the exception: further presses
     // join its wait instead of being turned away.
-    if pendingPress.isWaiting, pendingShowHoldIsOff(for: combination) {
+    if pendingPress.isWaiting, pendingShowHoldIsOff {
       return
     }
-    if showDelay(for: combination) != nil {
+    if let delay = showDelay {
       holdForDelay(
         combination,
         deliveryDelay: deliveryDelay,
         startedAt: startedAt,
+        delay: delay,
         commitOnCommand: commitOnCommand
       )
       return
@@ -595,29 +547,17 @@ final class PanelPresenter {
 
   /// The wait one press is owed, or nothing when the delay is off.
   ///
-  /// Resolved per invocation from that switcher's settings, so a
-  /// parallel-only delay holds an Option press while the main press
-  /// opens at once. Read at every press rather than settled at launch,
-  /// the way the other per-press answers are: a change lands on the
-  /// next press.
-  private func showDelay(for combination: HotkeyCombination) -> Duration? {
-    showDelay(for: combination.switcher)
-  }
-
-  /// The wait one switcher is owed, or nothing when its delay is off.
-  ///
-  /// Read for the wait already owed when the arriving press carries no
-  /// delay of its own, so a no-delay press still joins the wait and
-  /// restarts it on the first press's delay rather than opening at once.
-  private func showDelay(for switcher: SwitcherIdentity) -> Duration? {
-    let milliseconds = settings(for: switcher).showDelayMs
-    guard let milliseconds, milliseconds > 0 else { return nil }
-    return .milliseconds(max(1, Int(milliseconds.rounded())))
+  /// Shared by both switchers. Read at every press rather than settled
+  /// at launch, the way the other per-press answers are: a change lands
+  /// on the next press.
+  private var showDelay: Duration? {
+    guard let showDelayMs, showDelayMs > 0 else { return nil }
+    return .milliseconds(max(1, Int(showDelayMs.rounded())))
   }
 
   /// Whether the delay holds no press back: the ordinary path.
-  private func pendingShowHoldIsOff(for combination: HotkeyCombination) -> Bool {
-    showDelay(for: combination) == nil
+  private var pendingShowHoldIsOff: Bool {
+    showDelay == nil
   }
 
   /// Answers a release for the waits, when the wait's commit key matches
@@ -692,17 +632,15 @@ final class PanelPresenter {
   /// Set on every appearance, so a surface grown later hears the same
   /// handlers through the sync below it.
   private func wirePointerHandlers() {
-    // Each appearance answers to its own switcher's switches: the
-    // identity only moves when the next appearance goes up.
     surface.onHoverRow = { [weak self] id in
-      guard let self, settings(for: activeSwitcher).hoverSelect else { return }
+      guard let self, hoverSelect else { return }
       selection.select(id)
     }
     surface.onClickRow = { [weak self] id in
       self?.keyCommands.commitClickedRow(id)
     }
     surface.onScrollStep = { [weak self] step in
-      guard let self, settings(for: activeSwitcher).scrollSelect else { return }
+      guard let self, scrollSelect else { return }
       selection.step(by: step)
     }
   }
@@ -715,11 +653,9 @@ final class PanelPresenter {
     _ combination: HotkeyCombination,
     deliveryDelay: Duration?,
     startedAt: ContinuousClock.Instant,
+    delay: Duration,
     commitOnCommand: Bool
   ) {
-    guard let delay = showDelay(for: combination) ?? pendingShow.waitingSwitcher.flatMap({ showDelay(for: $0) }) else {
-      return
-    }
     if store.snapshot == nil, !pendingPress.isWaiting {
       pendingPress.begin(
         combination,
@@ -864,7 +800,7 @@ final class PanelPresenter {
       surface.showNumberedRows(keyCommands.numberedRows().map(\.id))
       return
     }
-    guard settings(for: activeSwitcher).numberJump else {
+    guard numberJump else {
       surface.showNumberedRows([])
       return
     }
@@ -912,24 +848,20 @@ final class PanelPresenter {
     // position is free: it has to happen before the panel can go.
     tracker.noteSnapshotObserved(store.snapshot?.gatheredAt ?? now())
     let ordered = tracker.ordered(windows, skipping: store.snapshot?.skippedOwners ?? [])
-    // Each appearance reads its own switcher's settings: the scope and
-    // the display modes seed this showing alone, and the identity stays
-    // for the commit and the diagnostics to name. A panel that is up
-    // keeps its own until it closes; the next appearance seeds again.
+    // Each appearance reads its own switcher's list settings: the scope,
+    // the display modes, and the parked-section placements seed this
+    // showing alone, and the identity stays for the commit and the
+    // diagnostics to name. A panel that is up keeps its own until it
+    // closes; the next appearance seeds again.
     activeSwitcher = combination.switcher
     wayOut.switcherIdentity = combination.switcher
     let settings = settings(for: combination)
     keyCommands.updateWindowScope(settings.windowScope)
     keyCommands.updateDisplayModes(settings.displayModes)
-    // Grouping and search fold the shared halves in, so each appearance
-    // reads its own switcher with the same names and memory both share.
-    // Number switches ride the same ports their settings window writes.
-    let applied = AppliedPanelSettings.resolve(settings, sharedGrouping: grouping, sharedSearch: searchSettings)
+    // The placements fold into the shared grouping, so each appearance
+    // groups alike and parks the kinds where its own switcher says.
+    let applied = AppliedPanelSettings.resolve(settings, sharedGrouping: grouping)
     keyCommands.updateGrouping(applied.grouping)
-    keyCommands.updateSearchSettings(applied.searchSettings)
-    keyCommands.updateNumberJump(settings.numberJump)
-    keyCommands.updateReorder(settings.numberReorder)
-    keyCommands.updateNumberScope(settings.numberScope)
     keyCommands.beginFiltering(fullWindows: ordered, filtering: combination == .filter)
     let layout = keyCommands.shownLayout
     let shown = layout.rows

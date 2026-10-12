@@ -22,7 +22,8 @@ extension AppConfiguration {
   /// text, because JSON objects carry no order of their own. The text
   /// scale is lenient the same way on its own: a present but invalid
   /// value falls back to standard with a note.
-  /// The section keys holding panel settings rather than shared ones.
+  /// The section keys holding one switcher's list settings rather than
+  /// shared ones.
   static let switcherPanelKeys: Set = [
     "windowScope",
     "otherSpaceMode",
@@ -30,26 +31,11 @@ extension AppConfiguration {
     "minimizedMode",
     "fullscreenMode",
     "windowlessAppMode",
-    "resultOrder",
-    "grouping",
-    "groupCount",
-    "groupHeadingStyle",
     "otherSpacePlacement",
     "hiddenAppPlacement",
     "minimizedPlacement",
     "fullscreenPlacement",
     "windowlessAppPlacement",
-    "displayTarget",
-    "panelWidth",
-    "textScale",
-    "showDelayMs",
-    "hintsMode",
-    "numberJump",
-    "numberReorder",
-    "numberScope",
-    "hoverSelect",
-    "scrollSelect",
-    "fuzzyMatchEnabled",
   ]
 
   /// Every key a switcher section takes: the whole file's keys but the
@@ -604,37 +590,6 @@ extension AppConfiguration {
     }
   }
 
-  /// One main-section on-off key over the top-level value.
-  private static func applyMainSwitch(
-    key: String,
-    section: [String: Any],
-    top: [String: Any],
-    config: inout ValidConfiguration,
-    path: WritableKeyPath<ValidConfiguration, Bool?>,
-    notes: inout [String]
-  ) {
-    if isInherit(section[key]) {
-      notes.append(
-        "switchers.main.\(key) spells \"inherit\", which only the parallel section takes; "
-          + "using \(mainFallbackWord(key: key, top: top))"
-      )
-      return
-    }
-    switch checkedOptionalBool(section, key: key) {
-    case .success(let found):
-      guard let enabled = found else { return }
-      config[keyPath: path] = enabled
-      if top[key] != nil {
-        notes.append("top-level \(key) is unused; switchers.main.\(key) wins")
-      }
-
-    case .failure:
-      notes.append(
-        "switchers.main.\(key) is not a valid value; using \(mainFallbackWord(key: key, top: top))"
-      )
-    }
-  }
-
   /// One main-section panel key over the top-level value, by kind.
   private static func applyMainPanelKey(
     key: String,
@@ -656,42 +611,12 @@ extension AppConfiguration {
       applyMainMode(key: key, section: section, top: top, config: &config, path: \.windowlessAppMode, notes: &notes)
     case "windowScope":
       applyMainWord(key: key, section: section, top: top, config: &config, path: \.windowScope, notes: &notes)
-    case "numberScope":
-      applyMainWord(key: key, section: section, top: top, config: &config, path: \.numberScope, notes: &notes)
-    case "hintsMode":
-      applyMainWord(key: key, section: section, top: top, config: &config, path: \.hintsMode, notes: &notes)
-    case "grouping":
-      applyMainWord(key: key, section: section, top: top, config: &config, path: \.grouping, notes: &notes)
-    case "displayTarget":
-      applyMainWord(key: key, section: section, top: top, config: &config, path: \.displayTarget, notes: &notes)
-    case "groupHeadingStyle":
-      applyMainWord(key: key, section: section, top: top, config: &config, path: \.groupHeadingStyle, notes: &notes)
     case "otherSpacePlacement",
          "hiddenAppPlacement",
          "minimizedPlacement",
          "fullscreenPlacement",
          "windowlessAppPlacement":
       applyMainPlacement(key: key, section: section, top: top, config: &config, notes: &notes)
-    case "resultOrder":
-      applyMainResultOrder(section: section, top: top, config: &config, notes: &notes)
-    case "groupCount":
-      applyMainGroupCount(section: section, top: top, config: &config, notes: &notes)
-    case "fuzzyMatchEnabled":
-      applyMainSwitch(key: key, section: section, top: top, config: &config, path: \.fuzzyMatchEnabled, notes: &notes)
-    case "hoverSelect":
-      applyMainSwitch(key: key, section: section, top: top, config: &config, path: \.hoverSelect, notes: &notes)
-    case "scrollSelect":
-      applyMainSwitch(key: key, section: section, top: top, config: &config, path: \.scrollSelect, notes: &notes)
-    case "numberJump":
-      applyMainSwitch(key: key, section: section, top: top, config: &config, path: \.numberJump, notes: &notes)
-    case "numberReorder":
-      applyMainSwitch(key: key, section: section, top: top, config: &config, path: \.numberReorder, notes: &notes)
-    case "textScale":
-      applyMainTextScale(section: section, top: top, config: &config, notes: &notes)
-    case "panelWidth":
-      applyMainPanelWidth(section: section, top: top, config: &config, notes: &notes)
-    case "showDelayMs":
-      applyMainShowDelay(section: section, top: top, config: &config, notes: &notes)
     default:
       break
     }
@@ -728,160 +653,6 @@ extension AppConfiguration {
     }
   }
 
-  /// The main-section ordering word over the top-level value.
-  private static func applyMainResultOrder(
-    section: [String: Any],
-    top: [String: Any],
-    config: inout ValidConfiguration,
-    notes: inout [String]
-  ) {
-    let key = "resultOrder"
-    if isInherit(section[key]) {
-      notes.append(
-        "switchers.main.\(key) spells \"inherit\", which only the parallel section takes; "
-          + "using \(mainFallbackWord(key: key, top: top))"
-      )
-      return
-    }
-    switch checkedOptionalResultOrder(section, key: key) {
-    case .success(let found):
-      guard let order = found else { return }
-      config.resultOrder = order
-      if top[key] != nil {
-        notes.append("top-level \(key) is unused; switchers.main.\(key) wins")
-      }
-
-    case .failure:
-      notes.append(
-        "switchers.main.\(key) is not a valid value; using \(mainFallbackWord(key: key, top: top))"
-      )
-    }
-  }
-
-  /// The main-section group count over the top-level value.
-  private static func applyMainGroupCount(
-    section: [String: Any],
-    top: [String: Any],
-    config: inout ValidConfiguration,
-    notes: inout [String]
-  ) {
-    let key = "groupCount"
-    if isInherit(section[key]) {
-      notes.append(
-        "switchers.main.\(key) spells \"inherit\", which only the parallel section takes; "
-          + "using \(mainFallbackWord(key: key, top: top))"
-      )
-      return
-    }
-    switch checkedOptionalInt(section, key: key, minimum: 1) {
-    case .success(let found):
-      guard let count = found, count <= maximumGroupCount else {
-        if found != nil {
-          notes.append(
-            "switchers.main.\(key) is not a valid value; using \(mainFallbackWord(key: key, top: top))"
-          )
-        }
-        return
-      }
-      config.groupCount = count
-      if top[key] != nil {
-        notes.append("top-level \(key) is unused; switchers.main.\(key) wins")
-      }
-
-    case .failure:
-      notes.append(
-        "switchers.main.\(key) is not a valid value; using \(mainFallbackWord(key: key, top: top))"
-      )
-    }
-  }
-
-  /// The main-section text scale over the top-level value.
-  private static func applyMainTextScale(
-    section: [String: Any],
-    top: [String: Any],
-    config: inout ValidConfiguration,
-    notes: inout [String]
-  ) {
-    let key = "textScale"
-    if isInherit(section[key]) {
-      notes.append(
-        "switchers.main.\(key) spells \"inherit\", which only the parallel section takes; "
-          + "using \(mainFallbackWord(key: key, top: top))"
-      )
-      return
-    }
-    let (value, issue) = checkedOptionalTextScale(section)
-    if issue != nil {
-      notes.append(
-        "switchers.main.\(key) is not a valid value; using \(mainFallbackWord(key: key, top: top))"
-      )
-      return
-    }
-    guard let factor = value else { return }
-    config.textScale = factor
-    if top[key] != nil {
-      notes.append("top-level \(key) is unused; switchers.main.\(key) wins")
-    }
-  }
-
-  /// The main-section panel width over the top-level value.
-  private static func applyMainPanelWidth(
-    section: [String: Any],
-    top: [String: Any],
-    config: inout ValidConfiguration,
-    notes: inout [String]
-  ) {
-    let key = "panelWidth"
-    if isInherit(section[key]) {
-      notes.append(
-        "switchers.main.\(key) spells \"inherit\", which only the parallel section takes; "
-          + "using \(mainFallbackWord(key: key, top: top))"
-      )
-      return
-    }
-    let (value, issue) = checkedOptionalPanelWidth(section)
-    if issue != nil {
-      notes.append(
-        "switchers.main.\(key) is not a valid value; using \(mainFallbackWord(key: key, top: top))"
-      )
-      return
-    }
-    guard let factor = value else { return }
-    config.panelWidth = factor
-    if top[key] != nil {
-      notes.append("top-level \(key) is unused; switchers.main.\(key) wins")
-    }
-  }
-
-  /// The main-section show delay over the top-level value.
-  private static func applyMainShowDelay(
-    section: [String: Any],
-    top: [String: Any],
-    config: inout ValidConfiguration,
-    notes: inout [String]
-  ) {
-    let key = "showDelayMs"
-    if isInherit(section[key]) {
-      notes.append(
-        "switchers.main.\(key) spells \"inherit\", which only the parallel section takes; "
-          + "using \(mainFallbackWord(key: key, top: top))"
-      )
-      return
-    }
-    let (value, issue) = checkedOptionalShowDelayMs(section)
-    if issue != nil {
-      notes.append(
-        "switchers.main.\(key) is not a valid value; using \(mainFallbackWord(key: key, top: top))"
-      )
-      return
-    }
-    guard let milliseconds = value else { return }
-    config.showDelayMs = milliseconds
-    if top[key] != nil {
-      notes.append("top-level \(key) is unused; switchers.main.\(key) wins")
-    }
-  }
-
   /// One parallel-section display-mode choice.
   private static func readParallelMode(
     key: String,
@@ -915,26 +686,6 @@ extension AppConfiguration {
     case .success(let found):
       guard let word = found else { return .follow }
       return .own(word)
-
-    case .failure:
-      notes.append("switchers.parallel.\(key) is not a valid value; following the main switcher")
-      return .follow
-    }
-  }
-
-  /// One parallel-section on-off choice.
-  private static func readParallelSwitch(
-    key: String,
-    section: [String: Any],
-    notes: inout [String]
-  ) -> FollowOrOwn<Bool> {
-    if isInherit(section[key]) {
-      return .follow
-    }
-    switch checkedOptionalBool(section, key: key) {
-    case .success(let found):
-      guard let enabled = found else { return .follow }
-      return .own(enabled)
 
     case .failure:
       notes.append("switchers.parallel.\(key) is not a valid value; following the main switcher")
@@ -982,69 +733,12 @@ extension AppConfiguration {
     case "windowlessAppMode":
       overrides.windowlessAppMode = readParallelMode(key: key, section: section, notes: &notes)
 
-    case "numberScope":
-      overrides.numberScope = readParallelWord(key: key, section: section, notes: &notes)
-
-    case "hintsMode":
-      overrides.hintsMode = readParallelWord(key: key, section: section, notes: &notes)
-
-    case "grouping":
-      overrides.groupingMode = readParallelWord(key: key, section: section, notes: &notes)
-
-    case "displayTarget":
-      overrides.displayTarget = readParallelWord(key: key, section: section, notes: &notes)
-
-    case "groupHeadingStyle":
-      overrides.groupHeadingStyle = readParallelWord(key: key, section: section, notes: &notes)
-
     case "otherSpacePlacement",
          "hiddenAppPlacement",
          "minimizedPlacement",
          "fullscreenPlacement",
          "windowlessAppPlacement":
       applyParallelPlacement(key: key, section: section, overrides: &overrides, notes: &notes)
-
-    case "resultOrder":
-      if isInherit(section[key]) {
-        overrides.resultOrder = .follow
-        return
-      }
-      switch checkedOptionalResultOrder(section, key: key) {
-      case .success(let found):
-        guard let order = found else { return }
-        overrides.resultOrder = .own(SearchOrdering(rawValue: order) ?? .mru)
-
-      case .failure:
-        notes.append("switchers.parallel.\(key) is not a valid value; following the main switcher")
-        overrides.resultOrder = .follow
-      }
-
-    case "groupCount":
-      applyParallelGroupCount(section: section, overrides: &overrides, notes: &notes)
-
-    case "fuzzyMatchEnabled":
-      overrides.fuzzyMatchEnabled = readParallelSwitch(key: key, section: section, notes: &notes)
-
-    case "hoverSelect":
-      overrides.hoverSelect = readParallelSwitch(key: key, section: section, notes: &notes)
-
-    case "scrollSelect":
-      overrides.scrollSelect = readParallelSwitch(key: key, section: section, notes: &notes)
-
-    case "numberJump":
-      overrides.numberJump = readParallelSwitch(key: key, section: section, notes: &notes)
-
-    case "numberReorder":
-      overrides.numberReorder = readParallelSwitch(key: key, section: section, notes: &notes)
-
-    case "textScale":
-      applyParallelTextScale(section: section, overrides: &overrides, notes: &notes)
-
-    case "panelWidth":
-      applyParallelPanelWidth(section: section, overrides: &overrides, notes: &notes)
-
-    case "showDelayMs":
-      applyParallelShowDelay(section: section, overrides: &overrides, notes: &notes)
 
     default:
       break
@@ -1066,112 +760,6 @@ extension AppConfiguration {
     case "fullscreenPlacement": overrides.fullscreenPlacement = choice
     default: overrides.windowlessAppPlacement = choice
     }
-  }
-
-  /// The parallel-section group count choice.
-  private static func applyParallelGroupCount(
-    section: [String: Any],
-    overrides: inout ParallelOverrides,
-    notes: inout [String]
-  ) {
-    let key = "groupCount"
-    if isInherit(section[key]) {
-      overrides.groupCount = .follow
-      return
-    }
-    switch checkedOptionalInt(section, key: key, minimum: 1) {
-    case .success(let found):
-      guard let count = found, count <= maximumGroupCount else {
-        if found != nil {
-          notes.append("switchers.parallel.\(key) is not a valid value; following the main switcher")
-          overrides.groupCount = .follow
-        }
-        return
-      }
-      overrides.groupCount = .own(count)
-
-    case .failure:
-      notes.append("switchers.parallel.\(key) is not a valid value; following the main switcher")
-      overrides.groupCount = .follow
-    }
-  }
-
-  /// The parallel-section text-scale choice.
-  private static func applyParallelTextScale(
-    section: [String: Any],
-    overrides: inout ParallelOverrides,
-    notes: inout [String]
-  ) {
-    let key = "textScale"
-    if isInherit(section[key]) {
-      overrides.textScale = .follow
-      return
-    }
-    let (value, issue) = checkedOptionalTextScale(section)
-    if issue != nil {
-      notes.append("switchers.parallel.\(key) is not a valid value; following the main switcher")
-      overrides.textScale = .follow
-      return
-    }
-    guard let factor = value else {
-      if section[key] != nil {
-        overrides.textScale = .own(.standard)
-      }
-      return
-    }
-    overrides.textScale = .own(TextScaleLevel(factor: factor) ?? .standard)
-  }
-
-  /// The parallel-section panel-width choice.
-  private static func applyParallelPanelWidth(
-    section: [String: Any],
-    overrides: inout ParallelOverrides,
-    notes: inout [String]
-  ) {
-    let key = "panelWidth"
-    if isInherit(section[key]) {
-      overrides.panelWidth = .follow
-      return
-    }
-    let (value, issue) = checkedOptionalPanelWidth(section)
-    if issue != nil {
-      notes.append("switchers.parallel.\(key) is not a valid value; following the main switcher")
-      overrides.panelWidth = .follow
-      return
-    }
-    guard let factor = value else {
-      if section[key] != nil {
-        overrides.panelWidth = .own(.standard)
-      }
-      return
-    }
-    overrides.panelWidth = .own(PanelWidth(factor: factor) ?? .standard)
-  }
-
-  /// The parallel-section show-delay choice.
-  private static func applyParallelShowDelay(
-    section: [String: Any],
-    overrides: inout ParallelOverrides,
-    notes: inout [String]
-  ) {
-    let key = "showDelayMs"
-    if isInherit(section[key]) {
-      overrides.showDelayMs = .follow
-      return
-    }
-    let (value, issue) = checkedOptionalShowDelayMs(section)
-    if issue != nil {
-      notes.append("switchers.parallel.\(key) is not a valid value; following the main switcher")
-      overrides.showDelayMs = .follow
-      return
-    }
-    guard let milliseconds = value else {
-      if section[key] != nil {
-        overrides.showDelayMs = .own(nil)
-      }
-      return
-    }
-    overrides.showDelayMs = .own(milliseconds)
   }
 
 }

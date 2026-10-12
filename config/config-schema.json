@@ -905,7 +905,7 @@
       "type": "object",
       "properties": {
         "main": {
-          "description": "The main switcher's panel settings.",
+          "description": "The main switcher's list settings.",
           "type": "object",
           "properties": {
             "windowScope": {
@@ -961,38 +961,6 @@
                 "separateAtBottom"
               ]
             },
-            "resultOrder": {
-              "description": "The order the narrowed rows draw in. Absent means the top-level key.",
-              "type": "string",
-              "enum": [
-                "mru",
-                "score"
-              ]
-            },
-            "grouping": {
-              "description": "How the switcher list groups its rows. Absent means the top-level key.",
-              "type": "string",
-              "enum": [
-                "none",
-                "bySpace",
-                "manual"
-              ]
-            },
-            "groupCount": {
-              "description": "How many manual groups there are, 1 to 9. Absent means the top-level key.",
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 9
-            },
-            "groupHeadingStyle": {
-              "description": "What a manual group heading says. Absent means the top-level key.",
-              "type": "string",
-              "enum": [
-                "number",
-                "name",
-                "appNames"
-              ]
-            },
             "otherSpacePlacement": {
               "description": "Where the windows-on-other-spaces section goes when grouped. Absent means the top-level key.",
               "type": "string",
@@ -1033,64 +1001,65 @@
                 "withinGroup"
               ]
             },
+            "resultOrder": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "grouping": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupCount": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupHeadingStyle": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
             "displayTarget": {
-              "description": "Which display the panel opens on. Absent means the top-level key.",
-              "type": "string",
-              "enum": [
-                "primary",
-                "cursor",
-                "frontWindow",
-                "all"
-              ]
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "panelWidth": {
-              "description": "The panel width as a multiplier. Absent means the top-level key.",
-              "type": "number"
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "textScale": {
-              "description": "The panel text and icon scale as a multiplier. Absent means the top-level key.",
-              "type": "number"
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "showDelayMs": {
-              "description": "The panel show delay in milliseconds. Absent means the top-level key.",
-              "type": "number"
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "hintsMode": {
-              "description": "How the left edge of each row reads. Absent means the top-level key.",
-              "type": "string",
-              "enum": [
-                "prefix",
-                "numbers",
-                "neither"
-              ]
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "numberJump": {
-              "description": "Whether holding Command or Option and pressing a row number jumps to\nthat row. Absent means the top-level key.",
-              "type": "boolean"
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "numberReorder": {
-              "description": "Whether moving the selected row by key works in grouped lists.\nAbsent means the top-level key.",
-              "type": "boolean"
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "numberScope": {
-              "description": "Which rows row numbers cover. Absent means the top-level key.",
-              "type": "string",
-              "enum": [
-                "windows",
-                "allRows"
-              ]
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "hoverSelect": {
-              "description": "Whether hovering a row moves the selection. Absent means the top-level key.",
-              "type": "boolean"
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "scrollSelect": {
-              "description": "Whether scrolling moves the selection. Absent means the top-level key.",
-              "type": "boolean"
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "fuzzyMatchEnabled": {
-              "description": "Whether the filter also matches subsequence queries. Absent means the top-level key.",
-              "type": "boolean"
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "appearanceMode": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
@@ -1156,7 +1125,7 @@
           "additionalProperties": false
         },
         "parallel": {
-          "description": "The parallel switcher's panel settings.",
+          "description": "The parallel switcher's list settings.",
           "type": "object",
           "properties": {
             "windowScope": {
@@ -1260,70 +1229,6 @@
                 }
               ]
             },
-            "resultOrder": {
-              "description": "The order the narrowed rows draw in. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "The order the narrowed rows draw in. Absent or \"inherit\" follows the main switcher.",
-                  "type": "string",
-                  "enum": [
-                    "mru",
-                    "score"
-                  ]
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "grouping": {
-              "description": "How the switcher list groups its rows. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "How the switcher list groups its rows. Absent or \"inherit\" follows the main switcher.",
-                  "type": "string",
-                  "enum": [
-                    "none",
-                    "bySpace",
-                    "manual"
-                  ]
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "groupCount": {
-              "description": "How many manual groups there are, 1 to 9. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "How many manual groups there are, 1 to 9. Absent or \"inherit\" follows the main switcher.",
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "groupHeadingStyle": {
-              "description": "What a manual group heading says. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "What a manual group heading says. Absent or \"inherit\" follows the main switcher.",
-                  "type": "string",
-                  "enum": [
-                    "number",
-                    "name",
-                    "appNames"
-                  ]
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
             "otherSpacePlacement": {
               "description": "Where the windows-on-other-spaces section goes when grouped. Absent or \"inherit\" follows the main switcher.",
               "oneOf": [
@@ -1404,156 +1309,69 @@
                 }
               ]
             },
-            "displayTarget": {
-              "description": "Which display the panel opens on. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "Which display the panel opens on. Absent or \"inherit\" follows the main switcher.",
-                  "type": "string",
-                  "enum": [
-                    "primary",
-                    "cursor",
-                    "frontWindow",
-                    "all"
-                  ]
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "panelWidth": {
-              "description": "The panel width as a multiplier. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "The panel width as a multiplier. Absent or \"inherit\" follows the main switcher.",
-                  "type": "number"
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "textScale": {
-              "description": "The panel text and icon scale as a multiplier. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "The panel text and icon scale as a multiplier. Absent or \"inherit\" follows the main switcher.",
-                  "type": "number"
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "showDelayMs": {
-              "description": "The panel show delay in milliseconds. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "The panel show delay in milliseconds. Absent or \"inherit\" follows the main switcher.",
-                  "type": "number"
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "hintsMode": {
-              "description": "How the left edge of each row reads. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "How the left edge of each row reads. Absent or \"inherit\" follows the main switcher.",
-                  "type": "string",
-                  "enum": [
-                    "prefix",
-                    "numbers",
-                    "neither"
-                  ]
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "numberJump": {
-              "description": "Whether holding Command or Option and pressing a row number jumps to\nthat row. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "Whether holding Command or Option and pressing a row number jumps to\nthat row. Absent or \"inherit\" follows the main switcher.",
-                  "type": "boolean"
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "numberReorder": {
-              "description": "Whether moving the selected row by key works in grouped lists.\nAbsent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "Whether moving the selected row by key works in grouped lists.\nAbsent or \"inherit\" follows the main switcher.",
-                  "type": "boolean"
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "numberScope": {
-              "description": "Which rows row numbers cover. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "Which rows row numbers cover. Absent or \"inherit\" follows the main switcher.",
-                  "type": "string",
-                  "enum": [
-                    "windows",
-                    "allRows"
-                  ]
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "hoverSelect": {
-              "description": "Whether hovering a row moves the selection. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "Whether hovering a row moves the selection. Absent or \"inherit\" follows the main switcher.",
-                  "type": "boolean"
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "scrollSelect": {
-              "description": "Whether scrolling moves the selection. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "Whether scrolling moves the selection. Absent or \"inherit\" follows the main switcher.",
-                  "type": "boolean"
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
-            "fuzzyMatchEnabled": {
-              "description": "Whether the filter also matches subsequence queries. Absent or \"inherit\" follows the main switcher.",
-              "oneOf": [
-                {
-                  "description": "Whether the filter also matches subsequence queries. Absent or \"inherit\" follows the main switcher.",
-                  "type": "boolean"
-                },
-                {
-                  "const": "inherit"
-                }
-              ]
-            },
             "enabled": {
               "description": "Whether the parallel switcher answers its keys. Absent means on.",
               "type": "boolean"
+            },
+            "resultOrder": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "grouping": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupCount": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupHeadingStyle": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "displayTarget": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "panelWidth": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "textScale": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "showDelayMs": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "hintsMode": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "numberJump": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "numberReorder": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "numberScope": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "hoverSelect": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "scrollSelect": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "fuzzyMatchEnabled": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
             },
             "appearanceMode": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",

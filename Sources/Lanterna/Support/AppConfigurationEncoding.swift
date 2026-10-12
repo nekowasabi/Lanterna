@@ -7,18 +7,14 @@ import Foundation
 enum SectionValue: Equatable, Sendable {
   case word(String)
   case flag(Bool)
-  case count(Int)
-  case amount(Double)
 
   // MARK: Internal
 
-  /// The canonical spelling: words quoted, the rest bare.
+  /// The canonical spelling: words quoted, flags bare.
   var rendered: String {
     switch self {
     case .word(let text): "\"\(text)\""
     case .flag(let enabled): enabled ? "true" : "false"
-    case .count(let number): "\(number)"
-    case .amount(let number): "\(number)"
     }
   }
 }
@@ -211,56 +207,11 @@ extension AppConfiguration {
     for (key, mode, fallback) in modes where mode != fallback {
       out[key] = .word(mode.rawValue)
     }
-    if main.resultOrder != defaults.resultOrder {
-      out["resultOrder"] = .word(main.resultOrder.rawValue)
-    }
-    if main.groupingMode != defaults.groupingMode {
-      out["grouping"] = .word(main.groupingMode.rawValue)
-    }
     for (key, subgroup) in placementKeys {
       let placement = main.subgroupPlacements[subgroup] ?? .endOfList
       if placement != .endOfList {
         out[key] = .word(placement.rawValue)
       }
-    }
-    if main.groupCount != defaults.groupCount {
-      out["groupCount"] = .count(main.groupCount)
-    }
-    if main.groupHeadingStyle != defaults.groupHeadingStyle {
-      out["groupHeadingStyle"] = .word(main.groupHeadingStyle.rawValue)
-    }
-    if main.displayTarget != defaults.displayTarget {
-      out["displayTarget"] = .word(main.displayTarget.rawValue)
-    }
-    if main.panelWidth != defaults.panelWidth {
-      out["panelWidth"] = .amount(main.panelWidth.factor)
-    }
-    if main.textScale != defaults.textScale {
-      out["textScale"] = .amount(main.textScale.factor)
-    }
-    if let showDelayMs = main.showDelayMs, showDelayMs > 0 {
-      out["showDelayMs"] = .amount(showDelayMs)
-    }
-    if main.hintsMode != defaults.hintsMode {
-      out["hintsMode"] = .word(main.hintsMode.rawValue)
-    }
-    if main.numberJump != defaults.numberJump {
-      out["numberJump"] = .flag(main.numberJump)
-    }
-    if main.numberReorder != defaults.numberReorder {
-      out["numberReorder"] = .flag(main.numberReorder)
-    }
-    if main.numberScope != defaults.numberScope {
-      out["numberScope"] = .word(main.numberScope.rawValue)
-    }
-    if main.hoverSelect != defaults.hoverSelect {
-      out["hoverSelect"] = .flag(main.hoverSelect)
-    }
-    if main.scrollSelect != defaults.scrollSelect {
-      out["scrollSelect"] = .flag(main.scrollSelect)
-    }
-    if main.fuzzyMatchEnabled != defaults.fuzzyMatchEnabled {
-      out["fuzzyMatchEnabled"] = .flag(main.fuzzyMatchEnabled)
     }
     return out
   }
@@ -290,12 +241,6 @@ extension AppConfiguration {
         out[key] = .word(mode.rawValue)
       }
     }
-    if case .own(let order) = overrides.resultOrder {
-      out["resultOrder"] = .word(order.rawValue)
-    }
-    if case .own(let mode) = overrides.groupingMode {
-      out["grouping"] = .word(mode.rawValue)
-    }
     let placements = [
       ("otherSpacePlacement", overrides.otherSpacePlacement),
       ("hiddenAppPlacement", overrides.hiddenAppPlacement),
@@ -307,46 +252,6 @@ extension AppConfiguration {
       if case .own(let placement) = choice {
         out[key] = .word(placement.rawValue)
       }
-    }
-    if case .own(let count) = overrides.groupCount {
-      out["groupCount"] = .count(count)
-    }
-    if case .own(let style) = overrides.groupHeadingStyle {
-      out["groupHeadingStyle"] = .word(style.rawValue)
-    }
-    if case .own(let target) = overrides.displayTarget {
-      out["displayTarget"] = .word(target.rawValue)
-    }
-    if case .own(let width) = overrides.panelWidth {
-      out["panelWidth"] = .amount(width.factor)
-    }
-    if case .own(let scale) = overrides.textScale {
-      out["textScale"] = .amount(scale.factor)
-    }
-    if case .own(let milliseconds) = overrides.showDelayMs {
-      if let milliseconds, milliseconds > 0 {
-        out["showDelayMs"] = .amount(milliseconds)
-      } else if milliseconds == nil {
-        out["showDelayMs"] = .amount(0)
-      }
-    }
-    if case .own(let hints) = overrides.hintsMode {
-      out["hintsMode"] = .word(hints.rawValue)
-    }
-    let switches = [
-      ("numberJump", overrides.numberJump),
-      ("numberReorder", overrides.numberReorder),
-      ("hoverSelect", overrides.hoverSelect),
-      ("scrollSelect", overrides.scrollSelect),
-      ("fuzzyMatchEnabled", overrides.fuzzyMatchEnabled),
-    ]
-    for (key, choice) in switches {
-      if case .own(let enabled) = choice {
-        out[key] = .flag(enabled)
-      }
-    }
-    if case .own(let scope) = overrides.numberScope {
-      out["numberScope"] = .word(scope.rawValue)
     }
     if !overrides.isEnabled {
       out["enabled"] = .flag(false)

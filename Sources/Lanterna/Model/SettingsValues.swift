@@ -117,32 +117,17 @@ struct SettingsValues: Equatable, Sendable {
   /// from an edited table.
   var loadedKeyBindings: KeyBindingTable
 
-  /// The main switcher's resolved panel settings, read off the shared
-  /// fields below. Computed so the two never drift apart.
+  /// The main switcher's resolved list settings, read off the top-level
+  /// fields above. Computed so the two never drift apart.
   var mainSwitcher: SwitcherSettings {
     SwitcherSettings(
       windowScope: windowScope,
       displayModes: displayModes,
-      resultOrder: resultOrder,
-      groupingMode: grouping.mode,
-      subgroupPlacements: grouping.placements,
-      groupCount: grouping.groupCount,
-      groupHeadingStyle: grouping.headingStyle,
-      displayTarget: displayTarget,
-      panelWidth: panelWidth,
-      textScale: textScale,
-      showDelayMs: showDelayMs,
-      hintsMode: hintsMode,
-      numberJump: numberJump,
-      numberReorder: numberReorder,
-      numberScope: numberScope,
-      hoverSelect: hoverSelect,
-      scrollSelect: scrollSelect,
-      fuzzyMatchEnabled: fuzzyMatchEnabled
+      subgroupPlacements: grouping.placements
     )
   }
 
-  /// The parallel switcher's resolved panel settings.
+  /// The parallel switcher's resolved list settings.
   var parallelSwitcher: SwitcherSettings {
     SwitcherSettings.parallel(main: mainSwitcher, overrides: parallelOverrides)
   }
@@ -345,23 +330,8 @@ struct SettingsValues: Equatable, Sendable {
     config.minimizedMode = nil
     config.fullscreenMode = nil
     config.windowlessAppMode = nil
-    config.fuzzyMatchEnabled = nil
-    config.resultOrder = nil
-    config.textScale = nil
-    config.displayTarget = nil
-    config.panelWidth = nil
-    config.showDelayMs = nil
-    config.hoverSelect = nil
-    config.scrollSelect = nil
-    config.numberJump = nil
-    config.numberReorder = nil
-    config.numberScope = nil
-    config.hintsMode = nil
     config.windowScope = nil
-    config.grouping = nil
     config.subgroupPlacements = [:]
-    config.groupCount = nil
-    config.groupHeadingStyle = nil
     config.mainSection = main.isEmpty ? nil : main
     config.parallelSection = parallel.isEmpty ? nil : parallel
   }

@@ -184,7 +184,6 @@ final class MirroredPanelSurface: SwitcherSurface {
   }
 
   func applyPanelSettings(_ settings: AppliedPanelSettings) {
-    displayTarget = settings.displayTarget
     for panel in panels {
       panel.applyPanelSettings(settings)
     }

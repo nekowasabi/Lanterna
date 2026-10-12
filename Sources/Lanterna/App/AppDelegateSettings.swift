@@ -149,10 +149,6 @@ extension AppDelegate {
     )
     presenter.windowScope = currentValues.windowScope
     presenter.grouping = currentValues.grouping
-    presenter.displayTarget = currentValues.displayTarget
-    presenter.panelWidth = currentValues.panelWidth
-    presenter.textScale = currentValues.textScale
-    presenter.hintsMode = currentValues.hintsMode
     presenter.parallelSwitcher = currentValues.parallelSwitcher
     presenter.parallelEnabled = currentValues.parallelOverrides.isEnabled
     presenter.hoverSelect = options.hoverSelect
@@ -191,25 +187,30 @@ extension AppDelegate {
     if checkContextChanged {
       settingsWindow?.checkDisplay.resultText = nil
     }
-    // The appearance is shared, so it lands at once; every per-switcher
-    // panel setting reaches the panel through the per-appearance handover
-    // at show time instead, so a panel that is up keeps its own switcher's
-    // values until it closes.
+    // The shared settings land on the panel at once. The display modes
+    // and the grouping reach it through the per-appearance handover at
+    // show time instead, so a panel that is up keeps its own switcher's
+    // list until it closes.
     panel?.appearance = values.appearanceMode.nsAppearance
+    panel?.textScale = values.textScale
+    panel?.displayTarget = values.displayTarget
+    panel?.panelWidth = values.panelWidth
+    panel?.hoverSelect = values.hoverSelect
+    panel?.scrollSelect = values.scrollSelect
+    panel?.hintsMode = values.hintsMode
     let searchSettings = SearchSettings(
       fuzzyMatchEnabled: values.fuzzyMatchEnabled,
       shortcutMemoryLength: values.shortcutMemoryLength,
       ordering: values.resultOrder
     )
+    panel?.searchSettings = searchSettings
     presenter?.displayModes = values.displayModes
     presenter?.searchSettings = searchSettings
     presenter?.windowScope = values.windowScope
-    presenter?.grouping = values.grouping
-    presenter?.displayTarget = values.displayTarget
-    presenter?.panelWidth = values.panelWidth
-    presenter?.textScale = values.textScale
-    presenter?.hintsMode = values.hintsMode
+    // The parallel placements first, so the grouping handover below
+    // folds a panel the parallel switcher opened over its new values.
     presenter?.parallelSwitcher = values.parallelSwitcher
+    presenter?.grouping = values.grouping
     presenter?.parallelEnabled = values.parallelOverrides.isEnabled
     presenter?.hoverSelect = values.hoverSelect
     presenter?.scrollSelect = values.scrollSelect

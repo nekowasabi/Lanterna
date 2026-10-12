@@ -55,12 +55,6 @@ final class PendingShowHold {
     pending?.commitOnCommand
   }
 
-  /// Which switcher the waiting press opens. Nil when no press is
-  /// waiting, so a called-off line still names whose press it was.
-  var waitingSwitcher: SwitcherIdentity? {
-    pending.map { $0.presses.first?.switcher ?? .main }
-  }
-
   /// Takes a press into the hold, or adds it to the one already there.
   ///
   /// Either way the wait starts over: a burst of presses opens one panel

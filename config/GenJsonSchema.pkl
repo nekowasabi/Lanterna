@@ -78,7 +78,10 @@ local sharedSwitcherKeys = new Listing<String> {
   "appearanceMode"; "romajiScope"; "launchAtLogin"; "logLevel";
   "saveLogsToDisk"; "updateCheckEnabled"; "updateChannel"; "exclusions";
   "shortcutMemoryLength"; "keybindings"; "sampleCount"; "stopMonitorEvery";
-  "rowOrder"; "groupNames"; "groupAssignments"
+  "rowOrder"; "groupNames"; "groupAssignments"; "resultOrder"; "grouping";
+  "groupCount"; "groupHeadingStyle"; "displayTarget"; "panelWidth"; "textScale";
+  "showDelayMs"; "hintsMode"; "numberJump"; "numberReorder"; "numberScope";
+  "hoverSelect"; "scrollSelect"; "fuzzyMatchEnabled"
 }
 
 /// The two switcher sections side by side. The main section renders each
@@ -91,7 +94,7 @@ local function switchersFragment(prop: reflect.Property): Dynamic = new {
   ["properties"] = new {
     ["main"] = new {
       ["type"] = "object"
-      description = "The main switcher's panel settings."
+      description = "The main switcher's list settings."
       ["properties"] = new {
         for (name, sub in reflect.Module(schema).classes["SwitcherMain"].properties) {
           [name] = fragment(sub)
@@ -101,7 +104,7 @@ local function switchersFragment(prop: reflect.Property): Dynamic = new {
     }
     ["parallel"] = new {
       ["type"] = "object"
-      description = "The parallel switcher's panel settings."
+      description = "The parallel switcher's list settings."
       ["properties"] = new {
         for (name, sub in reflect.Module(schema).classes["SwitcherParallel"].properties) {
           [name] =
