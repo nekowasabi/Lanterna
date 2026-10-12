@@ -19,11 +19,19 @@ import LightEntry from "../../../components/LightEntry.astro";
   行の左端に、絞り込みで使う文字を表示します。
 </LightEntry>
 
-<LightEntry no="D1.4" name="最小化・非表示のまとめ" setting="Settings › Filter">
+<LightEntry
+  no="D1.4"
+  name="最小化・非表示のまとめ"
+  setting="Settings › Switchers"
+>
   最小化したウィンドウや非表示のアプリを、一覧の下にまとめます。混ぜて表示する、出さない、も選べます。
 </LightEntry>
 
-<LightEntry no="D1.5" name="フルスクリーンの扱い" setting="Settings › Filter">
+<LightEntry
+  no="D1.5"
+  name="フルスクリーンの扱い"
+  setting="Settings › Switchers"
+>
   自分のSpaceを使うフルスクリーンのウィンドウも、同じく混ぜる・出さない・下にまとめるから選べます。
 </LightEntry>
 
@@ -31,9 +39,9 @@ import LightEntry from "../../../components/LightEntry.astro";
   no="D1.6"
   name="並列スイッチャー"
   keys={["⌥", "Tab"]}
-  setting="Settings › Parallel"
+  setting="Settings › Switchers"
 >
-  同じ画面を独自の設定で開き、はじめは前面アプリの窓だけを並べます。各設定はCmd-Tabのスイッチャーと同じか独自の値を取り、切ると呼び出しのキーは前面のアプリに届きます。
+  同じ画面を独自の一覧の設定で開き、はじめは前面アプリの窓だけを並べます。一覧の各設定はCmd-Tabのスイッチャーと同じか独自の値を取り、切ると呼び出しのキーは前面のアプリに届きます。
 </LightEntry>
 
 ## 検索

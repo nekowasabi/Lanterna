@@ -36,9 +36,9 @@ import SwitchSequence from "../../../components/SwitchSequence.astro";
 
 `Opt+Tab` opens a second switcher beside `Cmd+Tab`: the same panel and the same keys, but with its own settings. Out of the box it lists only the front app's windows, so you can hop between one app's windows without pressing `Cmd+/` first. `Cmd+Tab` keeps listing every app's windows. Letting go of `Opt` switches, the way letting go of `Cmd` does on the main switcher.
 
-The Parallel tab of Settings changes what the parallel switcher lists, how it sorts and groups, where it opens, and how its rows answer. Every row either follows the main switcher or carries its own value. Switching the parallel switcher off hands `Opt+Tab` and `Shift+Opt+Tab` back to the front application; switching it back on answers them again without a restart.
+The Switchers tab of Settings holds one sub-tab per switcher, `Cmd+Tab` and `Opt+Tab`, with the same rows in each: which apps' windows to list, how to treat windows on other Spaces, hidden apps, minimized and fullscreen windows, and apps without windows, and where those kinds go when the list is grouped. Each `Opt+Tab` row is linked to `Cmd+Tab` and follows it until you unlink it; Link all to Cmd+Tab links every row again. Everything else, such as the sort order, fuzzy matching, how the list groups, the panel's display, width, and text size, the show delay, and the gestures inside the panel, is shared by both switchers and stays in its own tab. Switching the parallel switcher off hands `Opt+Tab` and `Shift+Opt+Tab` back to the front application; switching it back on answers them again without a restart.
 
-The config file writes the two switchers side by side under `switchers`, with `main` for `Cmd+Tab` and `parallel` for the parallel switcher. A `parallel` row reads `"inherit"` to follow the main switcher:
+The config file writes the two switchers side by side under `switchers`, with `main` for `Cmd+Tab` and `parallel` for the parallel switcher. A `parallel` row reads `"inherit"` to follow the main switcher. Shared settings belong at the top level; written under `main` or `parallel` they are ignored with a diagnostics entry:
 
 ```json
 {
@@ -113,16 +113,16 @@ By default, hidden apps and minimized windows move below the other windows, grou
 
 ## Narrowing and grouping the list
 
-Press <kbd>⌘</kbd><kbd>/</kbd> while the switcher is up to list only the windows of the app that was in front when it opened. A band above the list names that app, the query stays as typed, and pressing the key again brings every app back. The next time the switcher opens it starts on the Show windows of setting in the Filter tab, which can make Active app the starting point.
+Press <kbd>⌘</kbd><kbd>/</kbd> while the switcher is up to list only the windows of the app that was in front when it opened. A band above the list names that app, the query stays as typed, and pressing the key again brings every app back. The next time the switcher opens it starts on its Show windows of setting in the Switchers tab, which can make Active app the starting point.
 
-Apps that are running with no open window can be listed as rows of their own, reading "No open windows". Choosing one brings the app forward. Apps without windows in the Filter tab shows them, hides them, or keeps them below the other windows under APPS WITHOUT WINDOWS. Hidden is the default, and a query naming such an app still finds it.
+Apps that are running with no open window can be listed as rows of their own, reading "No open windows". Choosing one brings the app forward. Apps without windows in the Switchers tab shows them, hides them, or keeps them below the other windows under APPS WITHOUT WINDOWS. Hidden is the default, and a query naming such an app still finds it.
 
 The Groups tab can group the list:
 
 - By Space puts the windows of each Space under a heading naming the desktop, and the display when there is more than one. Spaces in view come first. Windows on another Space join their own group instead of a section below.
 - Manually lets you choose up to nine groups and assign apps to them by bundle ID, either from the running apps or by typing the ID. Headings show the group number, a name you give the group, or the names of the apps in it. Apps you have not assigned join the first group.
 
-When the list is grouped, each kind of section below the windows, such as MINIMIZED, can go at the end of the list or inside each group. By Space is the exception for two kinds: apps without windows always go after the last group, since they are on no Space, and the setting for windows on another Space does not apply, since those windows join their own group. A list with only one group shows no heading.
+When the list is grouped, each kind of section below the windows, such as MINIMIZED, can go at the end of the list or inside each group, under Placement when grouped in the Switchers tab. By Space is the exception for two kinds: apps without windows always go after the last group, since they are on no Space, and the setting for windows on another Space does not apply, since those windows join their own group. A list with only one group shows no heading.
 
 ## Panel display and width
 

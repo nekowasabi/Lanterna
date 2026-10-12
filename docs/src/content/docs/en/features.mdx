@@ -24,13 +24,13 @@ import LightEntry from "../../../components/LightEntry.astro";
 <LightEntry
   no="D1.4"
   name="Grouped minimized and hidden rows"
-  setting="Settings › Filter"
+  setting="Settings › Switchers"
 >
   Keeps minimized windows and hidden apps below the list. They can also be mixed
   in or hidden.
 </LightEntry>
 
-<LightEntry no="D1.5" name="Fullscreen handling" setting="Settings › Filter">
+<LightEntry no="D1.5" name="Fullscreen handling" setting="Settings › Switchers">
   Fullscreen windows on their own Space can also be mixed in, hidden, or kept
   below.
 </LightEntry>
@@ -39,11 +39,12 @@ import LightEntry from "../../../components/LightEntry.astro";
   no="D1.6"
   name="Parallel switcher"
   keys={["⌥", "Tab"]}
-  setting="Settings › Parallel"
+  setting="Settings › Switchers"
 >
-  Opens the same panel with its own settings, starting on the front app's
-  windows alone. Each setting either follows the main switcher or carries its
-  own value, and switching it off hands its keys back to the front application.
+  Opens the same panel with its own window list, starting on the front app's
+  windows alone. Each list setting either follows the main switcher or carries
+  its own value, and switching it off hands its keys back to the front
+  application.
 </LightEntry>
 
 ## Search
