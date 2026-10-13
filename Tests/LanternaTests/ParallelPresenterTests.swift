@@ -81,12 +81,13 @@ struct ParallelPresenterTests {
   func parallelReverseWalksBackwards() {
     let fixture = twoAppFixture(front: safari)
     fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
-    let first = fixture.surface.shownSelections.last
+    let rows = twoAppRows()
+    #expect(fixture.surface.presentedSelections.last == rows[1].id)
     fixture.presenter.handleHotkey(.parallelReverse, deliveryDelay: nil)
 
     #expect(fixture.surface.isPresented)
     #expect(fixture.surface.presentedLists.count == 1)
-    #expect(fixture.surface.shownSelections.last != first)
+    #expect(fixture.surface.shownSelections.last == rows[0].id)
   }
 
   @Test
@@ -99,7 +100,7 @@ struct ParallelPresenterTests {
 
   @Test
   func optionReleaseCommitsAnOptionOpenedPanel() {
-    let fixture = twoAppFixture(front: safari, heldModifiers: .maskAlternate)
+    let fixture = twoAppFixture(front: safari, commandIsHeld: false, heldModifiers: .maskAlternate)
     fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
 
     #expect(fixture.surface.isPresented)
@@ -157,13 +158,15 @@ struct ParallelPresenterTests {
     #expect(!fixture.log.lines.contains(where: { $0.hasPrefix("committed ") }))
   }
 
-  @Test
+  @Test(.timeLimit(.minutes(1)))
   func optionHeldPanelSurvivesTheReleaseWatch() async {
     let fixture = twoAppFixture(front: safari, commandIsHeld: false, heldModifiers: .maskAlternate)
     fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
 
     #expect(fixture.surface.isPresented)
-    try? await Task.sleep(for: .milliseconds(50))
+    let askedAtThePress = fixture.optionHold.askCount
+    await fixture.optionHold.waitUntilAsked(times: askedAtThePress + 3)
+    await settle()
     #expect(fixture.surface.isPresented)
     #expect(fixture.surface.dismissCount == 0)
   }
