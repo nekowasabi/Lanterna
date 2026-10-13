@@ -154,7 +154,16 @@ struct ParallelPresenterTests {
 
     #expect(fixture.surface.isPresented)
     let askedAtThePress = fixture.optionHold.askCount
-    await fixture.optionHold.waitUntilAsked(times: askedAtThePress + 3)
+    // Whichever comes first: a watch that asks about the wrong key takes
+    // the panel down without ever asking about Option, and waiting on the
+    // asks alone would then wait for good.
+    let landed = FirstToLand()
+    fixture.surface.onDismiss = { landed.signal() }
+    Task {
+      await fixture.optionHold.waitUntilAsked(times: askedAtThePress + 3)
+      landed.signal()
+    }
+    await landed.wait()
     await settle()
     #expect(fixture.surface.isPresented)
     #expect(fixture.surface.dismissCount == 0)
@@ -811,5 +820,33 @@ struct ParallelPresenterTests {
     fixture.presenter.keyCommands.frontmostProcessIdentifier = { front }
     return fixture
   }
+
+}
+
+// MARK: - FirstToLand
+
+/// Lets a test wait on more than one thing at once and go on at the first
+/// of them, so an awaited event that never comes cannot hold it past one
+/// that settles the outcome.
+@MainActor
+private final class FirstToLand {
+
+  // MARK: Internal
+
+  func signal() {
+    landed = true
+    continuation?.resume()
+    continuation = nil
+  }
+
+  func wait() async {
+    guard !landed else { return }
+    await withCheckedContinuation { continuation = $0 }
+  }
+
+  // MARK: Private
+
+  private var landed = false
+  private var continuation: CheckedContinuation<Void, Never>?
 
 }
