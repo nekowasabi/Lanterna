@@ -323,15 +323,7 @@ struct ParallelPresenterTests {
 
   @Test
   func firstListWaitDropsTheOtherPress() async {
-    let rows = twoAppRows()
-    let fake = HeldGather(answer: WindowListSnapshot(
-      items: rows,
-      applicationCount: 2,
-      gatheringDuration: .milliseconds(12),
-      skipped: [],
-      droppedWithoutID: 0,
-      gatheredAt: .now
-    ))
+    let fake = heldTwoAppGather()
     let fixture = Fixture(
       store: WindowListStore(gather: fake.gather, writeLine: { _ in }),
       commandIsHeld: false,
@@ -348,6 +340,50 @@ struct ParallelPresenterTests {
     let shown = fixture.surface.presentedLists.last ?? []
     #expect(shown.count == 3)
     #expect(shown.allSatisfy { $0.ownerProcessIdentifier == safari })
+  }
+
+  @Test
+  func parallelPressWithNeitherKeyHeldIsTurnedAway() {
+    let fixture = twoAppFixture(front: safari, commandIsHeld: false, heldModifiers: [])
+    fixture.optionHold.isHeld = false
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+
+    #expect(!fixture.surface.isPresented)
+    #expect(fixture.surface.presentedLists.isEmpty)
+    #expect(fixture.log.lines == [
+      "turned away Opt+Tab (parallel); Option was already up by the time the press arrived"
+    ])
+  }
+
+  @Test
+  func optionReleaseCallsOffAnOptionPressWaitingForItsList() async {
+    let fake = heldTwoAppGather()
+    let fixture = waitingForItsFirstList(fake)
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    await fake.waitUntilCalled()
+    fixture.presenter.handleOptionRelease()
+    fake.finish()
+    await settle()
+
+    #expect(fixture.surface.presentedLists.isEmpty)
+    #expect(fixture.log.lines.count == 1)
+    #expect(fixture.log.lines.first?.hasPrefix("press called off ") == true)
+    #expect(fixture.log.lines.first?.contains("after Option was released") == true)
+  }
+
+  @Test
+  func commandReleaseLeavesAnOptionPressWaitingForItsList() async {
+    let fake = heldTwoAppGather()
+    let fixture = waitingForItsFirstList(fake)
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    await fake.waitUntilCalled()
+    fixture.presenter.handleCommandRelease()
+    fake.finish()
+    await settle()
+
+    #expect(fixture.surface.presentedLists.count == 1)
+    #expect(fixture.surface.isPresented)
+    #expect(!fixture.log.lines.contains(where: { $0.hasPrefix("press called off ") }))
   }
 
   @Test
@@ -676,6 +712,32 @@ struct ParallelPresenterTests {
       parallelRow(4, owner: finder, app: "Finder", title: "Documents"),
       parallelRow(5, owner: finder, app: "Finder", title: "Desktop"),
     ]
+  }
+
+  /// A gather that holds the two-application list until released, so a
+  /// press can be left waiting for its first list.
+  private func heldTwoAppGather() -> HeldGather {
+    HeldGather(answer: WindowListSnapshot(
+      items: twoAppRows(),
+      applicationCount: 2,
+      gatheringDuration: .milliseconds(12),
+      skipped: [],
+      droppedWithoutID: 0,
+      gatheredAt: .now
+    ))
+  }
+
+  /// A presenter with a monitor running and no list yet, whose press
+  /// arrives as Opt+Tab does: Option down, Command up.
+  private func waitingForItsFirstList(_ fake: HeldGather) -> Fixture {
+    let fixture = Fixture(
+      store: WindowListStore(gather: fake.gather, writeLine: { _ in }),
+      closesOnCommandRelease: true,
+      commandIsHeld: false,
+      heldModifiers: .maskAlternate
+    )
+    fixture.presenter.keyCommands.frontmostProcessIdentifier = { safari }
+    return fixture
   }
 
   /// Rows whose recent-use order puts the other application's window
