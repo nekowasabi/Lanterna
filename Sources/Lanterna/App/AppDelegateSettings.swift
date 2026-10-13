@@ -347,15 +347,12 @@ extension AppDelegate {
     parallelEnabled: Bool
   ) -> SettingsValues {
     guard changed else { return values }
-    guard
-      didApplyKeyBindings(
-        values.keyBindings,
-        previous: previous.keyBindings,
-        parallelEnabled: parallelEnabled
-      )
-    else {
-      return values
-    }
+    let applied = didApplyKeyBindings(
+      values.keyBindings,
+      previous: previous.keyBindings,
+      parallelEnabled: parallelEnabled
+    )
+    guard !applied else { return values }
     currentValues.keyBindings = previous.keyBindings
     currentValues.keyBindingSection = previous.keyBindingSection
     currentValues.loadedKeyBindings = previous.loadedKeyBindings
