@@ -235,24 +235,26 @@ struct ParallelPresenterTests {
   func otherInvocationMovesSelectionWithoutOpeningSecond() {
     let fixture = twoAppFixture(front: safari)
     fixture.presenter.handleHotkey(.forward, deliveryDelay: nil)
-    let first = fixture.surface.shownSelections.last
+    let rows = twoAppRows()
+    #expect(fixture.surface.presentedSelections.last == rows[1].id)
     fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
 
     #expect(fixture.surface.isPresented)
     #expect(fixture.surface.presentedLists.count == 1)
-    #expect(fixture.surface.shownSelections.last != first)
+    #expect(fixture.surface.shownSelections.last == rows[2].id)
   }
 
   @Test
   func mainPressMovesParallelSelectionTheSameWay() {
     let fixture = twoAppFixture(front: safari)
     fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
-    let first = fixture.surface.shownSelections.last
+    let rows = twoAppRows()
+    #expect(fixture.surface.presentedSelections.last == rows[1].id)
     fixture.presenter.handleHotkey(.forward, deliveryDelay: nil)
 
     #expect(fixture.surface.isPresented)
     #expect(fixture.surface.presentedLists.count == 1)
-    #expect(fixture.surface.shownSelections.last != first)
+    #expect(fixture.surface.shownSelections.last == rows[2].id)
   }
 
   @Test
