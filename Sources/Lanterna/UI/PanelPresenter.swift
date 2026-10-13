@@ -234,9 +234,9 @@ final class PanelPresenter {
   /// appearance sets it as it goes up.
   private(set) var activeSwitcher = SwitcherIdentity.main
 
-  /// The main switcher's resolved list settings, read off the fields
-  /// below. Computed so the two never drift apart: every staging of a
-  /// legacy field lands here with it.
+  /// The main switcher's resolved list settings, read off the scope,
+  /// display mode, and grouping fields. Computed so they never drift
+  /// apart: every staging of a legacy field lands here with it.
   var mainSwitcher: SwitcherSettings {
     SwitcherSettings(
       windowScope: windowScope,
@@ -470,8 +470,9 @@ final class PanelPresenter {
 
   /// Acts on Option having been let go.
   ///
-  /// Only a panel that is up answers: unlike Command, letting go of
-  /// Option never calls off a press still waiting for its first list.
+  /// A press still waiting, for its first list or for the show delay,
+  /// is settled first when Option is its commit key, the way Command
+  /// settles its own; one keyed to Command is left for Command.
   /// While Command stays held the release does nothing and the pending
   /// number carries on for the Command release to settle; otherwise the
   /// pending number dies with the release either way, committed or not.
@@ -530,9 +531,10 @@ final class PanelPresenter {
   private let modifierFlags: @MainActor () -> CGEventFlags
 
   /// The modifiers held as of the last tap report. Seeded per
-  /// appearance from the held Command, because the tap only reports
-  /// changes and the opening press holds Command already. The Option
-  /// release also reads it to tell a release under Command apart.
+  /// appearance from the live flags, because the tap only reports
+  /// changes and the opening press already holds its Command or
+  /// Option. The releases also read it to tell a release under the
+  /// other key apart.
   private var lastModifierFlags: CGEventFlags = []
 
   /// How long the watch waits between looks (`UnreportedReleaseWatch`'s
