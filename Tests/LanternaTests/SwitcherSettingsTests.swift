@@ -211,6 +211,47 @@ struct SwitcherSettingsTests {
   }
 
   @Test
+  func everySwitcherItemSurvivesSaveAndLoad() throws {
+    var values = SettingsValues.defaults
+    values.windowScope = .frontApp
+    values.displayModes = DisplayModes(
+      otherSpace: .hide,
+      hiddenApp: .show,
+      minimized: .hide,
+      fullscreen: .separateAtBottom,
+      windowlessApp: .show
+    )
+    values.grouping.placements = [
+      .otherSpace: .withinGroup,
+      .hiddenApp: .withinGroup,
+      .minimized: .withinGroup,
+      .fullscreen: .withinGroup,
+      .windowlessApp: .withinGroup,
+    ]
+    values.parallelOverrides = ParallelOverrides(
+      windowScope: .own(.allApps),
+      otherSpaceMode: .own(.separateAtBottom),
+      hiddenAppMode: .own(.hide),
+      minimizedMode: .own(.show),
+      fullscreenMode: .own(.hide),
+      windowlessAppMode: .own(.separateAtBottom),
+      otherSpacePlacement: .own(.endOfList),
+      hiddenAppPlacement: .own(.endOfList),
+      minimizedPlacement: .own(.endOfList),
+      fullscreenPlacement: .own(.endOfList),
+      windowlessAppPlacement: .own(.endOfList),
+      isEnabled: false
+    )
+    let text = try encode(values, diskHasSections: false, changed: true)
+
+    let reread = try #require(decode(text).successValue)
+    let reloaded = SettingsValues.effective(from: reread.config)
+    #expect(reloaded.mainSwitcher == values.mainSwitcher)
+    #expect(reloaded.parallelOverrides == values.parallelOverrides)
+    #expect(reloaded.parallelSwitcher == values.parallelSwitcher)
+  }
+
+  @Test
   func panelLookKeysInSectionsAreIgnoredWithNotes() throws {
     let entries = Self.sharedPanelKeys.map(\.spelled).joined(separator: ", ")
     let decoded = try #require(decode(
