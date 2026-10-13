@@ -1074,7 +1074,7 @@
               "deprecated": true
             },
             "logLevel": {
-              "description": "Retired; write it at the top level. Ignored here.",
+              "description": "Retired. Ignored here.",
               "deprecated": true
             },
             "saveLogsToDisk": {
@@ -1386,7 +1386,7 @@
               "deprecated": true
             },
             "logLevel": {
-              "description": "Retired; write it at the top level. Ignored here.",
+              "description": "Retired. Ignored here.",
               "deprecated": true
             },
             "saveLogsToDisk": {

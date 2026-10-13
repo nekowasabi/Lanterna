@@ -20,7 +20,9 @@ enum BindingMode: Equatable, Sendable {
 /// Every action a key can drive, in the config file's words.
 ///
 /// The raw values are the `keybindings` section's keys, so renaming one
-/// renames the file format. The mode decides the validation from FR-012.
+/// renames the file format. The mode decides how its keys are validated,
+/// and `requiresCommandOrOption` adds the per-action rule that a key must
+/// hold Command or Option.
 enum KeyBindingAction: String, CaseIterable, Equatable, Sendable {
   case show
   case showReverse

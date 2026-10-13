@@ -385,7 +385,7 @@ open class SwitcherMain {
   romajiScope: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   launchAtLogin: Any? = null
-  /// Retired; write it at the top level. Ignored here.
+  /// Retired. Ignored here.
   logLevel: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   saveLogsToDisk: Any? = null
@@ -489,7 +489,7 @@ open class SwitcherParallel {
   romajiScope: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   launchAtLogin: Any? = null
-  /// Retired; write it at the top level. Ignored here.
+  /// Retired. Ignored here.
   logLevel: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   saveLogsToDisk: Any? = null

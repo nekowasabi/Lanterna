@@ -13,15 +13,6 @@ extension AppConfiguration {
   /// force.
   static let deprecatedKeys = ["logLevel"]
 
-  /// Resolves the lenient sections over an otherwise valid file.
-  ///
-  /// The keybindings section is lenient where the rest of the file is
-  /// strict: bad entries fall back per item with diagnostics, while a
-  /// section that is not an object at all invalidates the whole file
-  /// like any other bad value. Declaration order comes from the file
-  /// text, because JSON objects carry no order of their own. The text
-  /// scale is lenient the same way on its own: a present but invalid
-  /// value falls back to standard with a note.
   /// The section keys holding one switcher's list settings rather than
   /// shared ones.
   static let switcherPanelKeys: Set = [
@@ -448,7 +439,8 @@ extension AppConfiguration {
   }
 
   /// Builds the parallel choices beside the main values. An unreadable
-  /// item follows the main switcher; a shared key is ignored in favour
+  /// item follows the main switcher, except the scope, which falls back
+  /// to the front application alone; a shared key is ignored in favour
   /// of the top level.
   static func applyParallelSection(
     _ section: [String: Any],
@@ -481,6 +473,15 @@ extension AppConfiguration {
     config.parallelOverrides = overrides
   }
 
+  /// Resolves the lenient sections over an otherwise valid file.
+  ///
+  /// The keybindings section is lenient where the rest of the file is
+  /// strict: bad entries fall back per item with diagnostics, while a
+  /// section that is not an object at all invalidates the whole file
+  /// like any other bad value. Declaration order comes from the file
+  /// text, because JSON objects carry no order of their own. The text
+  /// scale is lenient the same way on its own: a present but invalid
+  /// value falls back to standard with a note.
   static func resolvedKeyBindings(
     _ dict: [String: Any],
     data: Data,
