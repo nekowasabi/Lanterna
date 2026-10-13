@@ -607,11 +607,6 @@ final class PanelPresenter {
     commitOnCommand ? commandIsHeld() : optionIsHeld()
   }
 
-  /// The resolved settings behind one invocation's switcher.
-  private func settings(for combination: HotkeyCombination) -> SwitcherSettings {
-    settings(for: combination.switcher)
-  }
-
   /// The resolved settings behind one switcher.
   private func settings(for switcher: SwitcherIdentity) -> SwitcherSettings {
     switch switcher {
@@ -719,11 +714,31 @@ final class PanelPresenter {
   ) -> [WindowItem] {
     tracker.noteSnapshotObserved(store.snapshot?.gatheredAt ?? now())
     let ordered = tracker.ordered(items, skipping: store.snapshot?.skippedOwners ?? [])
+    _ = seedSwitcher(presses.first?.switcher ?? .main)
     keyCommands.beginFiltering(fullWindows: ordered, filtering: presses.first == .filter)
     let layout = keyCommands.shownLayout
     selection.beginSecond(layout.rowIDs, ranking: layout.rankedRows.map(\.id))
     replayDelayedPresses(Array(presses.dropFirst()))
     return ordered
+  }
+
+  /// Seeds the key commands with one switcher's list settings and keeps
+  /// its identity for the commit and the diagnostics to name.
+  ///
+  /// Shared by showing and by the silent commit, so a choice made
+  /// without a panel reads the same rows that switcher's panel would
+  /// have shown.
+  private func seedSwitcher(_ switcher: SwitcherIdentity) -> AppliedPanelSettings {
+    activeSwitcher = switcher
+    wayOut.switcherIdentity = switcher
+    let settings = settings(for: switcher)
+    keyCommands.updateWindowScope(settings.windowScope)
+    keyCommands.updateDisplayModes(settings.displayModes)
+    // The placements fold into the shared grouping, so each appearance
+    // groups alike and parks the kinds where its own switcher says.
+    let applied = AppliedPanelSettings.resolve(settings, sharedGrouping: grouping)
+    keyCommands.updateGrouping(applied.grouping)
+    return applied
   }
 
   /// Walks waiting presses past the first over the fresh choice.
@@ -853,15 +868,7 @@ final class PanelPresenter {
     // showing alone, and the identity stays for the commit and the
     // diagnostics to name. A panel that is up keeps its own until it
     // closes; the next appearance seeds again.
-    activeSwitcher = combination.switcher
-    wayOut.switcherIdentity = combination.switcher
-    let settings = settings(for: combination)
-    keyCommands.updateWindowScope(settings.windowScope)
-    keyCommands.updateDisplayModes(settings.displayModes)
-    // The placements fold into the shared grouping, so each appearance
-    // groups alike and parks the kinds where its own switcher says.
-    let applied = AppliedPanelSettings.resolve(settings, sharedGrouping: grouping)
-    keyCommands.updateGrouping(applied.grouping)
+    let applied = seedSwitcher(combination.switcher)
     keyCommands.beginFiltering(fullWindows: ordered, filtering: combination == .filter)
     let layout = keyCommands.shownLayout
     let shown = layout.rows

@@ -170,7 +170,9 @@ struct ParallelPresenterTests {
 
   @Test
   func delayedOptionReleaseCommitsWithoutShowing() async {
-    let waiting = waitingPresenter()
+    let rows = interleavedRows()
+    let switcher = FakeWindowSwitcher()
+    let waiting = waitingPresenter(rows: rows, switcher: switcher)
     waiting.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
 
     #expect(waiting.presenter.pendingShow.isWaiting)
@@ -178,6 +180,54 @@ struct ParallelPresenterTests {
     await settle()
     #expect(waiting.surface.presentedLists.isEmpty)
     #expect(waiting.log.lines.contains(where: { $0.hasPrefix("committed ") }))
+    #expect(switcher.targets.map(\.id) == [rows[2].id])
+  }
+
+  @Test
+  func delayedParallelTapAfterMainAppearanceKeepsTheFrontApplication() async {
+    let rows = interleavedRows()
+    let switcher = FakeWindowSwitcher()
+    let waiting = waitingPresenter(rows: rows, switcher: switcher)
+    waiting.presenter.showDelayMs = nil
+    waiting.commandHold.isHeld = true
+    waiting.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    #expect(waiting.surface.isPresented)
+    waiting.presenter.handleCommandRelease()
+    await settle()
+    #expect(switcher.targets.map(\.id) == [rows[1].id])
+
+    waiting.commandHold.isHeld = false
+    waiting.presenter.showDelayMs = 150
+    waiting.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    #expect(waiting.presenter.pendingShow.isWaiting)
+    waiting.presenter.handleOptionRelease()
+    await settle()
+    #expect(waiting.surface.presentedLists.count == 1)
+    #expect(switcher.targets.map(\.id) == [rows[1].id, rows[2].id])
+  }
+
+  @Test
+  func delayedMainTapAfterParallelAppearanceKeepsEveryApplication() async {
+    let rows = interleavedRows()
+    let switcher = FakeWindowSwitcher()
+    let waiting = waitingPresenter(rows: rows, switcher: switcher)
+    waiting.presenter.showDelayMs = nil
+    waiting.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+    #expect(waiting.surface.isPresented)
+    waiting.presenter.modifierFlagsChanged([])
+    waiting.presenter.handleOptionRelease()
+    await settle()
+    #expect(switcher.targets.map(\.id) == [rows[2].id])
+
+    waiting.commandHold.isHeld = true
+    waiting.optionHold.isHeld = false
+    waiting.presenter.showDelayMs = 150
+    waiting.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    #expect(waiting.presenter.pendingShow.isWaiting)
+    waiting.presenter.handleCommandRelease()
+    await settle()
+    #expect(waiting.surface.presentedLists.count == 1)
+    #expect(switcher.targets.map(\.id) == [rows[2].id, rows[0].id])
   }
 
   @Test
@@ -636,10 +686,26 @@ struct ParallelPresenterTests {
     ]
   }
 
+  /// Rows whose recent-use order puts the other application's window
+  /// between the front application's, so the scope decides which row
+  /// comes second.
+  private func interleavedRows() -> [WindowItem] {
+    [
+      parallelRow(4, owner: finder, app: "Finder", title: "Documents"),
+      parallelRow(1, owner: safari, app: "Safari", title: "Front page"),
+      parallelRow(2, owner: safari, app: "Safari", title: "Downloads"),
+      parallelRow(5, owner: finder, app: "Finder", title: "Desktop"),
+      parallelRow(3, owner: safari, app: "Safari", title: "Reading list"),
+    ]
+  }
+
   /// A presenter held at its show delay, so presses and releases land
   /// while the wait is still shut. Both holds start as an Option-held
   /// press finds them: Command up, Option down.
-  private func waitingPresenter() -> (
+  private func waitingPresenter(
+    rows: [WindowItem]? = nil,
+    switcher: FakeWindowSwitcher = FakeWindowSwitcher()
+  ) -> (
     presenter: PanelPresenter,
     surface: FakeSurface,
     log: DiagnosticsLog,
@@ -655,7 +721,7 @@ struct ParallelPresenterTests {
     let optionHold = CommandHold(isHeld: true)
     let presenter = PanelPresenter(
       surface: surface,
-      store: WindowListStore(fixed: twoAppRows()),
+      store: WindowListStore(fixed: rows ?? twoAppRows()),
       ownProcessIdentifier: ownProcess,
       now: clock.read,
       writeLine: log.write,
@@ -667,7 +733,7 @@ struct ParallelPresenterTests {
       keyStatusWatchInterval: .milliseconds(1),
       showDelayMs: 150,
       showDelaySleep: sleep.sleep,
-      switcher: FakeWindowSwitcher()
+      switcher: switcher
     )
     presenter.keyCommands.frontmostProcessIdentifier = { safari }
     presenter.parallelSwitcher = .parallel(main: presenter.mainSwitcher, overrides: .defaults)
