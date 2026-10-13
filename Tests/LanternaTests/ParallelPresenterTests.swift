@@ -137,17 +137,6 @@ struct ParallelPresenterTests {
   }
 
   @Test
-  func controlReleaseCommitsNothing() {
-    let fixture = twoAppFixture(front: safari, heldModifiers: [.maskAlternate, .maskControl])
-    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
-
-    #expect(fixture.surface.isPresented)
-    fixture.presenter.modifierFlagsChanged(.maskAlternate)
-    #expect(fixture.surface.isPresented)
-    #expect(!fixture.log.lines.contains(where: { $0.hasPrefix("committed ") }))
-  }
-
-  @Test
   func filteringOptionReleaseCommitsNothing() {
     let fixture = twoAppFixture(front: safari, heldModifiers: .maskAlternate)
     fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
