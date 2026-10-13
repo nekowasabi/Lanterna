@@ -10,13 +10,14 @@ import Carbon.HIToolbox
 enum HotkeyCombination: Sendable, CaseIterable, Hashable {
   case forward
   case reverse
-  /// The filter invocation. Registered and diagnosed like the other two:
-  /// `HotkeyManager` and the disable/restore discipline iterate `all`, so
-  /// adding the case is what reaches them.
+  /// The filter invocation. Registered and diagnosed like the other main
+  /// invocations: `HotkeyManager` iterates `all`, and the disable/restore
+  /// discipline reaches it through `SystemSwitcherShortcuts.systemCounterparts`
+  /// and the window server's shortcut it maps to.
   case filter
-  /// The parallel switcher's invocations. Registered like the main three;
+  /// The parallel switcher's invocations. Registered like the main ones;
   /// the window server holds no counterpart, so the disable/restore
-  /// discipline leaves these two alone.
+  /// discipline leaves them alone.
   case parallelForward
   case parallelReverse
 
@@ -72,8 +73,8 @@ enum HotkeyCombination: Sendable, CaseIterable, Hashable {
     }
   }
 
-  /// Which switcher this invocation opens: the parallel two open the
-  /// parallel switcher, everything else the main one.
+  /// Which switcher this invocation opens: the parallel invocations open
+  /// the parallel switcher, everything else the main one.
   var switcher: SwitcherIdentity {
     switch self {
     case .forward,
@@ -109,8 +110,8 @@ struct HotkeyBinding: Equatable, Sendable {
 
   // MARK: Internal
 
-  /// The bindings an unchanged file resolves to: the main three
-  /// invocations beside the parallel pair.
+  /// The bindings an unchanged file resolves to: the main invocations
+  /// beside the parallel ones.
   static var defaults: [HotkeyBinding] {
     bindings(for: .defaults)
   }
@@ -134,7 +135,7 @@ struct HotkeyBinding: Equatable, Sendable {
   }
 
   /// One binding per key of every invocation action, in a fixed
-  /// order: show, then reverse, then filter, then the parallel pair.
+  /// order: show, then reverse, then filter, then the parallel ones.
   /// A switched-off parallel switcher asks for no bindings, so its keys
   /// stay with the front application; the table itself keeps them for
   /// the day it is switched back on.

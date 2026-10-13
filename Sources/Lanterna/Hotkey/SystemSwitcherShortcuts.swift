@@ -26,20 +26,21 @@ enum SystemSwitcherShortcuts {
     }
   }
 
-  /// Stops the system answering the given combinations, which are the ones
-  /// this app registered. Returns the ones that would not change; empty is
-  /// the ordinary case.
   /// The combinations the window server holds a counterpart for. The
-  /// parallel invocations have none, so they stay out of both lists below.
+  /// parallel invocations have none, so neither the disabling nor the
+  /// restoring below writes them.
   static var systemCounterparts: [HotkeyCombination] {
     [.forward, .reverse, .filter]
   }
 
+  /// Stops the system answering the given combinations, which are the ones
+  /// this app registered. Returns the ones that would not change; empty is
+  /// the ordinary case.
   static func disable(_ combinations: [HotkeyCombination]) -> [Failure] {
     write(combinations.filter { systemCounterparts.contains($0) }, isEnabled: false)
   }
 
-  /// Gives both back to the system.
+  /// Gives every system counterpart back to the system.
   ///
   /// Always writes "enabled" rather than putting back whatever was found
   /// earlier. A run that was killed leaves them off, and a later run that

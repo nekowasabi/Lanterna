@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - SwitcherTab
 
-/// The two sub-tabs of the Switchers tab.
+/// The sub-tabs of the Switchers tab, one per switcher.
 private enum SwitcherTab: Hashable {
   case main
   case parallel
