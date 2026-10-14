@@ -1,0 +1,66 @@
+# Review policy: .github/instructions/code-review.instructions.md (Copilot code review reads it too).
+# Mention @claude for the default model, @opus for the larger one.
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  claude:
+    if: |
+      (github.event_name == 'issue_comment' && (contains(github.event.comment.body, '@claude') || contains(github.event.comment.body, '@opus'))) ||
+      (github.event_name == 'pull_request_review_comment' && (contains(github.event.comment.body, '@claude') || contains(github.event.comment.body, '@opus'))) ||
+      (github.event_name == 'pull_request_review' && (contains(github.event.review.body, '@claude') || contains(github.event.review.body, '@opus'))) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write # GitHub OIDC token for the Claude GitHub App and Claude API federation
+      actions: read # lets Claude read CI results on PRs
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Select Claude model
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body || '' }}
+          REVIEW_BODY: ${{ github.event.review.body || '' }}
+        run: |
+          if echo "$COMMENT_BODY $REVIEW_BODY" | grep -q '@opus'; then
+            echo "CLAUDE_MODEL=claude-opus-5-5" >> "$GITHUB_ENV"
+            echo "TRIGGER_PHRASE=@opus" >> "$GITHUB_ENV"
+          else
+            echo "CLAUDE_MODEL=claude-sonnet-5-5" >> "$GITHUB_ENV"
+            echo "TRIGGER_PHRASE=@claude" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@34968b5981d5d170904281aa3df6f3c0d4a28855 # v1.0.249
+        with:
+          # Workload identity federation exchanges the GitHub OIDC token, so no API key secret is stored.
+          # These are identifiers, not credentials, kept in repository variables.
+          anthropic_federation_rule_id: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          anthropic_organization_id: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          anthropic_service_account_id: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          anthropic_workspace_id: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
+          additional_permissions: |
+            actions: read
+          # Pass the matched phrase so a comment with only @opus still passes the action's own trigger check.
+          trigger_phrase: ${{ env.TRIGGER_PHRASE }}
+          # Options: https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
+          claude_args: |
+            --system-prompt "Review by following @.github/instructions/code-review.instructions.md. Apply its finding filter to every finding and post only the ones that pass. Do not report pre-existing problems outside the diff, risks whose trigger you cannot show, anything SwiftFormat, SwiftLint, actionlint, shellcheck or pinact already check, or general advice not tied to a concrete defect. Still report missing guardrails on paths the diff adds or changes (permission loss, event tap disabled, unresponsive apps, unbounded growth, main-thread blocking, config compatibility), even when the trigger is hypothetical. Do not use [NITS] or [FYI]. If nothing important remains, conclude with 'No significant findings'; the goal is fewer, more important findings, not more of them."
+            --model ${{ env.CLAUDE_MODEL }}
