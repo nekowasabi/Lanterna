@@ -27,7 +27,7 @@ jobs:
       contents: read
       pull-requests: read
       issues: read
-      id-token: write
+      id-token: write # GitHub OIDC token for the Claude GitHub App and Claude API federation
       actions: read # lets Claude read CI results on PRs
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -50,7 +50,12 @@ jobs:
       - name: Run Claude Code
         uses: anthropics/claude-code-action@34968b5981d5d170904281aa3df6f3c0d4a28855 # v1.0.249
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Workload identity federation exchanges the GitHub OIDC token, so no API key secret is stored.
+          # These are identifiers, not credentials, kept in repository variables.
+          anthropic_federation_rule_id: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          anthropic_organization_id: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          anthropic_service_account_id: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          anthropic_workspace_id: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
           additional_permissions: |
             actions: read
           # Pass the matched phrase so a comment with only @opus still passes the action's own trigger check.
