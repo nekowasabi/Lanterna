@@ -65,14 +65,25 @@ Without a `switchers` section the file reads as before, and the parallel switche
   ]}
 />
 
-|                              |                                                                                                                                                                                                      |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <kbd>⌘</kbd><kbd>Space</kbd> | Shows the switcher in filter mode. In this mode, releasing `Cmd` does not close it. Pressing it in a switcher opened with `Cmd+Tab` switches that switcher to filter mode, and so does <kbd>S</kbd>. |
-| <kbd>A–Z</kbd>               | Keeps only the rows whose app name or window title contains what you typed. Case is ignored.                                                                                                         |
-| <kbd>↑</kbd><kbd>↓</kbd>     | Moves the selection.                                                                                                                                                                                 |
-| <kbd>↩</kbd>                 | Switches to the chosen window.                                                                                                                                                                       |
-| <kbd>⌫</kbd>                 | Deletes one character.                                                                                                                                                                               |
-| <kbd>esc</kbd>               | Clears what you typed. With nothing typed, closes the switcher.                                                                                                                                      |
+|                                                                    |                                                                                                                                                                                                      |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <kbd>⌘</kbd><kbd>Space</kbd>                                       | Shows the switcher in filter mode. In this mode, releasing `Cmd` does not close it. Pressing it in a switcher opened with `Cmd+Tab` switches that switcher to filter mode, and so does <kbd>S</kbd>. |
+| <kbd>A–Z</kbd>                                                     | Keeps only the rows whose app name or window title contains what you typed. Case is ignored.                                                                                                         |
+| <kbd>↑</kbd><kbd>↓</kbd>                                           | Moves the selection.                                                                                                                                                                                 |
+| <kbd>↩</kbd>                                                       | Switches to the chosen window.                                                                                                                                                                       |
+| <kbd>⌫</kbd>                                                       | Deletes one character.                                                                                                                                                                               |
+| <kbd>←</kbd><kbd>→</kbd>, <kbd>Ctrl</kbd><kbd>B</kbd>/<kbd>F</kbd> | Moves the insertion point one character.                                                                                                                                                             |
+| <kbd>Ctrl</kbd><kbd>A</kbd>/<kbd>E</kbd>                           | Jumps to the start or the end.                                                                                                                                                                       |
+| <kbd>Ctrl</kbd><kbd>H</kbd>                                        | Deletes one character, like <kbd>⌫</kbd>.                                                                                                                                                            |
+| fn+<kbd>⌫</kbd>, <kbd>Ctrl</kbd><kbd>D</kbd>                       | Deletes the next character.                                                                                                                                                                          |
+| <kbd>Ctrl</kbd><kbd>W</kbd>                                        | Deletes one word.                                                                                                                                                                                    |
+| <kbd>Ctrl</kbd><kbd>U</kbd>/<kbd>K</kbd>                           | Deletes back to the start or forward to the end.                                                                                                                                                     |
+| <kbd>Ctrl</kbd><kbd>N</kbd>/<kbd>P</kbd>                           | Moves the selection, like <kbd>↓</kbd>/<kbd>↑</kbd>.                                                                                                                                                 |
+| <kbd>Ctrl</kbd><kbd>M</kbd>                                        | Switches to the chosen window, like <kbd>↩</kbd>.                                                                                                                                                    |
+| <kbd>Ctrl</kbd><kbd>G</kbd>                                        | Closes the switcher at once, keeping what you typed.                                                                                                                                                 |
+| <kbd>esc</kbd>                                                     | Clears what you typed. With nothing typed, closes the switcher.                                                                                                                                      |
+
+A `Ctrl` letter with no row above types nothing while filtering: it is dropped.
 
 :::note
 While Lanterna runs, the Spotlight `Cmd+Space` shortcut is off. It comes back when you quit Lanterna.
@@ -138,31 +149,39 @@ Hover to select in the same tab moves the selection to the row under the pointer
 
 Every keybinding below can be changed through the `keybindings` section of the config file or the Keyboard tab of Settings. Keys are physical positions, so they work the same under any input source.
 
-| Action                   | Default keys                                      |
-| ------------------------ | ------------------------------------------------- |
-| Show                     | <kbd>⌘</kbd><kbd>Tab</kbd>                        |
-| Show in reverse          | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Tab</kbd>            |
-| Show for filtering       | <kbd>⌘</kbd><kbd>Space</kbd>                      |
-| Show parallel            | <kbd>⌥</kbd><kbd>Tab</kbd>                        |
-| Show parallel in reverse | <kbd>⇧</kbd><kbd>⌥</kbd><kbd>Tab</kbd>            |
-| Next                     | <kbd>↓</kbd>, <kbd>J</kbd>, <kbd>N</kbd>          |
-| Previous                 | <kbd>↑</kbd>, <kbd>K</kbd>, <kbd>P</kbd>          |
-| Commit                   | <kbd>↩</kbd>, keypad `Enter`                      |
-| Cancel                   | <kbd>esc</kbd>, <kbd>⌘</kbd><kbd>.</kbd>          |
-| Toggle active app only   | <kbd>⌘</kbd><kbd>/</kbd>                          |
-| Delete backward          | <kbd>⌫</kbd>                                      |
-| Clear query              | <kbd>esc</kbd>                                    |
-| Close window             | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>W</kbd>             |
-| Quit application         | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>Q</kbd>             |
-| Hide application         | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>H</kbd>             |
-| Minimize window          | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>M</kbd>             |
-| Start filtering          | <kbd>S</kbd>                                      |
-| Open settings            | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>,</kbd>             |
-| Jump to row number       | <kbd>⌘</kbd>/<kbd>⌥</kbd> digits                  |
-| Move row up              | <kbd>⇧</kbd><kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>↑</kbd> |
-| Move row down            | <kbd>⇧</kbd><kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>↓</kbd> |
+| Action                   | Default keys                                                          |
+| ------------------------ | --------------------------------------------------------------------- |
+| Show                     | <kbd>⌘</kbd><kbd>Tab</kbd>                                            |
+| Show in reverse          | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Tab</kbd>                                |
+| Show for filtering       | <kbd>⌘</kbd><kbd>Space</kbd>                                          |
+| Show parallel            | <kbd>⌥</kbd><kbd>Tab</kbd>                                            |
+| Show parallel in reverse | <kbd>⇧</kbd><kbd>⌥</kbd><kbd>Tab</kbd>                                |
+| Next                     | <kbd>↓</kbd>, <kbd>J</kbd>, <kbd>N</kbd>, <kbd>Ctrl</kbd><kbd>N</kbd> |
+| Previous                 | <kbd>↑</kbd>, <kbd>K</kbd>, <kbd>P</kbd>, <kbd>Ctrl</kbd><kbd>P</kbd> |
+| Commit                   | <kbd>↩</kbd>, keypad `Enter`, <kbd>Ctrl</kbd><kbd>M</kbd>             |
+| Cancel                   | <kbd>esc</kbd>, <kbd>⌘</kbd><kbd>.</kbd>, <kbd>Ctrl</kbd><kbd>G</kbd> |
+| Toggle active app only   | <kbd>⌘</kbd><kbd>/</kbd>                                              |
+| Move cursor left         | <kbd>←</kbd>, <kbd>Ctrl</kbd><kbd>B</kbd>                             |
+| Move cursor right        | <kbd>→</kbd>, <kbd>Ctrl</kbd><kbd>F</kbd>                             |
+| Move cursor to start     | <kbd>Ctrl</kbd><kbd>A</kbd>                                           |
+| Move cursor to end       | <kbd>Ctrl</kbd><kbd>E</kbd>                                           |
+| Delete backward          | <kbd>⌫</kbd>, <kbd>Ctrl</kbd><kbd>H</kbd>                             |
+| Delete forward           | fn+<kbd>⌫</kbd>, <kbd>Ctrl</kbd><kbd>D</kbd>                          |
+| Delete word backward     | <kbd>Ctrl</kbd><kbd>W</kbd>                                           |
+| Delete to start          | <kbd>Ctrl</kbd><kbd>U</kbd>                                           |
+| Delete to end            | <kbd>Ctrl</kbd><kbd>K</kbd>                                           |
+| Clear query              | <kbd>esc</kbd>                                                        |
+| Close window             | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>W</kbd>                                 |
+| Quit application         | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>Q</kbd>                                 |
+| Hide application         | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>H</kbd>                                 |
+| Minimize window          | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>M</kbd>                                 |
+| Start filtering          | <kbd>S</kbd>                                                          |
+| Open settings            | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>,</kbd>                                 |
+| Jump to row number       | <kbd>⌘</kbd>/<kbd>⌥</kbd> digits                                      |
+| Move row up              | <kbd>⇧</kbd><kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>↑</kbd>                     |
+| Move row down            | <kbd>⇧</kbd><kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>↓</kbd>                     |
 
-Show, Show in reverse, and Show for filtering reach across the system, and the window actions, Toggle active app only and Open settings would fire while typing, so every key for those needs `Cmd`, `Ctrl`, or `Opt`. The two parallel invocations need `Cmd` or `Opt`: a key holding neither leaves no release to switch on. Jump to row number, Move row up and Move row down also need `Cmd`, `Ctrl`, or `Opt`. Letter and number keys with no modifier act only while not filtering; while filtering they type into the query. A key already used by another action is refused, except that Clear query and Cancel may share keys. An action left with no keys falls back to its defaults, but if the defaults are also taken the action can stay unbound with a diagnostics entry. Invocation changes apply at once.
+Show, Show in reverse, and Show for filtering reach across the system, and the window actions, Toggle active app only and Open settings would fire while typing, so every key for those needs `Cmd`, `Ctrl`, or `Opt`. The two parallel invocations need `Cmd` or `Opt`: a key holding neither leaves no release to switch on. Jump to row number, Move row up and Move row down also need `Cmd`, `Ctrl`, or `Opt`. Letter and number keys with no modifier act only while not filtering; while filtering they type into the query. A `Ctrl` key with no binding types nothing while filtering. Where bindings ask for the same count of modifiers, the one asking for `Ctrl` answers first. A key already used by another action is refused, except that Clear query and Cancel may share keys. An action left with no keys falls back to its defaults, but if the defaults are also taken the action can stay unbound with a diagnostics entry. Invocation changes apply at once.
 
 ## Links
 
