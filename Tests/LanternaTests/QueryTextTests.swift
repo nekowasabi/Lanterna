@@ -171,9 +171,9 @@ struct QueryTextTests {
     #expect(line.cursor == 2)
     #expect(line.apply(.deleteBackward) == true)
     #expect(line == QueryText(text: "ab", cursor: 1))
-    var combining = QueryText(text: "e\u{301}x", cursor: 2)
+    var combining = QueryText(text: "e\u{301}x", cursor: 1)
     #expect(combining.apply(.deleteBackward) == true)
-    #expect(combining == QueryText(text: "x", cursor: 1))
+    #expect(combining == QueryText(text: "x", cursor: 0))
   }
 
 }
