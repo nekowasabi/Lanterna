@@ -210,19 +210,20 @@ final class PanelFilter {
     writeLine(LogLine(.info, .panel, "scope \(word)", context: ["scope": .string(word)]))
   }
 
-  /// Narrows one keystroke further. Answers nothing while inactive.
+  /// Narrows one keystroke further, inserting at the insertion point.
+  /// Answers nothing while inactive.
   func append(_ text: String) {
     guard isActive else { return }
-    state.append(text)
+    state.line.insert(text)
     apply()
   }
 
-  /// Shortens the query by one character, and does nothing when already
-  /// empty: there is nothing to narrow back to that the panel is not
-  /// already showing.
+  /// Shortens the query by the character before the insertion point,
+  /// and does nothing when already empty: there is nothing to narrow
+  /// back to that the panel is not already showing.
   func removeLast() {
     guard isActive, isFiltering else { return }
-    state.removeLast()
+    _ = state.line.apply(.deleteBackward)
     apply()
   }
 
