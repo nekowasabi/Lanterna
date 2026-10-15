@@ -216,6 +216,22 @@ struct PanelKeyInputTests {
     }
   }
 
+  /// Away from filtering the editing step leaves the candidates, so
+  /// Control-held K falls back to the bare K row and moves back.
+  @Test
+  func controlKHoldsPreviousWhileNotFiltering() {
+    let table = KeyBindingTable.defaults
+    #expect(
+      PanelKeyInput.action(
+        for: press(kVK_ANSI_K, .control, characters: "k"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: false
+      ) == .selectPrevious
+    )
+  }
+
   /// Held modifiers change nothing about a step: with Command still down
   /// from the invocation the arrows still move the point one character.
   @Test(arguments: [NSEvent.ModifierFlags(), .command, .option])
