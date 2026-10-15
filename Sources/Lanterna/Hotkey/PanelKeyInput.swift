@@ -116,8 +116,9 @@ enum PanelKeyAction: Equatable, Sendable {
   case startFiltering
   /// Hides the panel and opens the settings.
   case openSettings
-  /// Backspace: shortens the query by one character.
-  case filterBackspace
+  /// Edits the query or moves its insertion point. Repeats while held,
+  /// the way Backspace always did.
+  case editQuery(QueryEdit)
   /// Clears the query, leaving the panel up.
   case clearQuery
   /// No meaning was given to this key. It is swallowed all the same.
@@ -452,6 +453,12 @@ enum PanelKeyInput {
     {
       return winner
     }
+    // A Control-held press with no binding goes nowhere while filtering:
+    // reaching for an editing key must never type its letter into the
+    // query. Away from filtering the old fate stays, whatever is held.
+    if filtering, keystroke.modifiers.contains(.control) {
+      return .absorb
+    }
     // Going by key code and not by the character is what keeps the
     // whole table independent of the input source and the physical
     // layout. What the key made is only read here, where a row means
@@ -497,30 +504,62 @@ enum PanelKeyInput {
     ordered += [
       (.openSettings, .openSettings),
       (.clearQuery, .clearQuery),
-      (.deleteBackward, .filterBackspace),
     ]
+    // The editing steps answer while filtering only: away from it the
+    // same keys keep whatever else they mean, including typing.
+    if filtering {
+      ordered += [
+        (.deleteBackward, .editQuery(.deleteBackward)),
+        (.moveCursorLeft, .editQuery(.moveLeft)),
+        (.moveCursorRight, .editQuery(.moveRight)),
+        (.moveCursorToStart, .editQuery(.moveToStart)),
+        (.moveCursorToEnd, .editQuery(.moveToEnd)),
+        (.deleteForward, .editQuery(.deleteForward)),
+        (.deleteWordBackward, .editQuery(.deleteWordBackward)),
+        (.deleteToStart, .editQuery(.deleteToStart)),
+        (.deleteToEnd, .editQuery(.deleteToEnd)),
+      ]
+    }
     let ranked = ordered.enumerated().compactMap { order, entry in
-      narrowness(of: keystroke, action: entry.0, table: table, filtering: filtering).map {
-        (narrowness: $0, order: order, action: entry.1)
+      strength(of: keystroke, action: entry.0, table: table, filtering: filtering).map {
+        (narrowness: $0.narrowness, wantsControl: $0.wantsControl, order: order, action: entry.1)
       }
     }
     return ranked.max {
-      $0.narrowness == $1.narrowness ? $0.order > $1.order : $0.narrowness < $1.narrowness
+      if $0.narrowness != $1.narrowness {
+        return $0.narrowness < $1.narrowness
+      }
+      // With the same count of modifiers held, the binding asking for
+      // Control answers first; among those, and among the rest, the
+      // fixed order still decides.
+      if $0.wantsControl != $1.wantsControl {
+        return !$0.wantsControl && $1.wantsControl
+      }
+      return $0.order > $1.order
     }?.action
   }
 
-  /// How many modifiers the closest matching key demands, else nothing.
-  /// Reads the same per-key test as `KeyBindingTable.matches`, adding
-  /// how narrow the fit is.
-  private static func narrowness(
+  /// How narrowly an action answers the press, else nothing: how many
+  /// modifiers the closest matching key demands, and whether that key
+  /// asks for Control. Reads the same per-key test as
+  /// `KeyBindingTable.matches`, adding how narrow the fit is.
+  private static func strength(
     of keystroke: PanelKeystroke,
     action: KeyBindingAction,
     table: KeyBindingTable,
     filtering: Bool = true
-  ) -> Int? {
+  ) -> (narrowness: Int, wantsControl: Bool)? {
     let schema: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
-    return table[action].filter { $0.answers(keystroke, filtering: filtering) }.lazy
-      .map { $0.modifiers.intersection(schema).rawValue.nonzeroBitCount }.max()
+    let answering = table[action].filter { $0.answers(keystroke, filtering: filtering) }
+    guard
+      let narrowness = answering.lazy.map({ $0.modifiers.intersection(schema).rawValue.nonzeroBitCount }).max()
+    else {
+      return nil
+    }
+    let closest = answering.filter {
+      $0.modifiers.intersection(schema).rawValue.nonzeroBitCount == narrowness
+    }
+    return (narrowness, closest.contains { $0.modifiers.contains(.control) })
   }
 
   /// Whether any invocation holds Tab. Only an explicit invocation
@@ -551,7 +590,7 @@ extension PanelKeyAction {
     case .selectNext,
          .selectPrevious,
          .filterText,
-         .filterBackspace,
+         .editQuery,
          .clearQuery:
       self
     case .commit,

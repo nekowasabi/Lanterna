@@ -129,8 +129,11 @@ final class PanelFilter {
 
   /// Switches filtering on for the panel that is up, drawing at once: the
   /// chrome appears with the activation rather than with the next keystroke.
+  /// A panel switched over mid-appearance starts on an empty query with
+  /// the point at the start, the way a fresh appearance does.
   func activate() {
     guard !isActive else { return }
+    state.line = QueryText()
     isActive = true
     apply()
   }
@@ -208,6 +211,18 @@ final class PanelFilter {
     apply()
     let word = scope.current.rawValue
     writeLine(LogLine(.info, .panel, "scope \(word)", context: ["scope": .string(word)]))
+  }
+
+  /// Applies one editing step: narrowing again when the string changed,
+  /// redrawing only the insertion point when it merely moved. Answers
+  /// nothing while inactive.
+  func edit(_ edit: QueryEdit) {
+    guard isActive else { return }
+    guard state.line.apply(edit) else {
+      surface.showCursor(state.line.cursor)
+      return
+    }
+    apply()
   }
 
   /// Narrows one keystroke further, inserting at the insertion point.

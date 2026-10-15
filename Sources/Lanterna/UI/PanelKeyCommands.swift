@@ -309,8 +309,8 @@ final class PanelKeyCommands {
     case .filterText(let text):
       filter.append(text)
 
-    case .filterBackspace:
-      filter.removeLast()
+    case .editQuery(let edit):
+      filter.edit(edit)
 
     case .numberDigit:
       guard numberJumpEnabled, let digit = PanelKeyInput.digitValue(for: keystroke.keyCode) else {
