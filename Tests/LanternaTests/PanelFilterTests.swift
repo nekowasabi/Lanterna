@@ -219,6 +219,35 @@ struct PanelFilterTests {
     #expect(made.selection.chosenID == chosen)
   }
 
+  /// Removing from an empty query rebuilds no list: only the insertion
+  /// point is redrawn.
+  @Test
+  func removingFromAnEmptyQueryRedrawsOnlyTheCursor() {
+    let made = makeFilter()
+    let updates = made.surface.updatedLists.count
+    made.filter.removeLast()
+    #expect(made.surface.updatedLists.count == updates)
+    #expect(made.surface.shownCursors == [0])
+  }
+
+  /// Removing at the start leaves the query and the list alone: only
+  /// the insertion point is redrawn.
+  @Test
+  func removingAtTheStartLeavesTheQueryAndTheListAlone() {
+    let made = makeFilter()
+    made.filter.append("ab")
+    made.filter.edit(.moveToStart)
+    let updates = made.surface.updatedLists.count
+    let redraws = made.surface.shownCursors.count
+    let chosen = made.selection.chosenID
+    made.filter.removeLast()
+    #expect(made.surface.updatedQueries.last == "ab")
+    #expect(made.surface.updatedLists.count == updates)
+    #expect(made.surface.shownCursors.count == redraws + 1)
+    #expect(made.surface.shownCursors.last == 0)
+    #expect(made.selection.chosenID == chosen)
+  }
+
   /// Clearing restores the whole list and leaves the panel up.
   @Test
   func clearingRestoresTheWholeListAndKeepsThePanelUp() {

@@ -233,9 +233,9 @@ final class PanelFilter {
     apply()
   }
 
-  /// Shortens the query by the character before the insertion point,
-  /// and does nothing when already empty: there is nothing to narrow
-  /// back to that the panel is not already showing.
+  /// Shortens the query by the character before the insertion point.
+  /// With an empty query or at the start there is nothing to shorten,
+  /// so the list is left alone and only the insertion point is redrawn.
   func removeLast() {
     edit(.deleteBackward)
   }
