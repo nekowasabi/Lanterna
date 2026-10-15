@@ -384,13 +384,17 @@ extension AppDelegate {
       return .failed(reason: "cannot resolve directory")
     }
     let preserved = preservedConfiguration()
-    let config = values.configuration(
+    var config = values.configuration(
       version: AppConfiguration.currentVersion,
       sampleCount: preserved?.sampleCount,
       stopMonitorEverySeconds: preserved?.stopMonitorEverySeconds,
       diskHasSwitcherSections: preserved?.hasSwitchersSection ?? false,
       switcherSettingsChanged: switcherSettingsChanged
     )
+    // Unknown keys ride back out, so saving from an older build never
+    // drops what a newer one wrote. Re-read at save time above, so a hand
+    // edit landing between launch and saving still keeps its unknowns.
+    config.unknownFields = preserved?.unknownFields ?? []
     return SettingsSaver.save(
       config,
       to: configFileURL,
