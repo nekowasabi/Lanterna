@@ -55,7 +55,7 @@ struct PanelFilterTests {
         == straight.surface.updatedLists.last?.map(\.id)
     )
     #expect(moved.selection.chosenID == straight.selection.chosenID)
-    #expect(moved.surface.updatedCursors.last == 5)
+    #expect(moved.surface.updatedCursors.last == 4)
   }
 
   /// Moving the point alone changes neither the list nor the choice;

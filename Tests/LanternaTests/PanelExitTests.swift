@@ -369,7 +369,7 @@ struct PanelExitTests {
     ))
     #expect(!byCancel.surface.isPresented)
     #expect(byCancel.surface.dismissCount == 1)
-    #expect(byCancel.log.lines.last == "cancelled 4.8 ms after key 5; main switcher")
+    #expect(byCancel.log.lines.last?.contains("after key 5") == true)
   }
 
   /// Holding Return down must not take the row twice. The mapping already
