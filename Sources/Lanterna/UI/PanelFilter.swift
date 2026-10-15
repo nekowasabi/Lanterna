@@ -237,9 +237,7 @@ final class PanelFilter {
   /// and does nothing when already empty: there is nothing to narrow
   /// back to that the panel is not already showing.
   func removeLast() {
-    guard isActive, isFiltering else { return }
-    _ = state.line.apply(.deleteBackward)
-    apply()
+    edit(.deleteBackward)
   }
 
   /// Clears the query, leaving the panel up over the whole list.
