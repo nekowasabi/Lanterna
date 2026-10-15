@@ -126,6 +126,19 @@ struct PanelKeyInputTests {
     )
   }
 
+  /// Holding a cursor key down keeps moving the point, the way holding
+  /// Backspace keeps shortening.
+  @Test
+  func holdingACursorKeyRepeatsTheMoving() {
+    #expect(
+      PanelKeyInput.action(for: press(kVK_ANSI_B, .control, characters: "b", repeating: true))
+        == .editQuery(.moveLeft)
+    )
+    #expect(
+      PanelKeyInput.action(for: press(kVK_LeftArrow, repeating: true)) == .editQuery(.moveLeft)
+    )
+  }
+
   /// Committing or cancelling is done once by deciding to. A second one
   /// produced by leaning on the key would land on whatever the first left
   /// behind.

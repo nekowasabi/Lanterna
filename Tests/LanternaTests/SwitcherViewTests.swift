@@ -110,6 +110,26 @@ struct SwitcherViewTests {
     )
   }
 
+  /// The query divides around the insertion point: what stands before
+  /// it and what stands after it. Out-of-range points clamp to the ends.
+  @Test
+  func theQuerySplitsAroundTheInsertionPoint() {
+    #expect(SwitcherView.splitQuery("safari", at: 0) == ("", "safari"))
+    #expect(SwitcherView.splitQuery("safari", at: 2) == ("sa", "fari"))
+    #expect(SwitcherView.splitQuery("safari", at: 6) == ("safari", ""))
+    #expect(SwitcherView.splitQuery("safari", at: 99) == ("safari", ""))
+    #expect(SwitcherView.splitQuery("", at: 0) == ("", ""))
+  }
+
+  /// The view carries the insertion point beside the query.
+  @Test
+  func theViewCarriesTheInsertionPoint() {
+    #expect(
+      SwitcherView(windows: [], selectedID: nil, appearanceToken: 0, query: "sa", cursor: 1, filterActive: true)
+        .cursor == 1
+    )
+  }
+
   /// The query row names how many window rows the list draws, singular
   /// for one and plural otherwise, zero included.
   @Test
