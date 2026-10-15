@@ -209,6 +209,14 @@ open class KeyBindings {
   moveRowDown: Listing<KeyBinding>? = null
   startFiltering: Listing<KeyBinding>? = null
   openSettings: Listing<KeyBinding>? = null
+  moveCursorLeft: Listing<KeyBinding>? = null
+  moveCursorRight: Listing<KeyBinding>? = null
+  moveCursorToStart: Listing<KeyBinding>? = null
+  moveCursorToEnd: Listing<KeyBinding>? = null
+  deleteForward: Listing<KeyBinding>? = null
+  deleteWordBackward: Listing<KeyBinding>? = null
+  deleteToStart: Listing<KeyBinding>? = null
+  deleteToEnd: Listing<KeyBinding>? = null
 }
 
 /// User-configurable keybindings. Absent means all defaults.

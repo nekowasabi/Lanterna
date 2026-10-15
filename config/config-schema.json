@@ -715,6 +715,230 @@
             "additionalProperties": false
           }
         },
+        "moveCursorLeft": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "moveCursorRight": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "moveCursorToStart": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "moveCursorToEnd": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "deleteForward": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "deleteWordBackward": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "deleteToStart": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "deleteToEnd": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
         "showParallel": {
           "type": "array",
           "items": {

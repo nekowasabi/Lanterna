@@ -161,6 +161,8 @@ local function keyBindingsFragment(prop: reflect.Property): Dynamic = new {
       "closeWindow"; "quitApplication"; "hideApplication"; "minimizeWindow";
       "numberJump"; "moveRowUp"; "moveRowDown";
       "startFiltering"; "openSettings";
+      "moveCursorLeft"; "moveCursorRight"; "moveCursorToStart"; "moveCursorToEnd";
+      "deleteForward"; "deleteWordBackward"; "deleteToStart"; "deleteToEnd";
       "showParallel"; "showParallelReverse"
     }) {
       [action] = new {
