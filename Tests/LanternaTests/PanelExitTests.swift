@@ -337,6 +337,41 @@ struct PanelExitTests {
     }
   }
 
+  /// The control-held commit and cancel keys write their key numbers,
+  /// having no names of their own. The cancel lands at once even with
+  /// a query on screen: nothing is cleared first.
+  @Test
+  func controlCommitAndCancelNameTheirKeyNumbers() {
+    let byCommit = runningWithAMonitor()
+    byCommit.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    _ = byCommit.presenter.handleKeyStroke(PanelKeystroke(
+      keyCode: UInt16(kVK_ANSI_M),
+      modifiers: .control,
+      isARepeat: false,
+      characters: "m"
+    ))
+    #expect(!byCommit.surface.isPresented)
+    #expect(byCommit.log.lines.last?.contains("after key 46") == true)
+
+    let byCancel = runningWithAMonitor()
+    byCancel.presenter.handleHotkey(.filter, deliveryDelay: nil)
+    _ = byCancel.presenter.handleKeyStroke(PanelKeystroke(
+      keyCode: UInt16(kVK_ANSI_S),
+      modifiers: [],
+      isARepeat: false,
+      characters: "s"
+    ))
+    _ = byCancel.presenter.handleKeyStroke(PanelKeystroke(
+      keyCode: UInt16(kVK_ANSI_G),
+      modifiers: .control,
+      isARepeat: false,
+      characters: "g"
+    ))
+    #expect(!byCancel.surface.isPresented)
+    #expect(byCancel.surface.dismissCount == 1)
+    #expect(byCancel.log.lines.last == "cancelled 4.8 ms after key 5; main switcher")
+  }
+
   /// Holding Return down must not take the row twice. The mapping already
   /// turns a repeat into nothing, and this holds that nothing reaching the
   /// panel: the panel stays up, and no line is written.

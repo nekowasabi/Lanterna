@@ -252,4 +252,69 @@ struct PanelKeyInputTableTests {
     #expect(table.matches(tablePress(kVK_Escape), action: .clearQuery))
     #expect(!table.matches(tablePress(kVK_ANSI_Period, .command), action: .clearQuery))
   }
+
+  /// With the same count of modifiers held, the binding asking for
+  /// Control answers first: held Command does not hand the press to
+  /// the window operation.
+  @Test
+  func controlAskingBindingsWinTiesWhileFiltering() {
+    let table = KeyBindingTable.defaults
+    #expect(
+      PanelKeyInput.action(for: tablePress(kVK_ANSI_W, [.command, .control], characters: "w"), table: table)
+        == .editQuery(.deleteWordBackward)
+    )
+    #expect(
+      PanelKeyInput.action(for: tablePress(kVK_ANSI_M, [.command, .control], characters: "m"), table: table)
+        == .commit(.custom(UInt16(kVK_ANSI_M)))
+    )
+    #expect(
+      PanelKeyInput.action(for: tablePress(kVK_ANSI_H, [.option, .control], characters: "h"), table: table)
+        == .editQuery(.deleteBackward)
+    )
+  }
+
+  /// Away from filtering the editing steps leave the candidates, so
+  /// the same held presses keep their old meanings.
+  @Test
+  func editingStepsStandDownAwayFromFiltering() {
+    let table = KeyBindingTable.defaults
+    #expect(
+      PanelKeyInput.action(
+        for: tablePress(kVK_ANSI_W, [.command, .control], characters: "w"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: false
+      ) == .windowOperation(.closeWindow)
+    )
+    #expect(
+      PanelKeyInput.action(
+        for: tablePress(kVK_ANSI_H, [.command, .control], characters: "h"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: false
+      ) == .windowOperation(.hideApplication)
+    )
+    #expect(
+      PanelKeyInput.action(
+        for: tablePress(kVK_ANSI_M, [.command, .control], characters: "m"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: false
+      ) == .commit(.custom(UInt16(kVK_ANSI_M)))
+    )
+  }
+
+  /// A customized Control binding keeps its own order against the new
+  /// editing steps: both ask for Control, so the fixed order decides.
+  @Test
+  func customControlBindingKeepsItsOrder() {
+    let table = tableWith(.closeWindow, resolved(kVK_ANSI_A, .control))
+    #expect(
+      PanelKeyInput.action(for: tablePress(kVK_ANSI_A, .control, characters: "a"), table: table)
+        == .windowOperation(.closeWindow)
+    )
+  }
 }

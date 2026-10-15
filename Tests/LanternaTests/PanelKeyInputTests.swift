@@ -139,6 +139,65 @@ struct PanelKeyInputTests {
     )
   }
 
+  /// The home-row selection keys match their long-standing counterparts,
+  /// filtering or not.
+  @Test(arguments: [true, false])
+  func controlSelectionKeysMatchTheirCounterparts(filtering: Bool) {
+    let table = KeyBindingTable.defaults
+    #expect(
+      PanelKeyInput.action(
+        for: press(kVK_ANSI_N, .control, characters: "n"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: filtering
+      ) == .selectNext
+    )
+    #expect(
+      PanelKeyInput.action(
+        for: press(kVK_ANSI_P, .control, characters: "p"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: filtering
+      ) == .selectPrevious
+    )
+    #expect(
+      PanelKeyInput.action(
+        for: press(kVK_ANSI_M, .control, characters: "m"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: filtering
+      ) == .commit(.custom(UInt16(kVK_ANSI_M)))
+    )
+    #expect(
+      PanelKeyInput.action(
+        for: press(kVK_ANSI_G, .control, characters: "g"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: filtering
+      ) == .cancel(.custom(UInt16(kVK_ANSI_G)))
+    )
+  }
+
+  /// Holding a selection key down keeps moving, while committing or
+  /// cancelling stays a single decision.
+  @Test
+  func holdingSelectionRepeatsButCommittingDoesNot() {
+    #expect(
+      PanelKeyInput.action(for: press(kVK_ANSI_N, .control, characters: "n", repeating: true))
+        == .selectNext
+    )
+    #expect(
+      PanelKeyInput.action(for: press(kVK_ANSI_P, .control, characters: "p", repeating: true))
+        == .selectPrevious
+    )
+    #expect(PanelKeyInput.action(for: press(kVK_ANSI_M, .control, repeating: true)) == .absorb)
+    #expect(PanelKeyInput.action(for: press(kVK_ANSI_G, .control, repeating: true)) == .absorb)
+  }
+
   /// Committing or cancelling is done once by deciding to. A second one
   /// produced by leaning on the key would land on whatever the first left
   /// behind.
