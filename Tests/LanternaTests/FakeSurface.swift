@@ -152,8 +152,8 @@ final class FakeSurface: SwitcherSurface {
     currentNotice = nil
   }
 
-  /// Kept out of `calls`: cursor-only redraws happen between swaps,
-  /// and the orderings the call log pins down are about the list.
+  /// Recorded in `calls`: cursor-only redraws happen between swaps,
+  /// and the orderings the call log pins down include the point.
   func showCursor(_ position: Int) {
     shownCursors.append(position)
     calls.append(.showCursor(position))
