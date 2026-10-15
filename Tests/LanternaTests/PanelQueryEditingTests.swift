@@ -101,16 +101,16 @@ struct PanelQueryEditingTests {
   @Test
   func everyControlLetterEitherWorksOrIsDropped() {
     let table = KeyBindingTable.defaults
-    let letters: [(Int, String, PanelKeyAction?)] = [
+    let letters: [(Int, String, PanelKeyAction)] = [
       (kVK_ANSI_A, "a", .editQuery(.moveToStart)),
       (kVK_ANSI_B, "b", .editQuery(.moveLeft)),
       (kVK_ANSI_D, "d", .editQuery(.deleteForward)),
       (kVK_ANSI_E, "e", .editQuery(.moveToEnd)),
       (kVK_ANSI_F, "f", .editQuery(.moveRight)),
-      (kVK_ANSI_G, "g", nil),
+      (kVK_ANSI_G, "g", .cancel(.custom(UInt16(kVK_ANSI_G)))),
       (kVK_ANSI_H, "h", .editQuery(.deleteBackward)),
       (kVK_ANSI_K, "k", .editQuery(.deleteToEnd)),
-      (kVK_ANSI_M, "m", nil),
+      (kVK_ANSI_M, "m", .commit(.custom(UInt16(kVK_ANSI_M)))),
       (kVK_ANSI_N, "n", .selectNext),
       (kVK_ANSI_P, "p", .selectPrevious),
       (kVK_ANSI_U, "u", .editQuery(.deleteToStart)),
@@ -123,12 +123,7 @@ struct PanelQueryEditingTests {
         isARepeat: false,
         characters: characters
       )
-      if let meaning {
-        #expect(PanelKeyInput.action(for: stroke, table: table) == meaning)
-      } else {
-        let answer = PanelKeyInput.action(for: stroke, table: table)
-        #expect(answer == .commit(.custom(UInt16(code))) || answer == .cancel(.custom(UInt16(code))))
-      }
+      #expect(PanelKeyInput.action(for: stroke, table: table) == meaning)
     }
     for code in
       [
