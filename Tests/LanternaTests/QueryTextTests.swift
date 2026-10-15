@@ -151,6 +151,13 @@ struct QueryTextTests {
   }
 
   @Test
+  func deletingAWordTreatsFullWidthSpaceAsDivider() {
+    var line = QueryText(text: "あいう\u{3000}えお", cursor: 6)
+    #expect(line.apply(.deleteWordBackward) == true)
+    #expect(line == QueryText(text: "あいう\u{3000}", cursor: 4))
+  }
+
+  @Test
   func deletingAWordOnLettersOnlyClearsToTheStart() {
     var line = QueryText(text: "saf", cursor: 3)
     #expect(line.apply(.deleteWordBackward) == true)
