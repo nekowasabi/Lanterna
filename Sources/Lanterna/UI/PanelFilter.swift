@@ -302,7 +302,13 @@ final class PanelFilter {
     let matchedList = matched.map(\.id)
     let chosen = state.resolveSelection(matched: layout.rankedRows.map(\.id), incoming: selection.chosenID)
     selection.retarget(to: matchedList, selecting: chosen)
-    surface.updateList(windows: matched, selecting: selection.chosenID, query: state.query, filterActive: isActive)
+    surface.updateList(
+      windows: matched,
+      selecting: selection.chosenID,
+      query: state.query,
+      cursor: state.line.cursor,
+      filterActive: isActive
+    )
     // Twin of `PanelKeyCommands.numberedRows`: same scope rule, so a narrowed
     // list renumbers the rows a jump would name.
     if surface.appearanceHints == .numbers {

@@ -115,13 +115,19 @@ protocol SwitcherSurface: AnyObject {
   /// Swaps the rows on screen for a narrowed set, redrawing the query row
   /// above them, and changes nothing about the panel's place —
   /// not its position, and writing no line. Only the height follows the
-  /// content, with the top edge staying where it was.
+  /// content, with the top edge staying where it was. The cursor travels
+  /// beside the query, so every appearance of the row draws the same point.
   func updateList(
     windows: [WindowItem],
     selecting: WindowItem.Identifier?,
     query: String,
+    cursor: Int,
     filterActive: Bool
   )
+
+  /// Redraws only the query row's insertion point, leaving the list,
+  /// the height, and the place alone, and writing no line.
+  func showCursor(_ position: Int)
 
   func dismiss()
 

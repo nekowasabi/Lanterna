@@ -329,6 +329,7 @@ final class SwitcherPanel: NSPanel {
     appearanceWidth = panelWidth
     resolvedScreenIndex = assignedScreenIndex ?? resolveFreshIndex()
     hostingView.rootView.query = ""
+    hostingView.rootView.cursor = 0
     hostingView.rootView.filterActive = filterActive
     hoverAnchor = HoverAnchor(point: NSEvent.mouseLocation)
     scrollGathering = ScrollAccumulator()

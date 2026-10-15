@@ -54,7 +54,7 @@ struct MirroredPanelSurfaceTests {
     let rows = windows()
     surface.present(windows: rows, selecting: nil)
     surface.showSelection(rows[2].id)
-    surface.updateList(windows: [rows[0]], selecting: rows[0].id, query: "a", filterActive: true)
+    surface.updateList(windows: [rows[0]], selecting: rows[0].id, query: "a", cursor: 1, filterActive: true)
     for fake in [first, second] {
       #expect(fake.shownSelections.last == rows[2].id)
       #expect(fake.updatedLists.last?.map(\.id) == [rows[0].id])

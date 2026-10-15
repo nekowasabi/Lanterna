@@ -39,6 +39,10 @@ struct SwitcherView: View {
   /// is on. Empty shows its guidance wording instead of drawing nothing.
   var query: String
 
+  /// How many characters stand before the insertion point. Drawn as a
+  /// mark in the query row; moving it alone redraws nothing else.
+  var cursor = 0
+
   /// Whether the query row belongs on screen. Off draws no chrome,
   /// whatever the query reads.
   var filterActive: Bool
