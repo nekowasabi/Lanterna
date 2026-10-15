@@ -198,6 +198,54 @@ struct PanelKeyInputTests {
     #expect(PanelKeyInput.action(for: press(kVK_ANSI_G, .control, repeating: true)) == .absorb)
   }
 
+  /// Away from filtering the sideways arrows and Backspace stay quiet:
+  /// the editing steps leave the candidates, and nothing else holds them.
+  @Test
+  func sidewaysKeysDoNothingAwayFromFiltering() {
+    let table = KeyBindingTable.defaults
+    for code in [kVK_LeftArrow, kVK_RightArrow, kVK_Delete] {
+      #expect(
+        PanelKeyInput.action(
+          for: press(code),
+          table: table,
+          numberJumpEnabled: false,
+          reorderEnabled: false,
+          filtering: false
+        ) == .absorb
+      )
+    }
+  }
+
+  /// Held modifiers change nothing about a step: with Command still down
+  /// from the invocation the arrows still move the point one character.
+  @Test(arguments: [NSEvent.ModifierFlags(), .command, .option])
+  func heldModifiersKeepSingleSteps(modifiers: NSEvent.ModifierFlags) {
+    #expect(PanelKeyInput.action(for: press(kVK_LeftArrow, modifiers)) == .editQuery(.moveLeft))
+    #expect(PanelKeyInput.action(for: press(kVK_RightArrow, modifiers)) == .editQuery(.moveRight))
+  }
+
+  /// A bare letter given to an editing step stays inert in both states:
+  /// while filtering it types, and away from filtering the step does
+  /// not answer, so the press falls through to typing and is swallowed.
+  @Test
+  func bareLetterStepsStayInert() {
+    var table = KeyBindingTable.defaults
+    table.keys[.moveCursorLeft] = [ResolvedKey(keyCode: UInt16(kVK_ANSI_Q), modifiers: [])]
+    #expect(
+      PanelKeyInput.action(for: press(kVK_ANSI_Q, [], characters: "q"), table: table)
+        == .filterText("q")
+    )
+    #expect(
+      PanelKeyInput.action(
+        for: press(kVK_ANSI_Q, [], characters: "q"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: false
+      ) == .filterText("q")
+    )
+  }
+
   /// Committing or cancelling is done once by deciding to. A second one
   /// produced by leaning on the key would land on whatever the first left
   /// behind.

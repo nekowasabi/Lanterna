@@ -321,6 +321,41 @@ struct PanelFilterTests {
     #expect(made.selection.chosenID == renewed[0].id)
   }
 
+  /// A swap keeps the insertion point beside the query it carries.
+  @Test
+  func replacingTheListKeepsTheCursor() {
+    let made = makeFilter()
+    made.filter.append("sa")
+    made.filter.edit(.moveLeft)
+    made.filter.replace(fullWindows: made.rows)
+    #expect(made.surface.updatedQueries.last == "sa")
+    #expect(made.surface.updatedCursors.last == 1)
+  }
+
+  /// Switching a presented panel into filtering starts on an empty
+  /// query with the point at the start.
+  @Test
+  func switchingIntoFilteringStartsOver() {
+    let made = makeFilter(active: false)
+    made.filter.activate()
+    made.filter.append("sa")
+    made.filter.edit(.moveLeft)
+    made.filter.begin(fullWindows: made.rows, filtering: false)
+    made.filter.activate()
+    #expect(made.surface.updatedQueries.last == "")
+    #expect(made.surface.updatedCursors.last == 0)
+  }
+
+  /// The commit names the whole query, wherever the point stands.
+  @Test
+  func theCommitNamesTheWholeQuery() {
+    let made = makeFilter()
+    made.filter.append("safari")
+    made.filter.edit(.moveLeft)
+    made.filter.edit(.moveLeft)
+    #expect(made.filter.logSummary().query == "safari")
+  }
+
   /// A swap that keeps the chosen row keeps the remembered row: a row the
   /// query still hides after the swap is chosen again when a later
   /// shortening brings it back.
