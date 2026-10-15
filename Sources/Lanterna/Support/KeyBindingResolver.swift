@@ -95,7 +95,7 @@ enum KeyBindingResolver {
     var kept = [ResolvedKey]()
     var issues = [KeyBindingIssue]()
     for raw in raws {
-      guard let resolved = validatedEntry(raw, mode: action.mode) else {
+      guard let resolved = validatedEntry(raw, for: action) else {
         issues.append(KeyBindingIssue(
           action: action,
           reason: .invalid,
@@ -109,9 +109,9 @@ enum KeyBindingResolver {
     return (kept.filter { seen.insert($0).inserted }, issues)
   }
 
-  /// One entry against its mode. `nil` means dropped. Key codes run 0
+  /// One entry against its action. `nil` means dropped. Key codes run 0
   /// to 127 on this keyboard; anything wider is not a key at all.
-  private static func validatedEntry(_ raw: RawKeyBinding, mode: BindingMode) -> ResolvedKey? {
+  private static func validatedEntry(_ raw: RawKeyBinding, for action: KeyBindingAction) -> ResolvedKey? {
     guard raw.keyCode >= 0, raw.keyCode <= 127 else { return nil }
     var flags = NSEvent.ModifierFlags()
     for word in raw.modifiers {
@@ -123,7 +123,7 @@ enum KeyBindingResolver {
       default: return nil
       }
     }
-    guard KeyBindingTable.allows(modifiers: flags, mode: mode) else {
+    guard KeyBindingTable.allows(modifiers: flags, for: action) else {
       return nil
     }
     return ResolvedKey(keyCode: UInt16(raw.keyCode), modifiers: flags)

@@ -92,6 +92,32 @@ struct PanelPresenterUnreportedReleaseTests {
     )
   }
 
+  /// An Option-held appearance names Option when the tap never reports
+  /// its release. The watch already follows the appearance's commit key
+  /// to notice the release; the line follows it too, so a parallel panel
+  /// that vanished without naming Option could not be told from a main
+  /// one that was never up.
+  @Test(.timeLimit(.minutes(1)))
+  func anOptionReleaseNothingReportedNamesOption() async {
+    let fixture = Fixture(closesOnCommandRelease: true, commandIsHeld: false, optionIsHeld: true)
+    fixture.presenter.parallelSwitcher.windowScope = .allApps
+    fixture.presenter.handleHotkey(.parallelForward, deliveryDelay: nil)
+
+    fixture.optionHold.isHeld = false
+    await fixture.optionHold.waitUntilAsked(times: 2)
+    await settle()
+
+    let second = fixture.windows[1]
+    #expect(fixture.surface.dismissCount == 1)
+    #expect(!fixture.surface.isPresented)
+    #expect(
+      fixture.log.lines.last
+        == "closed the panel showing \(second.appName) — \(second.displayTitle) "
+        + "(\(second.id.logWord)); "
+        + "Option was let go and the tap never said so"
+    )
+  }
+
   /// Holding Command and tapping along the list is the ordinary gesture, and
   /// it is the one the looking must not cut short. Three looks with the key
   /// still down, and the panel is exactly as it was.

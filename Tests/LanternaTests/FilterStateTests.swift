@@ -19,24 +19,25 @@ struct FilterStateTests {
     #expect(state.rememberedID == nil)
   }
 
-  /// Typing appends to the query.
+  /// Typing inserts at the insertion point.
   @Test
   func typingAppendsToTheQuery() {
     var state = FilterState()
-    state.append("a")
-    state.append("b")
+    state.line.insert("a")
+    state.line.insert("b")
     #expect(state.query == "ab")
   }
 
-  /// Backspace removes the last character; on an empty query it does nothing.
+  /// Backspace removes the character before the insertion point;
+  /// at the start it does nothing.
   @Test
   func backspaceRemovesTheLastCharacter() {
     var state = FilterState()
-    state.append("ab")
-    state.removeLast()
+    state.line.insert("ab")
+    _ = state.line.apply(.deleteBackward)
     #expect(state.query == "a")
-    state.removeLast()
-    state.removeLast()
+    _ = state.line.apply(.deleteBackward)
+    _ = state.line.apply(.deleteBackward)
     #expect(state.query.isEmpty)
   }
 
@@ -44,7 +45,7 @@ struct FilterStateTests {
   @Test
   func clearingDropsBothQueryAndMemory() {
     var state = FilterState(previousMatchedIDs: Set(all))
-    state.append("a")
+    state.line.insert("a")
     _ = state.resolveSelection(matched: [second], incoming: first)
     state.clear()
     #expect(state.query.isEmpty)

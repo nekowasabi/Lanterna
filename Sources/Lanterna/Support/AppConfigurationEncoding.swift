@@ -1,6 +1,24 @@
 import AppKit
 import Foundation
 
+// MARK: - SectionValue
+
+/// One spelled switcher-section entry's raw value.
+enum SectionValue: Equatable, Sendable {
+  case word(String)
+  case flag(Bool)
+
+  // MARK: Internal
+
+  /// The canonical spelling: words quoted, flags bare.
+  var rendered: String {
+    switch self {
+    case .word(let text): "\"\(text)\""
+    case .flag(let enabled): enabled ? "true" : "false"
+    }
+  }
+}
+
 /// Encoding side of the config file, split out when the decoding file
 /// reached the file-length limit. Decoding stays in `AppConfiguration`;
 /// everything that writes lives here.
@@ -57,6 +75,7 @@ extension AppConfiguration {
     entries.append(contentsOf: updateCheckEntries(config))
     entries.append(encodedInt(key: "version", value: config.version))
     entries.append(contentsOf: listingEntries(config))
+    entries.append(contentsOf: switcherSectionEntries(config))
     // Every line opens with two spaces and its quoted key, so sorting
     // the lines sorts the keys. Helpers may append in any order.
     return Data(("{\n" + entries.sorted().joined(separator: ",\n") + "\n}\n").utf8)
@@ -155,6 +174,91 @@ extension AppConfiguration {
     return entries
   }
 
+  /// The switchers section lines, from the spelled sections rather than
+  /// the flat fields, so a save keeps the sectioned shape. Absent or
+  /// empty sections mean no lines, so untouched files encode unchanged.
+  static func switcherSectionEntries(_ config: ValidConfiguration) -> [String] {
+    var sections = [String]()
+    if let main = config.mainSection, !main.isEmpty {
+      sections.append(sectionBlock(name: "main", values: main))
+    }
+    if let parallel = config.parallelSection, !parallel.isEmpty {
+      sections.append(sectionBlock(name: "parallel", values: parallel))
+    }
+    guard !sections.isEmpty else { return [] }
+    return ["  \"switchers\": {\n" + sections.joined(separator: ",\n") + "\n  }"]
+  }
+
+  /// The main switcher's items differing from the long-standing
+  /// defaults, as the section spells them.
+  static func spelledMainSection(_ main: SwitcherSettings) -> [String: SectionValue] {
+    let defaults = SwitcherSettings.mainDefaults
+    var out = [String: SectionValue]()
+    if main.windowScope != defaults.windowScope {
+      out["windowScope"] = .word(main.windowScope.rawValue)
+    }
+    let modes = [
+      ("otherSpaceMode", main.displayModes.otherSpace, defaults.displayModes.otherSpace),
+      ("hiddenAppMode", main.displayModes.hiddenApp, defaults.displayModes.hiddenApp),
+      ("minimizedMode", main.displayModes.minimized, defaults.displayModes.minimized),
+      ("fullscreenMode", main.displayModes.fullscreen, defaults.displayModes.fullscreen),
+      ("windowlessAppMode", main.displayModes.windowlessApp, defaults.displayModes.windowlessApp),
+    ]
+    for (key, mode, fallback) in modes where mode != fallback {
+      out[key] = .word(mode.rawValue)
+    }
+    for (key, subgroup) in placementKeys {
+      let placement = main.subgroupPlacements[subgroup] ?? .endOfList
+      if placement != .endOfList {
+        out[key] = .word(placement.rawValue)
+      }
+    }
+    return out
+  }
+
+  /// The parallel switcher's spelled keys: owned items, the window
+  /// scope's explicit following, and the switch when off. Following
+  /// items and the front-application scope stay omitted.
+  static func spelledParallelSection(_ overrides: ParallelOverrides) -> [String: SectionValue] {
+    var out = [String: SectionValue]()
+    switch overrides.windowScope {
+    case .follow:
+      out["windowScope"] = .word("inherit")
+    case .own(let scope) where scope != .frontApp:
+      out["windowScope"] = .word(scope.rawValue)
+    case .own:
+      break
+    }
+    let modes = [
+      ("otherSpaceMode", overrides.otherSpaceMode),
+      ("hiddenAppMode", overrides.hiddenAppMode),
+      ("minimizedMode", overrides.minimizedMode),
+      ("fullscreenMode", overrides.fullscreenMode),
+      ("windowlessAppMode", overrides.windowlessAppMode),
+    ]
+    for (key, choice) in modes {
+      if case .own(let mode) = choice {
+        out[key] = .word(mode.rawValue)
+      }
+    }
+    let placements = [
+      ("otherSpacePlacement", overrides.otherSpacePlacement),
+      ("hiddenAppPlacement", overrides.hiddenAppPlacement),
+      ("minimizedPlacement", overrides.minimizedPlacement),
+      ("fullscreenPlacement", overrides.fullscreenPlacement),
+      ("windowlessAppPlacement", overrides.windowlessAppPlacement),
+    ]
+    for (key, choice) in placements {
+      if case .own(let placement) = choice {
+        out[key] = .word(placement.rawValue)
+      }
+    }
+    if !overrides.isEnabled {
+      out["enabled"] = .flag(false)
+    }
+    return out
+  }
+
   // MARK: Private
 
   /// The keybindings section lines, from the stored customized section
@@ -225,6 +329,14 @@ extension AppConfiguration {
   /// One `"key": true` line, indented two spaces.
   private static func encodedBool(key: String, value: Bool) -> String {
     "  \"\(key)\": \(value)"
+  }
+
+  /// One named section block, keys sorted like the top-level lines.
+  private static func sectionBlock(name: String, values: [String: SectionValue]) -> String {
+    let rows = values.keys.sorted().map { key in
+      "      \"\(key)\": \(values[key]?.rendered ?? "null")"
+    }
+    return "    \"\(name)\": {\n" + rows.joined(separator: ",\n") + "\n    }"
   }
 
 }

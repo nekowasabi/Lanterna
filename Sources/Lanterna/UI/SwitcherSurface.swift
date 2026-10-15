@@ -1,3 +1,27 @@
+// MARK: - AppliedPanelSettings
+
+/// One appearance's panel settings: one switcher's display modes and
+/// parked-section placements, with the shared grouping folded in.
+///
+/// The rest of what the panel draws by is shared by both switchers and
+/// reaches the panel when the settings change, not per appearance.
+struct AppliedPanelSettings: Equatable, Sendable {
+  var displayModes: DisplayModes
+  var grouping: GroupingPolicy
+
+  /// Folds one switcher's placements into the shared grouping: how the
+  /// list groups, the group count, the heading style, and the manual
+  /// names and assignments stay the same whichever switcher opens.
+  static func resolve(
+    _ settings: SwitcherSettings,
+    sharedGrouping: GroupingPolicy
+  ) -> AppliedPanelSettings {
+    var grouping = sharedGrouping
+    grouping.placements = settings.subgroupPlacements
+    return AppliedPanelSettings(displayModes: settings.displayModes, grouping: grouping)
+  }
+}
+
 // MARK: - SwitcherSurface
 
 /// The panel as the code deciding when to show it sees it: something that can
@@ -91,17 +115,33 @@ protocol SwitcherSurface: AnyObject {
   /// Swaps the rows on screen for a narrowed set, redrawing the query row
   /// above them, and changes nothing about the panel's place —
   /// not its position, and writing no line. Only the height follows the
-  /// content, with the top edge staying where it was.
+  /// content, with the top edge staying where it was. The cursor travels
+  /// beside the query, so every appearance of the row draws the same point.
   func updateList(
     windows: [WindowItem],
     selecting: WindowItem.Identifier?,
     query: String,
+    cursor: Int,
     filterActive: Bool
   )
 
+  /// Redraws only the query row's insertion point, leaving the list,
+  /// the height, and the place alone, and writing no line.
+  func showCursor(_ position: Int)
+
   func dismiss()
+
+  /// Hands one appearance's panel settings over before it goes up. The
+  /// panel that is up keeps its own until it closes; the next appearance
+  /// hands its own again.
+  func applyPanelSettings(_ settings: AppliedPanelSettings)
 }
 
 // MARK: - SwitcherPanel + SwitcherSurface
 
-extension SwitcherPanel: SwitcherSurface { }
+extension SwitcherPanel: SwitcherSurface {
+  func applyPanelSettings(_ settings: AppliedPanelSettings) {
+    displayModes = settings.displayModes
+    grouping = settings.grouping
+  }
+}

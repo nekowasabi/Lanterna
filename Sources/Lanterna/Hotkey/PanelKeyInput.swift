@@ -94,7 +94,9 @@ enum PanelKeyAction: Equatable, Sendable {
   case cancel(CancelKey)
   /// An operation on the chosen row. Read before the filtering row: an
   /// operation key held with Command is an operation even where its
-  /// letter would type, while any other Command letter still narrows.
+  /// letter would type, while any other Command letter still narrows
+  /// while filtering. While not filtering, a letter bound with no
+  /// modifier to any action also answers with modifiers held.
   case windowOperation(WindowOperation)
   /// Switches this showing between every application's windows and the
   /// active application's alone.
@@ -110,8 +112,13 @@ enum PanelKeyAction: Equatable, Sendable {
   /// would step.
   case moveRowUp
   case moveRowDown
-  /// Backspace: shortens the query by one character.
-  case filterBackspace
+  /// Switches a panel that is not filtering into filtering.
+  case startFiltering
+  /// Hides the panel and opens the settings.
+  case openSettings
+  /// Edits the query or moves its insertion point. Repeats while held,
+  /// the way Backspace always did.
+  case editQuery(QueryEdit)
   /// Clears the query, leaving the panel up.
   case clearQuery
   /// No meaning was given to this key. It is swallowed all the same.
@@ -326,19 +333,22 @@ enum PanelKeyInput {
 
   /// What the panel should do about this press with the number
   /// switches in force. Off reads as the table holding neither the
-  /// number row nor the reorder rows, so an unchanged file keeps the
-  /// long-standing meanings key for key.
+  /// number row nor the reorder rows, so their keys keep the meanings
+  /// the rest of the table gives them. Callers omitting `filtering`
+  /// read as filtering, as before.
   static func action(
     for keystroke: PanelKeystroke,
     table: KeyBindingTable,
     numberJumpEnabled: Bool = false,
-    reorderEnabled: Bool = false
+    reorderEnabled: Bool = false,
+    filtering: Bool = true
   ) -> PanelKeyAction {
     let action = meaning(
       of: keystroke,
       table: table,
       numberJumpEnabled: numberJumpEnabled,
-      reorderEnabled: reorderEnabled
+      reorderEnabled: reorderEnabled,
+      filtering: filtering
     )
     guard keystroke.isARepeat else { return action }
     return action.whenTheKeyboardIsRepeating
@@ -426,7 +436,8 @@ enum PanelKeyInput {
     of keystroke: PanelKeystroke,
     table: KeyBindingTable,
     numberJumpEnabled: Bool = false,
-    reorderEnabled: Bool = false
+    reorderEnabled: Bool = false,
+    filtering: Bool = true
   ) -> PanelKeyAction {
     if Int(keystroke.keyCode) == kVK_Tab, !holdsTab(table) {
       return .absorb
@@ -436,10 +447,17 @@ enum PanelKeyInput {
         for: keystroke,
         table: table,
         numberJumpEnabled: numberJumpEnabled,
-        reorderEnabled: reorderEnabled
+        reorderEnabled: reorderEnabled,
+        filtering: filtering
       )
     {
       return winner
+    }
+    // A Control-held press with no binding goes nowhere while filtering:
+    // reaching for an editing key must never type its letter into the
+    // query. Away from filtering the old fate stays, whatever is held.
+    if filtering, keystroke.modifiers.contains(.control) {
+      return .absorb
     }
     // Going by key code and not by the character is what keeps the
     // whole table independent of the input source and the physical
@@ -459,7 +477,8 @@ enum PanelKeyInput {
     for keystroke: PanelKeystroke,
     table: KeyBindingTable,
     numberJumpEnabled: Bool = false,
-    reorderEnabled: Bool = false
+    reorderEnabled: Bool = false,
+    filtering: Bool = true
   ) -> PanelKeyAction? {
     var ordered: [(KeyBindingAction, PanelKeyAction)] = WindowOperation.allCases.map {
       ($0.binding, .windowOperation($0))
@@ -476,39 +495,84 @@ enum PanelKeyInput {
       (.commit, .commit(commitKey(for: keystroke))),
       (.cancel, .cancel(cancelKey(for: keystroke))),
       (.toggleScope, .toggleScope),
-      (.clearQuery, .clearQuery),
-      (.deleteBackward, .filterBackspace),
     ]
+    // A panel already filtering has nothing to switch into, so the key
+    // keeps whatever else it means there, typing included.
+    if !filtering {
+      ordered.append((.startFiltering, .startFiltering))
+    }
+    ordered += [
+      (.openSettings, .openSettings),
+      (.clearQuery, .clearQuery),
+    ]
+    // The editing steps answer while filtering only: away from it the
+    // same keys keep whatever else they mean, including typing.
+    if filtering {
+      ordered += [
+        (.deleteBackward, .editQuery(.deleteBackward)),
+        (.moveCursorLeft, .editQuery(.moveLeft)),
+        (.moveCursorRight, .editQuery(.moveRight)),
+        (.moveCursorToStart, .editQuery(.moveToStart)),
+        (.moveCursorToEnd, .editQuery(.moveToEnd)),
+        (.deleteForward, .editQuery(.deleteForward)),
+        (.deleteWordBackward, .editQuery(.deleteWordBackward)),
+        (.deleteToStart, .editQuery(.deleteToStart)),
+        (.deleteToEnd, .editQuery(.deleteToEnd)),
+      ]
+    }
     let ranked = ordered.enumerated().compactMap { order, entry in
-      narrowness(of: keystroke, action: entry.0, table: table).map {
-        (narrowness: $0, order: order, action: entry.1)
+      strength(of: keystroke, action: entry.0, table: table, filtering: filtering).map {
+        (narrowness: $0.narrowness, wantsControl: $0.wantsControl, order: order, action: entry.1)
       }
     }
     return ranked.max {
-      $0.narrowness == $1.narrowness ? $0.order > $1.order : $0.narrowness < $1.narrowness
+      if $0.narrowness != $1.narrowness {
+        return $0.narrowness < $1.narrowness
+      }
+      // With the same count of modifiers held, the binding asking for
+      // Control answers first; among those, and among the rest, the
+      // fixed order still decides.
+      if $0.wantsControl != $1.wantsControl {
+        return !$0.wantsControl && $1.wantsControl
+      }
+      return $0.order > $1.order
     }?.action
   }
 
-  /// How many modifiers the closest matching key demands, else nothing.
-  /// Reads the same per-key test as `KeyBindingTable.matches`, adding
-  /// how narrow the fit is.
-  private static func narrowness(
+  /// How narrowly an action answers the press, else nothing: how many
+  /// modifiers the closest matching key demands, and whether that key
+  /// asks for Control. Reads the same per-key test as
+  /// `KeyBindingTable.matches`, adding how narrow the fit is.
+  private static func strength(
     of keystroke: PanelKeystroke,
     action: KeyBindingAction,
-    table: KeyBindingTable
-  ) -> Int? {
+    table: KeyBindingTable,
+    filtering: Bool = true
+  ) -> (narrowness: Int, wantsControl: Bool)? {
     let schema: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
-    return table[action].filter { key in
-      key.keyCode == keystroke.keyCode && key.modifiers.isSubset(of: keystroke.modifiers)
-        && (!key.modifiers.isEmpty || WindowFilter.allowedText(keystroke.characters) == nil)
-    }.lazy.map { $0.modifiers.intersection(schema).rawValue.nonzeroBitCount }.max()
+    let answering = table[action].filter { $0.answers(keystroke, filtering: filtering) }
+    guard
+      let narrowness = answering.lazy.map({ $0.modifiers.intersection(schema).rawValue.nonzeroBitCount }).max()
+    else {
+      return nil
+    }
+    let closest = answering.filter {
+      $0.modifiers.intersection(schema).rawValue.nonzeroBitCount == narrowness
+    }
+    return (narrowness, closest.contains { $0.modifiers.contains(.control) })
   }
 
-  /// Whether show, showReverse or showFilter holds Tab. Only an explicit
-  /// invocation binding lifts the reservation, so any other action holding
-  /// Tab cannot answer a press Carbon already claimed for invocation.
+  /// Whether any invocation holds Tab. Only an explicit invocation
+  /// binding lifts the reservation, so any other action holding Tab
+  /// cannot answer a press Carbon already claimed for invocation. The
+  /// parallel invocations count the same way: Carbon claims their Tab
+  /// presses too, and the reservation goes by the table rather than by
+  /// whether the switcher is switched on, so a disabled parallel leaves
+  /// Tab-bound panel actions answering rather than growing an exception.
   private static func holdsTab(_ table: KeyBindingTable) -> Bool {
-    [.show, .showReverse, .showFilter].contains { table[$0].contains { $0.keyCode == kVK_Tab } }
+    [.show, .showReverse, .showFilter, .showParallel, .showParallelReverse].contains {
+      table[$0].contains { $0.keyCode == kVK_Tab }
+    }
   }
 
 }
@@ -526,13 +590,15 @@ extension PanelKeyAction {
     case .selectNext,
          .selectPrevious,
          .filterText,
-         .filterBackspace,
+         .editQuery,
          .clearQuery:
       self
     case .commit,
          .cancel,
          .windowOperation,
          .toggleScope,
+         .startFiltering,
+         .openSettings,
          .numberDigit,
          .moveRowUp,
          .moveRowDown,

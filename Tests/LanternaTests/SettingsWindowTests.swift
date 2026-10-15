@@ -147,7 +147,14 @@ extension SettingsWindowTests {
   func toolbarTabsFollowFixedOrder() throws {
     let controller = try tabController()
     #expect(controller.tabStyle == .toolbar)
-    #expect(controller.tabViewItems.map(\.label) == ["General", "Appearance", "Filter", "Groups", "Keyboard"])
+    #expect(controller.tabViewItems.map(\.label) == [
+      "General",
+      "Appearance",
+      "Switchers",
+      "Filter",
+      "Groups",
+      "Keyboard",
+    ])
   }
 
   /// Every tab shares one content size, so switching tabs never resizes.
@@ -157,7 +164,7 @@ extension SettingsWindowTests {
     window.layoutIfNeeded()
     let controller = window.contentViewController as? NSTabViewController
     let hosts = controller?.tabViewItems.compactMap { $0.viewController as? NSHostingController<AnyView> }
-    #expect(hosts?.count == 5)
+    #expect(hosts?.count == 6)
     let sizes = hosts?.map(\.preferredContentSize) ?? []
     #expect(Set(sizes.map(\.width)).count == 1)
     #expect(Set(sizes.map(\.height)).count == 1)

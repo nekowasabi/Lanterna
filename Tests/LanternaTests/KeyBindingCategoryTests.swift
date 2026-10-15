@@ -19,15 +19,27 @@ struct KeyBindingCategoryTests {
       .show,
       .showReverse,
       .showFilter,
+      .showParallel,
+      .showParallelReverse,
       .next,
       .previous,
       .commit,
       .cancel,
+      .openSettings,
       .toggleScope,
       .numberJump,
       .moveRowUp,
       .moveRowDown,
+      .startFiltering,
+      .moveCursorLeft,
+      .moveCursorRight,
+      .moveCursorToStart,
+      .moveCursorToEnd,
       .deleteBackward,
+      .deleteForward,
+      .deleteWordBackward,
+      .deleteToStart,
+      .deleteToEnd,
       .clearQuery,
       .closeWindow,
       .quitApplication,
@@ -43,6 +55,8 @@ struct KeyBindingCategoryTests {
       "Show",
       "Show in reverse",
       "Show for filtering",
+      "Show parallel",
+      "Show parallel in reverse",
       "Next",
       "Previous",
       "Commit",
@@ -57,6 +71,16 @@ struct KeyBindingCategoryTests {
       "Jump to row number",
       "Move row up",
       "Move row down",
+      "Start filtering",
+      "Open settings",
+      "Move cursor left",
+      "Move cursor right",
+      "Move cursor to start",
+      "Move cursor to end",
+      "Delete forward",
+      "Delete word backward",
+      "Delete to start",
+      "Delete to end",
     ])
   }
 
@@ -65,7 +89,7 @@ struct KeyBindingCategoryTests {
     let found = KeyBindingCategory.matches("sh")
     #expect(found?.count == 1)
     #expect(found?.first?.category == .switcher)
-    #expect(found?.first?.actions == [.show, .showReverse, .showFilter])
+    #expect(found?.first?.actions == [.show, .showReverse, .showFilter, .showParallel, .showParallelReverse])
   }
 
   @Test
@@ -105,7 +129,7 @@ struct KeyBindingCategoryTests {
   func paddedQueryIsTrimmed() {
     let found = KeyBindingCategory.matches(" sh ")
     #expect(found?.map(\.category) == [.switcher])
-    #expect(found?.first?.actions == [.show, .showReverse, .showFilter])
+    #expect(found?.first?.actions == [.show, .showReverse, .showFilter, .showParallel, .showParallelReverse])
   }
 
 }

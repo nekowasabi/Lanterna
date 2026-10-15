@@ -311,7 +311,7 @@ struct FilterKeyMeaningTests {
   func backspaceEditsTheQueryWhateverIsHeldWithIt(modifiers: NSEvent.ModifierFlags) {
     #expect(
       PanelKeyInput.action(for: aTypedPress(kVK_Delete, modifiers, characters: ""))
-        == .filterBackspace
+        == .editQuery(.deleteBackward)
     )
   }
 
@@ -326,7 +326,7 @@ struct FilterKeyMeaningTests {
     )
     #expect(
       PanelKeyInput.action(for: aTypedPress(kVK_Delete, characters: "", repeating: true))
-        == .filterBackspace
+        == .editQuery(.deleteBackward)
     )
     #expect(
       PanelKeyInput.action(for: aTypedPress(kVK_Escape, characters: "", repeating: true))

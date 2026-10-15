@@ -140,6 +140,7 @@ struct Fixture {
     step: Duration = .microseconds(4800),
     closesOnCommandRelease: Bool = false,
     commandIsHeld: Bool = true,
+    optionIsHeld: Bool = true,
     heldModifiers: CGEventFlags = .maskCommand,
     commandWatchInterval: Duration = .milliseconds(1),
     keyStatusWatchInterval: Duration = .milliseconds(1),
@@ -152,6 +153,7 @@ struct Fixture {
       step: step,
       closesOnCommandRelease: closesOnCommandRelease,
       commandIsHeld: commandIsHeld,
+      optionIsHeld: optionIsHeld,
       heldModifiers: heldModifiers,
       commandWatchInterval: commandWatchInterval,
       keyStatusWatchInterval: keyStatusWatchInterval,
@@ -165,6 +167,7 @@ struct Fixture {
     step: Duration = .microseconds(4800),
     closesOnCommandRelease: Bool = false,
     commandIsHeld: Bool = true,
+    optionIsHeld: Bool = true,
     heldModifiers: CGEventFlags = .maskCommand,
     commandWatchInterval: Duration = .milliseconds(1),
     keyStatusWatchInterval: Duration = .milliseconds(1),
@@ -178,6 +181,7 @@ struct Fixture {
     // down means, and every test written before the presenter could ask
     // was written for that press.
     let commandHold = CommandHold(isHeld: commandIsHeld)
+    let optionHold = CommandHold(isHeld: optionIsHeld)
     presenter = PanelPresenter(
       surface: surface,
       store: store,
@@ -186,6 +190,7 @@ struct Fixture {
       writeLine: log.write,
       closesOnCommandRelease: { [monitorLiveness] in monitorLiveness.isRunning },
       commandIsHeld: { [commandHold] in commandHold.read() },
+      optionIsHeld: { [optionHold] in optionHold.read() },
       modifierFlags: { heldModifiers },
       // A real fiftieth of a second per look would be paid over again by
       // every test that waits for one. The store's loop tests shorten
@@ -202,6 +207,7 @@ struct Fixture {
     self.clock = clock
     self.monitorLiveness = monitorLiveness
     self.commandHold = commandHold
+    self.optionHold = optionHold
     self.switcher = switcher
   }
 
@@ -220,6 +226,9 @@ struct Fixture {
   /// The very box the presenter asks, so a test can let Command go before
   /// the press that was made with it arrives.
   let commandHold: CommandHold
+  /// The very box the presenter asks, so a test can stage a press made
+  /// without Option beside one made with it held.
+  let optionHold: CommandHold
   /// What commits take. Silent unless a test scripts it, so the suites
   /// written before anything was taken keep reading the same lines.
   let switcher: FakeWindowSwitcher

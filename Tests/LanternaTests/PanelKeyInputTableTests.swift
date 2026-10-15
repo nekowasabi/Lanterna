@@ -83,11 +83,54 @@ struct PanelKeyInputTableTests {
   }
 
   @Test
-  func bareLetterBindingYieldsToTyping() {
+  func bareLetterBindingYieldsToTypingWhileFiltering() {
     let table = tableWith(.next, resolved(kVK_ANSI_N))
     #expect(
-      PanelKeyInput.action(for: tablePress(kVK_ANSI_N, [], characters: "n"), table: table)
-        == .filterText("n")
+      PanelKeyInput.action(
+        for: tablePress(kVK_ANSI_N, [], characters: "n"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: true
+      ) == .filterText("n")
+    )
+  }
+
+  @Test
+  func bareLetterBindingDrivesWhileNotFiltering() {
+    let table = tableWith(.next, resolved(kVK_ANSI_N))
+    #expect(
+      PanelKeyInput.action(
+        for: tablePress(kVK_ANSI_N, [], characters: "n"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: false
+      ) == .selectNext
+    )
+    #expect(
+      PanelKeyInput.action(
+        for: tablePress(kVK_ANSI_N, .command, characters: "n"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: false
+      ) == .selectNext
+    )
+  }
+
+  @Test
+  func narrowerBindingWinsWhileNotFiltering() {
+    var table = tableWith(.next, resolved(kVK_ANSI_N))
+    table.keys[.commit] = [resolved(kVK_ANSI_N, .command)]
+    #expect(
+      PanelKeyInput.action(
+        for: tablePress(kVK_ANSI_N, .command, characters: "n"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: false
+      ) == .commit(.custom(45))
     )
   }
 
@@ -147,8 +190,10 @@ struct PanelKeyInputTableTests {
       PanelKeyInput.action(for: tablePress(kVK_ANSI_H, .control), table: table)
         == .windowOperation(.closeWindow)
     )
+    // Bare typing narrows instead: no bare binding holds H, so "h" filters.
     #expect(
-      PanelKeyInput.action(for: tablePress(kVK_ANSI_H), table: table) == .absorb
+      PanelKeyInput.action(for: tablePress(kVK_ANSI_H, [], characters: "h"), table: table)
+        == .filterText("h")
     )
   }
 
@@ -183,17 +228,20 @@ struct PanelKeyInputTableTests {
   @Test
   func tabLostFromInvocationStaysAbsorbed() {
     // No invocation action holds Tab anymore: show moved to Cmd+S,
-    // crowding showFilter out, and showReverse moved to Cmd+R. The
-    // reservation stands back up, even though next still binds Tab.
+    // crowding showFilter out, showReverse moved to Cmd+R, and both
+    // parallel invocations moved to Ctrl+Opt+T. The reservation stands
+    // back up, even though next still binds Tab.
     let section: [KeyBindingAction: [RawKeyBinding]] = [
       .show: [RawKeyBinding(keyCode: kVK_ANSI_S, modifiers: ["cmd"])],
       .showReverse: [RawKeyBinding(keyCode: kVK_ANSI_R, modifiers: ["cmd"])],
       .showFilter: [RawKeyBinding(keyCode: kVK_ANSI_S, modifiers: ["cmd"])],
+      .showParallel: [RawKeyBinding(keyCode: kVK_ANSI_T, modifiers: ["ctrl", "opt"])],
+      .showParallelReverse: [RawKeyBinding(keyCode: kVK_ANSI_T, modifiers: ["ctrl", "opt", "shift"])],
       .next: [RawKeyBinding(keyCode: kVK_Tab, modifiers: [])],
     ]
     let (table, _) = KeyBindingResolver.resolve(
       section,
-      order: [.show, .showReverse, .showFilter, .next]
+      order: [.show, .showReverse, .showFilter, .showParallel, .showParallelReverse, .next]
     )
     #expect(PanelKeyInput.action(for: tablePress(kVK_Tab), table: table) == .absorb)
   }
@@ -203,5 +251,70 @@ struct PanelKeyInputTableTests {
     let table = KeyBindingTable.defaults
     #expect(table.matches(tablePress(kVK_Escape), action: .clearQuery))
     #expect(!table.matches(tablePress(kVK_ANSI_Period, .command), action: .clearQuery))
+  }
+
+  /// With the same count of modifiers held, the binding asking for
+  /// Control answers first: held Command does not hand the press to
+  /// the window operation.
+  @Test
+  func controlAskingBindingsWinTiesWhileFiltering() {
+    let table = KeyBindingTable.defaults
+    #expect(
+      PanelKeyInput.action(for: tablePress(kVK_ANSI_W, [.command, .control], characters: "w"), table: table)
+        == .editQuery(.deleteWordBackward)
+    )
+    #expect(
+      PanelKeyInput.action(for: tablePress(kVK_ANSI_M, [.command, .control], characters: "m"), table: table)
+        == .commit(.custom(UInt16(kVK_ANSI_M)))
+    )
+    #expect(
+      PanelKeyInput.action(for: tablePress(kVK_ANSI_H, [.option, .control], characters: "h"), table: table)
+        == .editQuery(.deleteBackward)
+    )
+  }
+
+  /// Away from filtering the editing steps leave the candidates, so
+  /// the same held presses keep their old meanings.
+  @Test
+  func editingStepsStandDownAwayFromFiltering() {
+    let table = KeyBindingTable.defaults
+    #expect(
+      PanelKeyInput.action(
+        for: tablePress(kVK_ANSI_W, [.command, .control], characters: "w"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: false
+      ) == .windowOperation(.closeWindow)
+    )
+    #expect(
+      PanelKeyInput.action(
+        for: tablePress(kVK_ANSI_H, [.command, .control], characters: "h"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: false
+      ) == .windowOperation(.hideApplication)
+    )
+    #expect(
+      PanelKeyInput.action(
+        for: tablePress(kVK_ANSI_M, [.command, .control], characters: "m"),
+        table: table,
+        numberJumpEnabled: false,
+        reorderEnabled: false,
+        filtering: false
+      ) == .commit(.custom(UInt16(kVK_ANSI_M)))
+    )
+  }
+
+  /// A customized Control binding keeps its own order against the new
+  /// editing steps: both ask for Control, so the fixed order decides.
+  @Test
+  func customControlBindingKeepsItsOrder() {
+    let table = tableWith(.closeWindow, resolved(kVK_ANSI_A, .control))
+    #expect(
+      PanelKeyInput.action(for: tablePress(kVK_ANSI_A, .control, characters: "a"), table: table)
+        == .windowOperation(.closeWindow)
+    )
   }
 }

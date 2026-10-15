@@ -213,6 +213,161 @@ struct KeyBindingConfigTests {
   }
 
   @Test
+  func newActionsRoundTrip() {
+    let result = decodeBindings(
+      "{\"startFiltering\": [{\"keyCode\": 3, \"modifiers\": []}], "
+        + "\"openSettings\": [{\"keyCode\": \(kVK_ANSI_Comma), \"modifiers\": [\"cmd\"]}, "
+        + "{\"keyCode\": \(kVK_ANSI_Comma), \"modifiers\": [\"opt\"]}]}"
+    )
+    guard case .success(let decoded) = result else {
+      Issue.record("expected the new actions to decode")
+      return
+    }
+    #expect(decoded.config.keyBindings[.startFiltering]
+      == [ResolvedKey(keyCode: 3, modifiers: [])])
+    #expect(decoded.config.keyBindings[.openSettings]
+      == [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_Comma), modifiers: .command),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_Comma), modifiers: .option),
+      ])
+    #expect(decoded.keyBindingIssues.isEmpty)
+    let encoded = AppConfiguration.encode(decoded.config)
+    switch AppConfiguration.decode(encoded) {
+    case .success(let again):
+      #expect(again.config.keyBindings == decoded.config.keyBindings)
+    case .failure:
+      Issue.record("expected the encoded new actions to decode cleanly")
+    }
+  }
+
+  @Test
+  func bareCommaForSettingsFallsBackWithIssue() {
+    let result = decodeBindings(
+      "{\"openSettings\": [{\"keyCode\": \(kVK_ANSI_Comma), \"modifiers\": []}]}"
+    )
+    switch result {
+    case .success(let decoded):
+      #expect(decoded.config.keyBindings[.openSettings] == KeyBindingTable.defaults[.openSettings])
+      #expect(decoded.keyBindingIssues.count == 1)
+      #expect(decoded.keyBindingIssues[0].action == .openSettings)
+      #expect(decoded.keyBindingIssues[0].reason == .invalid)
+
+    case .failure:
+      Issue.record("expected an invalid settings key to fall back, not fail")
+    }
+  }
+
+  @Test
+  func bareStartFilteringNeedsNoIssue() {
+    let result = decodeBindings("{\"startFiltering\": [{\"keyCode\": 3, \"modifiers\": []}]}")
+    switch result {
+    case .success(let decoded):
+      #expect(decoded.config.keyBindings[.startFiltering] == [ResolvedKey(keyCode: 3, modifiers: [])])
+      #expect(decoded.keyBindingIssues.isEmpty)
+
+    case .failure:
+      Issue.record("expected a bare start-filtering key to decode")
+    }
+  }
+
+  /// The editing steps decode like any other action: custom keys win,
+  /// and encoding keeps them for the next launch.
+  @Test
+  func editingStepsRoundTrip() {
+    let result = decodeBindings(
+      "{\"moveCursorLeft\": [{\"keyCode\": \(kVK_LeftArrow), \"modifiers\": []}], "
+        + "\"deleteWordBackward\": [{\"keyCode\": \(kVK_ANSI_W), \"modifiers\": [\"ctrl\"]}]}"
+    )
+    guard case .success(let decoded) = result else {
+      Issue.record("expected the editing steps to decode")
+      return
+    }
+    #expect(decoded.config.keyBindings[.moveCursorLeft]
+      == [ResolvedKey(keyCode: UInt16(kVK_LeftArrow), modifiers: [])])
+    #expect(decoded.config.keyBindings[.deleteWordBackward]
+      == [ResolvedKey(keyCode: UInt16(kVK_ANSI_W), modifiers: .control)])
+    #expect(decoded.keyBindingIssues.isEmpty)
+    let encoded = AppConfiguration.encode(decoded.config)
+    switch AppConfiguration.decode(encoded) {
+    case .success(let again):
+      #expect(again.config.keyBindings == decoded.config.keyBindings)
+    case .failure:
+      Issue.record("expected the encoded editing steps to decode cleanly")
+    }
+  }
+
+  /// Writing an old action gains it nothing new: the control keys stay
+  /// off unless they are written too.
+  @Test
+  func writtenDeletionKeepsOnlyWrittenKeys() {
+    let result = decodeBindings(
+      "{\"deleteBackward\": [{\"keyCode\": \(kVK_Delete), \"modifiers\": []}]}"
+    )
+    switch result {
+    case .success(let decoded):
+      #expect(decoded.config.keyBindings[.deleteBackward]
+        == [ResolvedKey(keyCode: UInt16(kVK_Delete), modifiers: [])])
+
+    case .failure:
+      Issue.record("expected a written deletion to decode")
+    }
+  }
+
+  /// A bad editing entry falls back to its defaults with a line,
+  /// and the rest of the file still stands.
+  @Test
+  func badEditingEntryFallsBackWithIssue() {
+    let result = decodeBindings(
+      "{\"deleteToEnd\": [{\"keyCode\": 999, \"modifiers\": []}]}"
+    )
+    switch result {
+    case .success(let decoded):
+      #expect(decoded.config.keyBindings[.deleteToEnd] == KeyBindingTable.defaults[.deleteToEnd])
+      #expect(decoded.keyBindingIssues.count == 1)
+
+    case .failure:
+      Issue.record("expected a bad editing entry to fall back")
+    }
+  }
+
+  @Test
+  func writtenNextKeepsOnlyWrittenKeys() {
+    let result = decodeBindings(
+      "{\"next\": [{\"keyCode\": \(kVK_DownArrow), \"modifiers\": []}]}"
+    )
+    switch result {
+    case .success(let decoded):
+      #expect(decoded.config.keyBindings[.next]
+        == [ResolvedKey(keyCode: UInt16(kVK_DownArrow), modifiers: [])])
+
+    case .failure:
+      Issue.record("expected a written next to decode")
+    }
+  }
+
+  @Test
+  func bareCommitDisplacesDefaultNext() {
+    let result = decodeBindings(
+      "{\"commit\": [{\"keyCode\": \(kVK_ANSI_J), \"modifiers\": []}]}"
+    )
+    switch result {
+    case .success(let decoded):
+      #expect(decoded.config.keyBindings[.commit]
+        == [ResolvedKey(keyCode: UInt16(kVK_ANSI_J), modifiers: [])])
+      #expect(!decoded.config.keyBindings[.next].contains(
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_J), modifiers: [])
+      ))
+      #expect(decoded.keyBindingIssues.contains(where: {
+        $0.action == .next && $0.reason == .conflict
+          && $0.detail.contains("keyCode 38 is already taken")
+      }))
+
+    case .failure:
+      Issue.record("expected a bare commit to displace the default next")
+    }
+  }
+
+  @Test
   func modifierWordsAreLowercase() {
     let result = decodeBindings(
       "{\"show\": [{\"keyCode\": \(kVK_Tab), \"modifiers\": [\"CMD\"]}]}"

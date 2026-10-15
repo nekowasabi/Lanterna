@@ -1,7 +1,7 @@
 import CoreGraphics
 import PrivateAPIs
 
-/// The window server's own Cmd+Tab and Shift+Cmd+Tab.
+/// The window server's own shortcuts beside this app's registrations.
 ///
 /// Registering an application hotkey is only half of taking a combination
 /// over. While the system still holds it, the Dock and the window server
@@ -26,14 +26,21 @@ enum SystemSwitcherShortcuts {
     }
   }
 
+  /// The combinations the window server holds a counterpart for. The
+  /// parallel invocations have none, so neither the disabling nor the
+  /// restoring below writes them.
+  static var systemCounterparts: [HotkeyCombination] {
+    [.forward, .reverse, .filter]
+  }
+
   /// Stops the system answering the given combinations, which are the ones
   /// this app registered. Returns the ones that would not change; empty is
   /// the ordinary case.
   static func disable(_ combinations: [HotkeyCombination]) -> [Failure] {
-    write(combinations, isEnabled: false)
+    write(combinations.filter { systemCounterparts.contains($0) }, isEnabled: false)
   }
 
-  /// Gives both back to the system.
+  /// Gives every system counterpart back to the system.
   ///
   /// Always writes "enabled" rather than putting back whatever was found
   /// earlier. A run that was killed leaves them off, and a later run that
@@ -48,7 +55,7 @@ enum SystemSwitcherShortcuts {
   /// failed restore, and `AppDelegate.shutDown()` exits non-zero for that
   /// even when this run never disabled the combination.
   static func restore() -> [Failure] {
-    write(HotkeyCombination.all, isEnabled: true)
+    write(systemCounterparts, isEnabled: true)
   }
 
   /// What to write when some of them would not go off. `nil` when they all
@@ -74,7 +81,10 @@ enum SystemSwitcherShortcuts {
 
   private static func write(_ combinations: [HotkeyCombination], isEnabled: Bool) -> [Failure] {
     combinations.compactMap { combination in
-      let status = CGSSetSymbolicHotKeyEnabled(symbolicHotKey(for: combination), isEnabled)
+      guard let key = symbolicHotKey(for: combination) else {
+        return nil
+      }
+      let status = CGSSetSymbolicHotKeyEnabled(key, isEnabled)
       guard status != .success else {
         return nil
       }
@@ -85,11 +95,13 @@ enum SystemSwitcherShortcuts {
   /// Which of the window server's shortcuts each combination stands for.
   /// The two sets of identifiers are unrelated numbering spaces that happen
   /// to agree, so the correspondence is spelled out rather than assumed.
-  private static func symbolicHotKey(for combination: HotkeyCombination) -> CGSSymbolicHotKey {
+  private static func symbolicHotKey(for combination: HotkeyCombination) -> CGSSymbolicHotKey? {
     switch combination {
     case .forward: CGSSymbolicHotKey(kCGSHotKeyCommandTab)
     case .reverse: CGSSymbolicHotKey(kCGSHotKeyCommandShiftTab)
     case .filter: CGSSymbolicHotKey(kCGSHotKeySpotlight)
+    case .parallelForward,
+         .parallelReverse: nil
     }
   }
 

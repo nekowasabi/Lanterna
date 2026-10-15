@@ -147,10 +147,24 @@ final class MirroredPanelSurface: SwitcherSurface {
     windows: [WindowItem],
     selecting: WindowItem.Identifier?,
     query: String,
+    cursor: Int,
     filterActive: Bool
   ) {
     for panel in activePanels {
-      panel.updateList(windows: windows, selecting: selecting, query: query, filterActive: filterActive)
+      panel.updateList(
+        windows: windows,
+        selecting: selecting,
+        query: query,
+        cursor: cursor,
+        filterActive: filterActive
+      )
+    }
+  }
+
+  /// Redraws only the query row's insertion point on every mirror.
+  func showCursor(_ position: Int) {
+    for panel in activePanels {
+      panel.showCursor(position)
     }
   }
 
@@ -181,6 +195,12 @@ final class MirroredPanelSurface: SwitcherSurface {
       syncMirrors(from: primary)
     }
     keyPanelIndex = min(keyPanelIndex, panels.count - 1)
+  }
+
+  func applyPanelSettings(_ settings: AppliedPanelSettings) {
+    for panel in panels {
+      panel.applyPanelSettings(settings)
+    }
   }
 
   /// Copies the content-affecting state onto the mirrors, so every

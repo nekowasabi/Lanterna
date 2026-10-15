@@ -125,7 +125,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     self.hotkeys = hotkeys
     self.presenter = presenter
 
-    let outcome = hotkeys.register(bindings: HotkeyBinding.bindings(for: options.keyBindings))
+    let outcome = hotkeys.register(
+      bindings: HotkeyBinding.bindings(
+        for: options.keyBindings,
+        parallelEnabled: currentValues.parallelOverrides.isEnabled
+      ),
+      parallelEnabled: currentValues.parallelOverrides.isEnabled
+    )
     Diagnostics.writeLine(LogLine(outcome.logLevel, .hotkey, outcome.summaryLine))
     for detail in hotkeys.refusedDetails {
       Diagnostics.writeLine(LogLine(.warning, .hotkey, detail))

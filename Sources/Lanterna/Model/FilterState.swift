@@ -6,8 +6,9 @@
 /// panel. Made fresh for every appearance and thrown away when the panel
 /// comes down; nothing carries over to the next one.
 struct FilterState: Equatable, Sendable {
-  /// The current query. Empty means the whole list.
-  var query = ""
+  /// The query with its insertion point. Fresh appearances start empty
+  /// with the point at the start; closing the panel throws it away.
+  var line = QueryText()
   /// The row chosen the moment it vanished. Updated only when a non-nil
   /// choice vanishes; moving with the arrows never updates it, and a nil
   /// choice never overwrites it.
@@ -15,20 +16,15 @@ struct FilterState: Equatable, Sendable {
   /// What matched last, for telling a renewed match apart from a kept one.
   var previousMatchedIDs = Set<WindowItem.Identifier>()
 
-  /// Appends typed text to the query.
-  mutating func append(_ text: String) {
-    query += text
-  }
-
-  /// Removes the last character, and does nothing when already empty.
-  mutating func removeLast() {
-    guard !query.isEmpty else { return }
-    query.removeLast()
+  /// The current query. Empty means the whole list. Read off the line:
+  /// the insertion point lives there, not here.
+  var query: String {
+    line.text
   }
 
   /// Drops the query and the memory; starting over as a fresh appearance does.
   mutating func clear() {
-    query = ""
+    line = QueryText()
     rememberedID = nil
     previousMatchedIDs = []
   }

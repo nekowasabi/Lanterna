@@ -6,14 +6,15 @@ import SwiftUI
 /// everything that swaps the list or grows the frame for a note lives
 /// here.
 extension SwitcherPanel {
-  /// One swap of the hosted list, carrying the choice, the query, and
-  /// the chrome across. Both `update` paths funnel through here so the
+  /// One swap of the hosted list, carrying the choice, the query, the
+  /// insertion point, and the chrome across. Both `update` paths funnel through here so the
   /// view the panel sizes is the view it draws.
   func swappedView(
     windows: [WindowItem],
     selectedID: WindowItem.Identifier?,
     appearanceToken: Int,
     query: String,
+    cursor: Int,
     filterActive: Bool
   ) -> SwitcherView {
     SwitcherView(
@@ -21,6 +22,7 @@ extension SwitcherPanel {
       selectedID: selectedID,
       appearanceToken: appearanceToken,
       query: query,
+      cursor: cursor,
       filterActive: filterActive,
       modes: displayModes,
       exclusionRules: exclusionRules,
@@ -90,6 +92,7 @@ extension SwitcherPanel {
       selectedID: hostingView.rootView.selectedID,
       appearanceToken: hostingView.rootView.appearanceToken,
       query: hostingView.rootView.query,
+      cursor: hostingView.rootView.cursor,
       filterActive: hostingView.rootView.filterActive
     )
     // The height is pushed down from the window, because the hosting view
@@ -130,6 +133,7 @@ extension SwitcherPanel {
     windows: [WindowItem],
     selecting: WindowItem.Identifier?,
     query: String,
+    cursor: Int,
     filterActive: Bool
   ) {
     // Both are dropped here because the size below counts no note.
@@ -140,6 +144,7 @@ extension SwitcherPanel {
       selectedID: selecting,
       appearanceToken: hostingView.rootView.appearanceToken,
       query: query,
+      cursor: cursor,
       filterActive: filterActive
     )
     let size = PanelMetrics.panelSize(
@@ -162,6 +167,12 @@ extension SwitcherPanel {
     frame.origin.y -= size.height - frame.height
     frame.size.height = size.height
     setFrame(frame, display: true)
+  }
+
+  /// Redraws only the query row's insertion point, the way
+  /// `showSelection` redraws only the choice.
+  func showCursor(_ position: Int) {
+    hostingView.rootView.cursor = position
   }
 
   /// Shows a small failure note under the list, growing the panel for it

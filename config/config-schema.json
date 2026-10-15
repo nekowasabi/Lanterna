@@ -574,6 +574,426 @@
             ],
             "additionalProperties": false
           }
+        },
+        "numberJump": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "moveRowUp": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "moveRowDown": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "startFiltering": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "openSettings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "moveCursorLeft": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "moveCursorRight": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "moveCursorToStart": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "moveCursorToEnd": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "deleteForward": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "deleteWordBackward": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "deleteToStart": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "deleteToEnd": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "showParallel": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "showParallelReverse": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyCode": {
+                "type": "integer"
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "cmd",
+                    "ctrl",
+                    "opt",
+                    "shift"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keyCode",
+              "modifiers"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -703,6 +1123,545 @@
         ],
         "additionalProperties": false
       }
+    },
+    "switchers": {
+      "description": "The two switchers side by side. Absent means the long-standing\nbehaviour: the main switcher follows the top-level keys, and the\nparallel switcher shows the front application's windows alone.",
+      "type": "object",
+      "properties": {
+        "main": {
+          "description": "The main switcher's list settings.",
+          "type": "object",
+          "properties": {
+            "windowScope": {
+              "description": "Every application's windows, or only those of the application in\nfront when the panel opens. Absent means the top-level key.",
+              "type": "string",
+              "enum": [
+                "allApps",
+                "frontApp"
+              ]
+            },
+            "otherSpaceMode": {
+              "description": "Windows on other Spaces. Absent means the top-level key.",
+              "type": "string",
+              "enum": [
+                "show",
+                "hide",
+                "separateAtBottom"
+              ]
+            },
+            "hiddenAppMode": {
+              "description": "Windows of hidden applications. Absent means the top-level key.",
+              "type": "string",
+              "enum": [
+                "show",
+                "hide",
+                "separateAtBottom"
+              ]
+            },
+            "minimizedMode": {
+              "description": "Minimized windows. Absent means the top-level key.",
+              "type": "string",
+              "enum": [
+                "show",
+                "hide",
+                "separateAtBottom"
+              ]
+            },
+            "fullscreenMode": {
+              "description": "Native fullscreen windows. Absent means the top-level key.",
+              "type": "string",
+              "enum": [
+                "show",
+                "hide",
+                "separateAtBottom"
+              ]
+            },
+            "windowlessAppMode": {
+              "description": "Running applications with no open window. Absent means the top-level key.",
+              "type": "string",
+              "enum": [
+                "show",
+                "hide",
+                "separateAtBottom"
+              ]
+            },
+            "otherSpacePlacement": {
+              "description": "Where the windows-on-other-spaces section goes when grouped. Absent means the top-level key.",
+              "type": "string",
+              "enum": [
+                "endOfList",
+                "withinGroup"
+              ]
+            },
+            "hiddenAppPlacement": {
+              "description": "Where the hidden-apps section goes when grouped. Absent means the top-level key.",
+              "type": "string",
+              "enum": [
+                "endOfList",
+                "withinGroup"
+              ]
+            },
+            "minimizedPlacement": {
+              "description": "Where the minimized section goes when grouped. Absent means the top-level key.",
+              "type": "string",
+              "enum": [
+                "endOfList",
+                "withinGroup"
+              ]
+            },
+            "fullscreenPlacement": {
+              "description": "Where the fullscreen section goes when grouped. Absent means the top-level key.",
+              "type": "string",
+              "enum": [
+                "endOfList",
+                "withinGroup"
+              ]
+            },
+            "windowlessAppPlacement": {
+              "description": "Where the apps-without-windows section goes when grouped. Absent means the top-level key.",
+              "type": "string",
+              "enum": [
+                "endOfList",
+                "withinGroup"
+              ]
+            },
+            "resultOrder": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "grouping": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupCount": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupHeadingStyle": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "displayTarget": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "panelWidth": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "textScale": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "showDelayMs": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "hintsMode": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "numberJump": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "numberReorder": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "numberScope": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "hoverSelect": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "scrollSelect": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "fuzzyMatchEnabled": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "appearanceMode": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "romajiScope": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "launchAtLogin": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "logLevel": {
+              "description": "Retired. Ignored here.",
+              "deprecated": true
+            },
+            "saveLogsToDisk": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "updateCheckEnabled": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "updateChannel": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "exclusions": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "shortcutMemoryLength": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "keybindings": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "sampleCount": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "stopMonitorEvery": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "rowOrder": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupNames": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupAssignments": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "parallel": {
+          "description": "The parallel switcher's list settings.",
+          "type": "object",
+          "properties": {
+            "windowScope": {
+              "description": "Every application's windows, or only those of the application in\nfront when the panel opens. Absent means the front application alone;\n\"inherit\" follows the main switcher.",
+              "oneOf": [
+                {
+                  "description": "Every application's windows, or only those of the application in\nfront when the panel opens. Absent means the front application alone;\n\"inherit\" follows the main switcher.",
+                  "type": "string",
+                  "enum": [
+                    "allApps",
+                    "frontApp"
+                  ]
+                },
+                {
+                  "const": "inherit"
+                }
+              ]
+            },
+            "otherSpaceMode": {
+              "description": "Windows on other Spaces. Absent or \"inherit\" follows the main switcher.",
+              "oneOf": [
+                {
+                  "description": "Windows on other Spaces. Absent or \"inherit\" follows the main switcher.",
+                  "type": "string",
+                  "enum": [
+                    "show",
+                    "hide",
+                    "separateAtBottom"
+                  ]
+                },
+                {
+                  "const": "inherit"
+                }
+              ]
+            },
+            "hiddenAppMode": {
+              "description": "Windows of hidden applications. Absent or \"inherit\" follows the main switcher.",
+              "oneOf": [
+                {
+                  "description": "Windows of hidden applications. Absent or \"inherit\" follows the main switcher.",
+                  "type": "string",
+                  "enum": [
+                    "show",
+                    "hide",
+                    "separateAtBottom"
+                  ]
+                },
+                {
+                  "const": "inherit"
+                }
+              ]
+            },
+            "minimizedMode": {
+              "description": "Minimized windows. Absent or \"inherit\" follows the main switcher.",
+              "oneOf": [
+                {
+                  "description": "Minimized windows. Absent or \"inherit\" follows the main switcher.",
+                  "type": "string",
+                  "enum": [
+                    "show",
+                    "hide",
+                    "separateAtBottom"
+                  ]
+                },
+                {
+                  "const": "inherit"
+                }
+              ]
+            },
+            "fullscreenMode": {
+              "description": "Native fullscreen windows. Absent or \"inherit\" follows the main switcher.",
+              "oneOf": [
+                {
+                  "description": "Native fullscreen windows. Absent or \"inherit\" follows the main switcher.",
+                  "type": "string",
+                  "enum": [
+                    "show",
+                    "hide",
+                    "separateAtBottom"
+                  ]
+                },
+                {
+                  "const": "inherit"
+                }
+              ]
+            },
+            "windowlessAppMode": {
+              "description": "Running applications with no open window. Absent or \"inherit\" follows the main switcher.",
+              "oneOf": [
+                {
+                  "description": "Running applications with no open window. Absent or \"inherit\" follows the main switcher.",
+                  "type": "string",
+                  "enum": [
+                    "show",
+                    "hide",
+                    "separateAtBottom"
+                  ]
+                },
+                {
+                  "const": "inherit"
+                }
+              ]
+            },
+            "otherSpacePlacement": {
+              "description": "Where the windows-on-other-spaces section goes when grouped. Absent or \"inherit\" follows the main switcher.",
+              "oneOf": [
+                {
+                  "description": "Where the windows-on-other-spaces section goes when grouped. Absent or \"inherit\" follows the main switcher.",
+                  "type": "string",
+                  "enum": [
+                    "endOfList",
+                    "withinGroup"
+                  ]
+                },
+                {
+                  "const": "inherit"
+                }
+              ]
+            },
+            "hiddenAppPlacement": {
+              "description": "Where the hidden-apps section goes when grouped. Absent or \"inherit\" follows the main switcher.",
+              "oneOf": [
+                {
+                  "description": "Where the hidden-apps section goes when grouped. Absent or \"inherit\" follows the main switcher.",
+                  "type": "string",
+                  "enum": [
+                    "endOfList",
+                    "withinGroup"
+                  ]
+                },
+                {
+                  "const": "inherit"
+                }
+              ]
+            },
+            "minimizedPlacement": {
+              "description": "Where the minimized section goes when grouped. Absent or \"inherit\" follows the main switcher.",
+              "oneOf": [
+                {
+                  "description": "Where the minimized section goes when grouped. Absent or \"inherit\" follows the main switcher.",
+                  "type": "string",
+                  "enum": [
+                    "endOfList",
+                    "withinGroup"
+                  ]
+                },
+                {
+                  "const": "inherit"
+                }
+              ]
+            },
+            "fullscreenPlacement": {
+              "description": "Where the fullscreen section goes when grouped. Absent or \"inherit\" follows the main switcher.",
+              "oneOf": [
+                {
+                  "description": "Where the fullscreen section goes when grouped. Absent or \"inherit\" follows the main switcher.",
+                  "type": "string",
+                  "enum": [
+                    "endOfList",
+                    "withinGroup"
+                  ]
+                },
+                {
+                  "const": "inherit"
+                }
+              ]
+            },
+            "windowlessAppPlacement": {
+              "description": "Where the apps-without-windows section goes when grouped. Absent or \"inherit\" follows the main switcher.",
+              "oneOf": [
+                {
+                  "description": "Where the apps-without-windows section goes when grouped. Absent or \"inherit\" follows the main switcher.",
+                  "type": "string",
+                  "enum": [
+                    "endOfList",
+                    "withinGroup"
+                  ]
+                },
+                {
+                  "const": "inherit"
+                }
+              ]
+            },
+            "enabled": {
+              "description": "Whether the parallel switcher answers its keys. Absent means on.",
+              "type": "boolean"
+            },
+            "resultOrder": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "grouping": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupCount": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupHeadingStyle": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "displayTarget": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "panelWidth": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "textScale": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "showDelayMs": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "hintsMode": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "numberJump": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "numberReorder": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "numberScope": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "hoverSelect": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "scrollSelect": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "fuzzyMatchEnabled": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "appearanceMode": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "romajiScope": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "launchAtLogin": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "logLevel": {
+              "description": "Retired. Ignored here.",
+              "deprecated": true
+            },
+            "saveLogsToDisk": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "updateCheckEnabled": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "updateChannel": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "exclusions": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "shortcutMemoryLength": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "keybindings": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "sampleCount": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "stopMonitorEvery": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "rowOrder": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupNames": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "groupAssignments": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

@@ -174,11 +174,13 @@ struct SettingsKeyboardView: View {
       }
       .padding(.horizontal, 20)
       .padding(.vertical, 8)
-      Text("Press a key to assign it. Assignments are physical keys, independent of input source.")
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 20)
-        .padding(.bottom, 8)
+      Text(
+        "Press a key to assign it. Assignments are physical keys, independent of input source. Letter and number keys with no modifier act only while not filtering; while filtering they type into the query."
+      )
+      .font(.footnote)
+      .foregroundStyle(.secondary)
+      .padding(.horizontal, 20)
+      .padding(.bottom, 8)
     }
     .background(Color(nsColor: .underPageBackgroundColor))
   }
@@ -256,7 +258,14 @@ struct SettingsKeyboardView: View {
       break
 
     case .needsModifiers:
-      notice = "\(key.displayName) needs Cmd, Ctrl or Opt for \(row)."
+      // Parallel invocations commit on releasing Command or Option, so a
+      // key holding neither leaves no release to commit on.
+      notice =
+        if action.requiresCommandOrOption {
+          "\(key.displayName) needs Cmd or Opt for \(row)."
+        } else {
+          "\(key.displayName) needs Cmd, Ctrl or Opt for \(row)."
+        }
       stopCapture()
       return
 

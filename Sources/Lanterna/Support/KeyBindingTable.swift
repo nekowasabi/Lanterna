@@ -20,11 +20,15 @@ enum BindingMode: Equatable, Sendable {
 /// Every action a key can drive, in the config file's words.
 ///
 /// The raw values are the `keybindings` section's keys, so renaming one
-/// renames the file format. The mode decides the validation from FR-012.
+/// renames the file format. The mode decides how its keys are validated,
+/// and `requiresCommandOrOption` adds the per-action rule that a key must
+/// hold Command or Option.
 enum KeyBindingAction: String, CaseIterable, Equatable, Sendable {
   case show
   case showReverse
   case showFilter
+  case showParallel
+  case showParallelReverse
   case next
   case previous
   case commit
@@ -39,14 +43,39 @@ enum KeyBindingAction: String, CaseIterable, Equatable, Sendable {
   case numberJump
   case moveRowUp
   case moveRowDown
+  case startFiltering
+  case openSettings
+  case moveCursorLeft
+  case moveCursorRight
+  case moveCursorToStart
+  case moveCursorToEnd
+  case deleteForward
+  case deleteWordBackward
+  case deleteToStart
+  case deleteToEnd
 
   // MARK: Internal
+
+  /// Whether an assignment must hold Command or Option. The parallel
+  /// invocations commit on releasing one of the two, so a key holding
+  /// neither leaves no release to commit on.
+  var requiresCommandOrOption: Bool {
+    switch self {
+    case .showParallel,
+         .showParallelReverse:
+      true
+    default:
+      false
+    }
+  }
 
   var mode: BindingMode {
     switch self {
     case .show,
          .showReverse,
-         .showFilter:
+         .showFilter,
+         .showParallel,
+         .showParallelReverse:
       .global
     case .closeWindow,
          .quitApplication,
@@ -55,7 +84,8 @@ enum KeyBindingAction: String, CaseIterable, Equatable, Sendable {
          .toggleScope,
          .numberJump,
          .moveRowUp,
-         .moveRowDown:
+         .moveRowDown,
+         .openSettings:
       .guarded
     default:
       .bare
@@ -133,6 +163,12 @@ struct ResolvedKey: Equatable, Hashable, Sendable {
       parts.append("Up")
     case kVK_DownArrow:
       parts.append("Down")
+    case kVK_LeftArrow:
+      parts.append("Left")
+    case kVK_RightArrow:
+      parts.append("Right")
+    case kVK_ForwardDelete:
+      parts.append("Forward Delete")
     case kVK_Delete:
       parts.append("Backspace")
     default:
@@ -148,6 +184,16 @@ struct ResolvedKey: Equatable, Hashable, Sendable {
   func hash(into hasher: inout Hasher) {
     hasher.combine(keyCode)
     hasher.combine(modifiers.rawValue)
+  }
+
+  /// Whether this binding answers the press under the given filtering state.
+  ///
+  /// A panel that is not filtering drops typed characters, so a bare letter
+  /// binding answers there too. While filtering, a bare binding answers
+  /// only presses that type nothing.
+  func answers(_ keystroke: PanelKeystroke, filtering: Bool) -> Bool {
+    keyCode == keystroke.keyCode && modifiers.isSubset(of: keystroke.modifiers)
+      && (!modifiers.isEmpty || !filtering || WindowFilter.allowedText(keystroke.characters) == nil)
   }
 
   // MARK: Private
@@ -357,7 +403,7 @@ struct KeyBindingTable: Equatable, Sendable {
     kVK_ANSI_Keypad0,
   ]
 
-  /// The long-standing behaviour, key for key.
+  /// The bindings an unchanged file resolves to.
   static var defaults: KeyBindingTable {
     KeyBindingTable(keys: [
       .show: [ResolvedKey(keyCode: UInt16(kVK_Tab), modifiers: .command)],
@@ -365,25 +411,61 @@ struct KeyBindingTable: Equatable, Sendable {
         ResolvedKey(keyCode: UInt16(kVK_Tab), modifiers: [.command, .shift])
       ],
       .showFilter: [ResolvedKey(keyCode: UInt16(kVK_Space), modifiers: .command)],
-      .next: [ResolvedKey(keyCode: UInt16(kVK_DownArrow), modifiers: [])],
-      .previous: [ResolvedKey(keyCode: UInt16(kVK_UpArrow), modifiers: [])],
+      // The parallel invocations answer Option-held Tab: the second
+      // switcher beside the Command-held one.
+      .showParallel: [ResolvedKey(keyCode: UInt16(kVK_Tab), modifiers: .option)],
+      .showParallelReverse: [
+        ResolvedKey(keyCode: UInt16(kVK_Tab), modifiers: [.option, .shift])
+      ],
+      // Bare letters answer only while not filtering; while filtering
+      // they type into the query.
+      .next: [
+        ResolvedKey(keyCode: UInt16(kVK_DownArrow), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_J), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_N), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_N), modifiers: .control),
+      ],
+      .previous: [
+        ResolvedKey(keyCode: UInt16(kVK_UpArrow), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_K), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_P), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_P), modifiers: .control),
+      ],
       .commit: [
         ResolvedKey(keyCode: UInt16(kVK_Return), modifiers: []),
         ResolvedKey(keyCode: UInt16(kVK_ANSI_KeypadEnter), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_M), modifiers: .control),
       ],
       .cancel: [
         ResolvedKey(keyCode: UInt16(kVK_Escape), modifiers: []),
         ResolvedKey(keyCode: UInt16(kVK_ANSI_Period), modifiers: .command),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_G), modifiers: .control),
       ],
       // A symbol and not a letter: letters typed with Command still held
       // from the switcher go to the query.
       .toggleScope: [ResolvedKey(keyCode: UInt16(kVK_ANSI_Slash), modifiers: .command)],
-      .deleteBackward: [ResolvedKey(keyCode: UInt16(kVK_Delete), modifiers: [])],
+      .deleteBackward: [
+        ResolvedKey(keyCode: UInt16(kVK_Delete), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_H), modifiers: .control),
+      ],
       .clearQuery: [ResolvedKey(keyCode: UInt16(kVK_Escape), modifiers: [])],
-      .closeWindow: [ResolvedKey(keyCode: UInt16(kVK_ANSI_W), modifiers: .command)],
-      .quitApplication: [ResolvedKey(keyCode: UInt16(kVK_ANSI_Q), modifiers: .command)],
-      .hideApplication: [ResolvedKey(keyCode: UInt16(kVK_ANSI_H), modifiers: .command)],
-      .minimizeWindow: [ResolvedKey(keyCode: UInt16(kVK_ANSI_M), modifiers: .command)],
+      // Window operations answer Command and Option alike: each Option key stands beside its Command key.
+      .closeWindow: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_W), modifiers: .command),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_W), modifiers: .option),
+      ],
+      .quitApplication: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_Q), modifiers: .command),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_Q), modifiers: .option),
+      ],
+      .hideApplication: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_H), modifiers: .command),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_H), modifiers: .option),
+      ],
+      .minimizeWindow: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_M), modifiers: .command),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_M), modifiers: .option),
+      ],
       // Every decimal digit on both the main row and the keypad, each
       // with Command and with Option: the number jump answers them all.
       .numberJump: Self.defaultNumberJumpKeys,
@@ -394,6 +476,41 @@ struct KeyBindingTable: Equatable, Sendable {
       .moveRowDown: [
         ResolvedKey(keyCode: UInt16(kVK_DownArrow), modifiers: [.command, .shift]),
         ResolvedKey(keyCode: UInt16(kVK_DownArrow), modifiers: [.option, .shift]),
+      ],
+      .startFiltering: [ResolvedKey(keyCode: UInt16(kVK_ANSI_S), modifiers: [])],
+      // Settings opens with either modifier, the way the window operations do.
+      .openSettings: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_Comma), modifiers: .command),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_Comma), modifiers: .option),
+      ],
+      // Cursor and deletion steps answer while filtering only; the
+      // matching keeps them out of the candidates otherwise.
+      .moveCursorLeft: [
+        ResolvedKey(keyCode: UInt16(kVK_LeftArrow), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_B), modifiers: .control),
+      ],
+      .moveCursorRight: [
+        ResolvedKey(keyCode: UInt16(kVK_RightArrow), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_F), modifiers: .control),
+      ],
+      .moveCursorToStart: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_A), modifiers: .control)
+      ],
+      .moveCursorToEnd: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_E), modifiers: .control)
+      ],
+      .deleteForward: [
+        ResolvedKey(keyCode: UInt16(kVK_ForwardDelete), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_D), modifiers: .control),
+      ],
+      .deleteWordBackward: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_W), modifiers: .control)
+      ],
+      .deleteToStart: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_U), modifiers: .control)
+      ],
+      .deleteToEnd: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_K), modifiers: .control)
       ],
     ])
   }
@@ -409,7 +526,7 @@ struct KeyBindingTable: Equatable, Sendable {
     to action: KeyBindingAction,
     in table: KeyBindingTable
   ) -> KeyAssignmentRefusal? {
-    guard allows(modifiers: key.modifiers, mode: action.mode) else {
+    guard allows(modifiers: key.modifiers, for: action) else {
       return .needsModifiers
     }
     let effective = table.fillingEmptiesWithDefaults()
@@ -438,6 +555,19 @@ struct KeyBindingTable: Equatable, Sendable {
     }
   }
 
+  /// Whether these modifiers may drive the action at all. The mode's
+  /// answer first; parallel invocations additionally need Command or
+  /// Option, since Control alone leaves no release to commit on.
+  static func allows(modifiers: NSEvent.ModifierFlags, for action: KeyBindingAction) -> Bool {
+    guard allows(modifiers: modifiers, mode: action.mode) else {
+      return false
+    }
+    guard action.requiresCommandOrOption else {
+      return true
+    }
+    return modifiers.contains(.command) || modifiers.contains(.option)
+  }
+
   subscript(_ action: KeyBindingAction) -> [ResolvedKey] {
     keys[action] ?? []
   }
@@ -462,15 +592,13 @@ struct KeyBindingTable: Equatable, Sendable {
   }
 
   /// Whether this press drives the action: the key sits on a bound
-  /// position with the required modifiers held. A bare binding only
-  /// answers a key that types nothing, so a letter keeps narrowing
-  /// the list instead of triggering.
-  func matches(_ keystroke: PanelKeystroke, action: KeyBindingAction) -> Bool {
-    (keys[action] ?? []).contains { key in
-      key.keyCode == keystroke.keyCode
-        && key.modifiers.isSubset(of: keystroke.modifiers)
-        && (!key.modifiers.isEmpty || !typesText(keystroke))
-    }
+  /// position with the required modifiers held. While filtering, a bare
+  /// binding only answers a key that types nothing, so a letter keeps
+  /// narrowing the list instead of triggering; while not filtering, typed
+  /// characters are dropped anyway, so the bare binding answers those too.
+  /// Callers omitting `filtering` keep the filtering behaviour.
+  func matches(_ keystroke: PanelKeystroke, action: KeyBindingAction, filtering: Bool = true) -> Bool {
+    (keys[action] ?? []).contains { $0.answers(keystroke, filtering: filtering) }
   }
 
   // MARK: Private
@@ -482,15 +610,6 @@ struct KeyBindingTable: Equatable, Sendable {
         ResolvedKey(keyCode: UInt16(code), modifiers: .option),
       ]
     }
-  }
-
-  /// Whether the press would narrow the list rather than drive.
-  ///
-  /// Read here, where a row means filtering: going by key code keeps
-  /// the table independent of the input source, and what the key made
-  /// is only asked where filtering is at stake.
-  private func typesText(_ keystroke: PanelKeystroke) -> Bool {
-    WindowFilter.allowedText(keystroke.characters) != nil
   }
 
 }
