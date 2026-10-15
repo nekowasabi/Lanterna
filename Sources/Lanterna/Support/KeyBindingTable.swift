@@ -45,6 +45,14 @@ enum KeyBindingAction: String, CaseIterable, Equatable, Sendable {
   case moveRowDown
   case startFiltering
   case openSettings
+  case moveCursorLeft
+  case moveCursorRight
+  case moveCursorToStart
+  case moveCursorToEnd
+  case deleteForward
+  case deleteWordBackward
+  case deleteToStart
+  case deleteToEnd
 
   // MARK: Internal
 
@@ -155,6 +163,12 @@ struct ResolvedKey: Equatable, Hashable, Sendable {
       parts.append("Up")
     case kVK_DownArrow:
       parts.append("Down")
+    case kVK_LeftArrow:
+      parts.append("Left")
+    case kVK_RightArrow:
+      parts.append("Right")
+    case kVK_ForwardDelete:
+      parts.append("Forward Delete")
     case kVK_Delete:
       parts.append("Backspace")
     default:
@@ -409,24 +423,31 @@ struct KeyBindingTable: Equatable, Sendable {
         ResolvedKey(keyCode: UInt16(kVK_DownArrow), modifiers: []),
         ResolvedKey(keyCode: UInt16(kVK_ANSI_J), modifiers: []),
         ResolvedKey(keyCode: UInt16(kVK_ANSI_N), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_N), modifiers: .control),
       ],
       .previous: [
         ResolvedKey(keyCode: UInt16(kVK_UpArrow), modifiers: []),
         ResolvedKey(keyCode: UInt16(kVK_ANSI_K), modifiers: []),
         ResolvedKey(keyCode: UInt16(kVK_ANSI_P), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_P), modifiers: .control),
       ],
       .commit: [
         ResolvedKey(keyCode: UInt16(kVK_Return), modifiers: []),
         ResolvedKey(keyCode: UInt16(kVK_ANSI_KeypadEnter), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_M), modifiers: .control),
       ],
       .cancel: [
         ResolvedKey(keyCode: UInt16(kVK_Escape), modifiers: []),
         ResolvedKey(keyCode: UInt16(kVK_ANSI_Period), modifiers: .command),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_G), modifiers: .control),
       ],
       // A symbol and not a letter: letters typed with Command still held
       // from the switcher go to the query.
       .toggleScope: [ResolvedKey(keyCode: UInt16(kVK_ANSI_Slash), modifiers: .command)],
-      .deleteBackward: [ResolvedKey(keyCode: UInt16(kVK_Delete), modifiers: [])],
+      .deleteBackward: [
+        ResolvedKey(keyCode: UInt16(kVK_Delete), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_H), modifiers: .control),
+      ],
       .clearQuery: [ResolvedKey(keyCode: UInt16(kVK_Escape), modifiers: [])],
       // Window operations answer Command and Option alike: each Option key stands beside its Command key.
       .closeWindow: [
@@ -461,6 +482,35 @@ struct KeyBindingTable: Equatable, Sendable {
       .openSettings: [
         ResolvedKey(keyCode: UInt16(kVK_ANSI_Comma), modifiers: .command),
         ResolvedKey(keyCode: UInt16(kVK_ANSI_Comma), modifiers: .option),
+      ],
+      // Cursor and deletion steps answer while filtering only; the
+      // matching keeps them out of the candidates otherwise.
+      .moveCursorLeft: [
+        ResolvedKey(keyCode: UInt16(kVK_LeftArrow), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_B), modifiers: .control),
+      ],
+      .moveCursorRight: [
+        ResolvedKey(keyCode: UInt16(kVK_RightArrow), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_F), modifiers: .control),
+      ],
+      .moveCursorToStart: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_A), modifiers: .control)
+      ],
+      .moveCursorToEnd: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_E), modifiers: .control)
+      ],
+      .deleteForward: [
+        ResolvedKey(keyCode: UInt16(kVK_ForwardDelete), modifiers: []),
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_D), modifiers: .control),
+      ],
+      .deleteWordBackward: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_W), modifiers: .control)
+      ],
+      .deleteToStart: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_U), modifiers: .control)
+      ],
+      .deleteToEnd: [
+        ResolvedKey(keyCode: UInt16(kVK_ANSI_K), modifiers: .control)
       ],
     ])
   }

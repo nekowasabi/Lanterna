@@ -71,8 +71,8 @@ struct KeyBindingTableTests {
   func defaultsCoverEveryAction() {
     let table = KeyBindingTable.defaults
     #expect(table.keys.count == KeyBindingAction.allCases.count)
-    #expect(table[.commit].count == 2)
-    #expect(table[.cancel].count == 2)
+    #expect(table[.commit].count == 3)
+    #expect(table[.cancel].count == 3)
     #expect(table[.show] == [key(kVK_Tab, .command)])
     #expect(
       table[.closeWindow]
@@ -93,17 +93,54 @@ struct KeyBindingTableTests {
     #expect(table[.toggleScope] == [key(kVK_ANSI_Slash, .command)])
     #expect(
       table[.next]
-        == [key(kVK_DownArrow), key(kVK_ANSI_J), key(kVK_ANSI_N)]
+        == [key(kVK_DownArrow), key(kVK_ANSI_J), key(kVK_ANSI_N), key(kVK_ANSI_N, .control)]
     )
     #expect(
       table[.previous]
-        == [key(kVK_UpArrow), key(kVK_ANSI_K), key(kVK_ANSI_P)]
+        == [key(kVK_UpArrow), key(kVK_ANSI_K), key(kVK_ANSI_P), key(kVK_ANSI_P, .control)]
     )
     #expect(table[.startFiltering] == [key(kVK_ANSI_S)])
     #expect(
       table[.openSettings]
         == [key(kVK_ANSI_Comma, .command), key(kVK_ANSI_Comma, .option)]
     )
+    #expect(
+      table[.moveCursorLeft] == [key(kVK_LeftArrow), key(kVK_ANSI_B, .control)]
+    )
+    #expect(
+      table[.moveCursorRight] == [key(kVK_RightArrow), key(kVK_ANSI_F, .control)]
+    )
+    #expect(table[.moveCursorToStart] == [key(kVK_ANSI_A, .control)])
+    #expect(table[.moveCursorToEnd] == [key(kVK_ANSI_E, .control)])
+    #expect(
+      table[.deleteForward] == [key(kVK_ForwardDelete), key(kVK_ANSI_D, .control)]
+    )
+    #expect(table[.deleteWordBackward] == [key(kVK_ANSI_W, .control)])
+    #expect(table[.deleteToStart] == [key(kVK_ANSI_U, .control)])
+    #expect(table[.deleteToEnd] == [key(kVK_ANSI_K, .control)])
+    #expect(
+      table[.deleteBackward] == [key(kVK_Delete), key(kVK_ANSI_H, .control)]
+    )
+    #expect(
+      table[.commit].last == key(kVK_ANSI_M, .control)
+    )
+    #expect(
+      table[.cancel].last == key(kVK_ANSI_G, .control)
+    )
+  }
+
+  /// The cursor and deletion steps ride the shared panel rules: bare
+  /// keys are allowed, like the deletion already there.
+  @Test
+  func editingStepsShareTheBareMode() {
+    #expect(KeyBindingAction.moveCursorLeft.mode == .bare)
+    #expect(KeyBindingAction.moveCursorRight.mode == .bare)
+    #expect(KeyBindingAction.moveCursorToStart.mode == .bare)
+    #expect(KeyBindingAction.moveCursorToEnd.mode == .bare)
+    #expect(KeyBindingAction.deleteForward.mode == .bare)
+    #expect(KeyBindingAction.deleteWordBackward.mode == .bare)
+    #expect(KeyBindingAction.deleteToStart.mode == .bare)
+    #expect(KeyBindingAction.deleteToEnd.mode == .bare)
   }
 
   /// The scope key is held to a modifier, the way the window operations
@@ -126,6 +163,10 @@ struct KeyBindingTableTests {
     #expect(KeyBindingTable.defaults[.minimizeWindow].first?.displayName == "Cmd+M")
     #expect(ResolvedKey(keyCode: UInt16(kVK_F5), modifiers: []).displayName == "key 96")
     #expect(ResolvedKey(keyCode: UInt16(kVK_ANSI_Keypad1), modifiers: []).displayName == "Keypad 1")
+    #expect(ResolvedKey(keyCode: UInt16(kVK_LeftArrow), modifiers: []).displayName == "Left")
+    #expect(ResolvedKey(keyCode: UInt16(kVK_RightArrow), modifiers: []).displayName == "Right")
+    #expect(ResolvedKey(keyCode: UInt16(kVK_ForwardDelete), modifiers: []).displayName == "Forward Delete")
+    #expect(ResolvedKey(keyCode: UInt16(kVK_ANSI_A), modifiers: .control).displayName == "Ctrl+A")
   }
 
   @Test(arguments: ansiLabels)
