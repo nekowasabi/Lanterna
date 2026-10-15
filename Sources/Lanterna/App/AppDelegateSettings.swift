@@ -141,11 +141,16 @@ extension AppDelegate {
       searchSettings: options.searchSettings,
       keyBindings: options.keyBindings,
       closesOnCommandRelease: { [weak self] in self?.monitor?.isMonitoring ?? false },
+      optionIsHeld: {
+        CGEventSource.flagsState(.combinedSessionState).contains(.maskAlternate)
+      },
       showDelayMs: options.showDelayMs,
       switcher: OwnWindowSwitcher(wrapped: LiveWindowSwitcher())
     )
     presenter.windowScope = currentValues.windowScope
     presenter.grouping = currentValues.grouping
+    presenter.parallelSwitcher = currentValues.parallelSwitcher
+    presenter.parallelEnabled = currentValues.parallelOverrides.isEnabled
     presenter.hoverSelect = options.hoverSelect
     presenter.scrollSelect = options.scrollSelect
     presenter.numberJump = options.numberJump
@@ -153,6 +158,7 @@ extension AppDelegate {
     presenter.numberScope = currentValues.numberScope
     presenter.rowOrder = currentValues.rowOrder
     presenter.onRowOrderChanged = { [weak self] order in self?.saveRowOrder(order) }
+    presenter.onOpenSettings = { [weak self] in self?.openSettings() }
     return (panel, presenter)
   }
 
@@ -167,6 +173,10 @@ extension AppDelegate {
     _ values: SettingsValues,
     replacingInvalidFile: Bool
   ) -> SettingsSaveOutcome {
+    let switcherSettingsChanged = values.mainSwitcher != currentValues.mainSwitcher
+      || values.parallelOverrides != currentValues.parallelOverrides
+    let parallelEnabledChanged = values.parallelOverrides.isEnabled
+      != currentValues.parallelOverrides.isEnabled
     let scopeChanged = values.romajiScope != currentValues.romajiScope
     let checkContextChanged = values.updateCheckEnabled != currentValues.updateCheckEnabled
       || values.updateChannel != currentValues.updateChannel
@@ -177,7 +187,10 @@ extension AppDelegate {
     if checkContextChanged {
       settingsWindow?.checkDisplay.resultText = nil
     }
-    panel?.displayModes = values.displayModes
+    // The shared settings land on the panel at once. The display modes
+    // and the grouping reach it through the per-appearance handover at
+    // show time instead, so a panel that is up keeps its own switcher's
+    // list until it closes.
     panel?.appearance = values.appearanceMode.nsAppearance
     panel?.textScale = values.textScale
     panel?.displayTarget = values.displayTarget
@@ -194,7 +207,11 @@ extension AppDelegate {
     presenter?.displayModes = values.displayModes
     presenter?.searchSettings = searchSettings
     presenter?.windowScope = values.windowScope
+    // The parallel placements first, so the grouping handover below
+    // folds a panel the parallel switcher opened over its new values.
+    presenter?.parallelSwitcher = values.parallelSwitcher
     presenter?.grouping = values.grouping
+    presenter?.parallelEnabled = values.parallelOverrides.isEnabled
     presenter?.hoverSelect = values.hoverSelect
     presenter?.scrollSelect = values.scrollSelect
     presenter?.numberJump = values.numberJump
@@ -202,7 +219,6 @@ extension AppDelegate {
     presenter?.numberScope = values.numberScope
     presenter?.rowOrder = values.rowOrder
     presenter?.showDelayMs = values.showDelayMs
-    panel?.grouping = values.grouping
     if let panel, let composite = presenter?.surface as? MirroredPanelSurface {
       composite.displayTarget = values.displayTarget
       composite.syncMirrors(from: panel)
@@ -217,7 +233,8 @@ extension AppDelegate {
     let valuesForSave = appliedKeyBindingValues(
       values,
       previous: previousValues,
-      changed: keyBindingsChanged
+      changed: keyBindingsChanged || parallelEnabledChanged,
+      parallelEnabled: values.parallelOverrides.isEnabled
     )
     guideWindows?.update(appearanceMode: values.appearanceMode)
     // Reopening rebuilds the engine, so only a scope change pays
@@ -240,7 +257,11 @@ extension AppDelegate {
     {
       Diagnostics.writeLine(LogLine(report.level, .config, report.line))
     }
-    return saveSettings(valuesForSave, replacingInvalidFile: replacingInvalidFile)
+    return saveSettings(
+      valuesForSave,
+      replacingInvalidFile: replacingInvalidFile,
+      switcherSettingsChanged: switcherSettingsChanged
+    )
   }
 
   // MARK: Private
@@ -322,12 +343,16 @@ extension AppDelegate {
   private func appliedKeyBindingValues(
     _ values: SettingsValues,
     previous: SettingsValues,
-    changed: Bool
+    changed: Bool,
+    parallelEnabled: Bool
   ) -> SettingsValues {
     guard changed else { return values }
-    guard didApplyKeyBindings(values.keyBindings, previous: previous.keyBindings) else {
-      return values
-    }
+    let applied = didApplyKeyBindings(
+      values.keyBindings,
+      previous: previous.keyBindings,
+      parallelEnabled: parallelEnabled
+    )
+    guard !applied else { return values }
     currentValues.keyBindings = previous.keyBindings
     currentValues.keyBindingSection = previous.keyBindingSection
     currentValues.loadedKeyBindings = previous.loadedKeyBindings
@@ -352,7 +377,8 @@ extension AppDelegate {
   /// length limit.
   private func saveSettings(
     _ values: SettingsValues,
-    replacingInvalidFile: Bool
+    replacingInvalidFile: Bool,
+    switcherSettingsChanged: Bool = false
   ) -> SettingsSaveOutcome {
     guard let configFileURL else {
       return .failed(reason: "cannot resolve directory")
@@ -361,7 +387,9 @@ extension AppDelegate {
     var config = values.configuration(
       version: AppConfiguration.currentVersion,
       sampleCount: preserved?.sampleCount,
-      stopMonitorEverySeconds: preserved?.stopMonitorEverySeconds
+      stopMonitorEverySeconds: preserved?.stopMonitorEverySeconds,
+      diskHasSwitcherSections: preserved?.hasSwitchersSection ?? false,
+      switcherSettingsChanged: switcherSettingsChanged
     )
     // Unknown keys ride back out, so saving from an older build never
     // drops what a newer one wrote. Re-read at save time above, so a hand
@@ -379,7 +407,11 @@ extension AppDelegate {
   /// everything previous and puts the old keys back, so the panel
   /// still opens. Split out when `applySettings` stood at the
   /// length limit.
-  private func didApplyKeyBindings(_ bindings: KeyBindingTable, previous: KeyBindingTable) -> Bool {
+  private func didApplyKeyBindings(
+    _ bindings: KeyBindingTable,
+    previous: KeyBindingTable,
+    parallelEnabled: Bool
+  ) -> Bool {
     hotkeys?.unregister()
     // The panel takes the table even with no manager, so a missing
     // manager never blocks what the panel shows.
@@ -395,7 +427,10 @@ extension AppDelegate {
     if let line = SystemSwitcherShortcuts.summaryLine(restoring: restoreFailures) {
       Diagnostics.writeLine(LogLine(.warning, .hotkey, line))
     }
-    let outcome = hotkeys.register(bindings: HotkeyBinding.bindings(for: bindings))
+    let outcome = hotkeys.register(
+      bindings: HotkeyBinding.bindings(for: bindings, parallelEnabled: parallelEnabled),
+      parallelEnabled: parallelEnabled
+    )
     Diagnostics.writeLine(LogLine(outcome.logLevel, .hotkey, outcome.summaryLine))
     for detail in hotkeys.refusedDetails {
       Diagnostics.writeLine(LogLine(.warning, .hotkey, detail))
@@ -405,7 +440,10 @@ extension AppDelegate {
     guard !outcome.isTotalFailure else {
       Diagnostics.writeLine(LogLine(.error, .hotkey, "new keybindings registered nothing; keeping the previous table"))
       hotkeys.unregister()
-      let recovery = hotkeys.register(bindings: HotkeyBinding.bindings(for: previous))
+      let recovery = hotkeys.register(
+        bindings: HotkeyBinding.bindings(for: previous, parallelEnabled: parallelEnabled),
+        parallelEnabled: parallelEnabled
+      )
       Diagnostics.writeLine(LogLine(recovery.logLevel, .hotkey, recovery.summaryLine))
       return false
     }

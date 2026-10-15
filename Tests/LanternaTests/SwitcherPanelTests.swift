@@ -83,6 +83,7 @@ struct SwitcherPanelTests {
       windows: [windows[0], windows[1], windows[2].settingHidden(true)],
       selecting: nil,
       query: "",
+      cursor: 0,
       filterActive: false
     )
     #expect(panel.contentRect(forFrameRect: panel.frame).height == PanelMetrics.height(rowCount: 4))
@@ -106,11 +107,17 @@ struct SwitcherPanelTests {
     )
     let windows = SampleWindows.make(count: 3)
     let rows = [windows[0], windows[1], windows[2].settingMinimized(true)]
-    panel.updateList(windows: rows, selecting: nil, query: "", filterActive: false)
+    panel.updateList(windows: rows, selecting: nil, query: "", cursor: 0, filterActive: false)
     #expect(panel.contentRect(forFrameRect: panel.frame).height == PanelMetrics.height(rowCount: 2))
     panel.update(windows: rows)
     #expect(panel.contentRect(forFrameRect: panel.frame).height == PanelMetrics.height(rowCount: 2))
-    panel.updateList(windows: [rows[2]], selecting: nil, query: rows[2].appName, filterActive: true)
+    panel.updateList(
+      windows: [rows[2]],
+      selecting: nil,
+      query: rows[2].appName,
+      cursor: rows[2].appName.count,
+      filterActive: true
+    )
     #expect(
       panel.contentRect(forFrameRect: panel.frame).height
         == PanelMetrics.height(rowCount: 2)
@@ -133,7 +140,7 @@ struct SwitcherPanelTests {
     panel.grouping = grouping
     panel.update(windows: windows)
     #expect(panel.contentRect(forFrameRect: panel.frame).height == PanelMetrics.height(rowCount: 5))
-    panel.updateList(windows: windows, selecting: nil, query: "", filterActive: false)
+    panel.updateList(windows: windows, selecting: nil, query: "", cursor: 0, filterActive: false)
     #expect(panel.contentRect(forFrameRect: panel.frame).height == PanelMetrics.height(rowCount: 5))
   }
 
@@ -144,7 +151,7 @@ struct SwitcherPanelTests {
   func anAppearanceOpensOnAnEmptyQuery() {
     let panel = panel(rowCount: 5)
     let rows = SampleWindows.make(count: 3)
-    panel.updateList(windows: [], selecting: nil, query: "x", filterActive: true)
+    panel.updateList(windows: [], selecting: nil, query: "x", cursor: 1, filterActive: true)
     panel.present(windows: rows, selecting: rows[1].id)
     let view = (panel.contentView as? NSHostingView<SwitcherView>)?.rootView
     #expect(view?.query == "")
@@ -300,7 +307,7 @@ struct SwitcherPanelTests {
     let rows = SampleWindows.make(count: 3)
     panel.present(windows: rows, selecting: nil)
     panel.panelWidth = .narrowMinus
-    panel.updateList(windows: [rows[0]], selecting: rows[0].id, query: "a", filterActive: true)
+    panel.updateList(windows: [rows[0]], selecting: rows[0].id, query: "a", cursor: 1, filterActive: true)
     let expected = PanelMetrics.fittedWidth(
       PanelMetrics.width(for: .standard, step: .widePlus),
       in: screen.visibleFrame.width

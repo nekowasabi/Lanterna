@@ -39,9 +39,10 @@ final class PanelFilter {
   /// from the config file and whenever the settings change, like the
   /// exclusion rules are recompiled.
   var searchSettings = SearchSettings()
-  /// Whether keystrokes narrow the list right now. Set only by the filter
-  /// invocation; a panel shown any other way leaves it off, and typing is
-  /// swallowed as before.
+  /// Whether keystrokes narrow the list right now. Set by the filter
+  /// invocation and by the start-filtering key on a presented panel; a panel
+  /// shown any other way leaves it off, and typing is swallowed as before
+  /// unless a bare binding answers while not filtering.
   private(set) var isActive = false
   /// How the special kinds show. Read at launch from the config file;
   /// the panel keeps the rows and this decides which reach the screen.
@@ -138,8 +139,11 @@ final class PanelFilter {
 
   /// Switches filtering on for the panel that is up, drawing at once: the
   /// chrome appears with the activation rather than with the next keystroke.
+  /// A panel switched over mid-appearance starts on an empty query with
+  /// the point at the start, the way a fresh appearance does.
   func activate() {
     guard !isActive else { return }
+    state.line = QueryText()
     isActive = true
     apply()
   }
@@ -219,20 +223,31 @@ final class PanelFilter {
     writeLine(LogLine(.info, .panel, "scope \(word)", context: ["scope": .string(word)]))
   }
 
-  /// Narrows one keystroke further. Answers nothing while inactive.
-  func append(_ text: String) {
+  /// Applies one editing step: narrowing again when the string changed,
+  /// redrawing only the insertion point when it merely moved. Answers
+  /// nothing while inactive.
+  func edit(_ edit: QueryEdit) {
     guard isActive else { return }
-    state.append(text)
+    guard state.line.apply(edit) else {
+      surface.showCursor(state.line.cursor)
+      return
+    }
     apply()
   }
 
-  /// Shortens the query by one character, and does nothing when already
-  /// empty: there is nothing to narrow back to that the panel is not
-  /// already showing.
-  func removeLast() {
-    guard isActive, isFiltering else { return }
-    state.removeLast()
+  /// Narrows one keystroke further, inserting at the insertion point.
+  /// Answers nothing while inactive.
+  func append(_ text: String) {
+    guard isActive else { return }
+    state.line.insert(text)
     apply()
+  }
+
+  /// Shortens the query by the character before the insertion point.
+  /// With an empty query or at the start there is nothing to shorten,
+  /// so the list is left alone and only the insertion point is redrawn.
+  func removeLast() {
+    edit(.deleteBackward)
   }
 
   /// Clears the query, leaving the panel up over the whole list.
@@ -310,7 +325,13 @@ final class PanelFilter {
     let matchedList = matched.map(\.id)
     let chosen = state.resolveSelection(matched: layout.rankedRows.map(\.id), incoming: selection.chosenID)
     selection.retarget(to: matchedList, selecting: chosen)
-    surface.updateList(windows: matched, selecting: selection.chosenID, query: state.query, filterActive: isActive)
+    surface.updateList(
+      windows: matched,
+      selecting: selection.chosenID,
+      query: state.query,
+      cursor: state.line.cursor,
+      filterActive: isActive
+    )
     // Twin of `PanelKeyCommands.numberedRows`: same scope rule, so a narrowed
     // list renumbers the rows a jump would name.
     if surface.appearanceHints == .numbers {

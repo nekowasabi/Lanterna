@@ -19,6 +19,7 @@ struct HotkeyMeasurementTests {
     #expect(
       Self.measurement().summaryLine
         == "panel shown 4.8 ms after Cmd+Tab (12 entries)" + Self.notTakingKeys
+        + "; main switcher"
     )
   }
 
@@ -30,7 +31,7 @@ struct HotkeyMeasurementTests {
   func whetherTheKeyboardArrivedIsAlwaysSaid() {
     #expect(
       Self.measurement(becameKey: true).summaryLine
-        == "panel shown 4.8 ms after Cmd+Tab (12 entries); taking keys"
+        == "panel shown 4.8 ms after Cmd+Tab (12 entries); taking keys; main switcher"
     )
   }
 
@@ -39,7 +40,7 @@ struct HotkeyMeasurementTests {
     #expect(
       Self.measurement(deliveryDelay: .microseconds(1900)).summaryLine
         == "panel shown 4.8 ms after Cmd+Tab (12 entries); delivery 1.9 ms"
-        + Self.notTakingKeys
+        + Self.notTakingKeys + "; main switcher"
     )
   }
 
@@ -52,6 +53,7 @@ struct HotkeyMeasurementTests {
       Self.measurement(gatheredOnDemand: true).summaryLine
         == "panel shown 4.8 ms after Cmd+Tab (12 entries)"
         + "; gathered on the spot (no list held yet)" + Self.notTakingKeys
+        + "; main switcher"
     )
   }
 
@@ -62,6 +64,7 @@ struct HotkeyMeasurementTests {
         .summaryLine
         == "panel shown 4.8 ms after Cmd+Tab (12 entries); delivery 1.9 ms"
         + "; gathered on the spot (no list held yet)" + Self.notTakingKeys
+        + "; main switcher"
     )
   }
 
@@ -70,6 +73,7 @@ struct HotkeyMeasurementTests {
     #expect(
       Self.measurement(combination: .reverse).summaryLine
         == "panel shown 4.8 ms after Shift+Cmd+Tab (12 entries)" + Self.notTakingKeys
+        + "; main switcher"
     )
   }
 
@@ -83,7 +87,7 @@ struct HotkeyMeasurementTests {
     ).summaryLine
     #expect(
       line == "panel shown 71.3 ms after Cmd+Tab (12 entries); delivery 0.0 ms"
-        + Self.notTakingKeys
+        + Self.notTakingKeys + "; main switcher"
     )
   }
 
@@ -118,7 +122,7 @@ struct HotkeyMeasurementTests {
 /// What the end of an appearance says it was.
 ///
 /// The exits that carry a measured span are worded by this type: a release, a
-/// commit key, a cancel key, and a press let go of before its panel ever
+/// commit key, a cancel key, a settings key, and a press let go of before its panel ever
 /// arrived. They are pinned here rather than where the decision is made, so a
 /// reword shows up as a failure in the file that owns the wording.
 ///
@@ -366,6 +370,9 @@ struct PanelExitMeasurementTests {
       Self.measurement(.pressCalledOff),
       Self.measurement(.cancelled, by: .cancelKey(.commandPeriod)),
       Self.measurement(.cancelled, by: .cancelKey(.escape)),
+      Self.measurement(.leftForSettings, by: .settingsKey(.commandComma)),
+      Self.measurement(.leftForSettings, by: .settingsKey(.optionComma)),
+      Self.measurement(.leftForSettings, by: .settingsKey(.custom(3))),
     ].map(\.summaryLine)
 
     #expect(Set(lines).count == lines.count)
@@ -407,6 +414,43 @@ struct PanelExitMeasurementTests {
       Self.measurement(.nothingToCommit, by: .commitKey(.returnKey)).summaryLine
         == "committed nothing 4.8 ms after Return (the list was empty)"
     )
+  }
+
+  @Test
+  func leavingForSettingsNamesTheKey() {
+    #expect(
+      Self.measurement(.leftForSettings, by: .settingsKey(.commandComma)).summaryLine
+        == "left for settings 4.8 ms after Cmd+Comma"
+    )
+    #expect(
+      Self.measurement(.leftForSettings, by: .settingsKey(.optionComma)).summaryLine
+        == "left for settings 4.8 ms after Opt+Comma"
+    )
+    #expect(
+      Self.measurement(.leftForSettings, by: .settingsKey(.custom(3))).summaryLine
+        == "left for settings 4.8 ms after key 3"
+    )
+  }
+
+  @Test
+  func leavingForSettingsCarriesTheQuery() {
+    let summary = FilterLogSummary(query: "saf", matchedCount: 2, totalCount: 31)
+    #expect(
+      PanelExitMeasurement(
+        outcome: .leftForSettings,
+        trigger: .settingsKey(.commandComma),
+        elapsed: .microseconds(4800),
+        filterSummary: summary
+      ).summaryLine
+        == "left for settings 4.8 ms after Cmd+Comma; filter \"saf\" (2 of 31)"
+    )
+  }
+
+  @Test
+  func leavingForSettingsIsNotACommit() {
+    #expect(!PanelExitMeasurement.Trigger.settingsKey(.commandComma).isCommit)
+    #expect(!PanelExitMeasurement.Trigger.settingsKey(.optionComma).isCommit)
+    #expect(!PanelExitMeasurement.Trigger.settingsKey(.custom(3)).isCommit)
   }
 
   // MARK: Private

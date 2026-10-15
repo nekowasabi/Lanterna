@@ -17,7 +17,8 @@ final class FakeSurface: SwitcherSurface {
     case present(selecting: WindowItem.Identifier?)
     case takeKeys
     case showSelection(WindowItem.Identifier?)
-    case updateList(selecting: WindowItem.Identifier?, query: String, filterActive: Bool)
+    case updateList(selecting: WindowItem.Identifier?, query: String, cursor: Int, filterActive: Bool)
+    case showCursor(Int)
     case dismiss
   }
 
@@ -27,6 +28,10 @@ final class FakeSurface: SwitcherSurface {
   private(set) var updatedLists = [[WindowItem]]()
   /// The choice and the query each swap carried beside the rows.
   private(set) var updatedSelections = [WindowItem.Identifier?]()
+  /// The insertion point each swap carried beside the query.
+  private(set) var updatedCursors = [Int]()
+  /// Every insertion point redrawn on its own, in order.
+  private(set) var shownCursors = [Int]()
   private(set) var updatedQueries = [String]()
   /// Whether the filter chrome was on for each swap.
   private(set) var updatedActives = [Bool]()
@@ -77,6 +82,8 @@ final class FakeSurface: SwitcherSurface {
 
   /// Every band asked for, in order; nil asked for no band.
   private(set) var scopeBands = [ScopeBand?]()
+  /// Every appearance's panel settings, in order.
+  private(set) var appliedSettings = [AppliedPanelSettings]()
 
   /// Every numbered order asked for, in order; empty asked for no numbers.
   private(set) var numberedRowOrders = [[WindowItem.Identifier]]()
@@ -120,6 +127,10 @@ final class FakeSurface: SwitcherSurface {
     scopeBands.append(band)
   }
 
+  func applyPanelSettings(_ settings: AppliedPanelSettings) {
+    appliedSettings.append(settings)
+  }
+
   /// Kept out of `calls` for the same reason as the band above.
   func showNumberedRows(_ ids: [WindowItem.Identifier]) {
     numberedRowOrders.append(ids)
@@ -129,14 +140,23 @@ final class FakeSurface: SwitcherSurface {
     windows: [WindowItem],
     selecting: WindowItem.Identifier?,
     query: String,
+    cursor: Int,
     filterActive: Bool
   ) {
     updatedLists.append(windows)
     updatedSelections.append(selecting)
     updatedQueries.append(query)
+    updatedCursors.append(cursor)
     updatedActives.append(filterActive)
-    calls.append(.updateList(selecting: selecting, query: query, filterActive: filterActive))
+    calls.append(.updateList(selecting: selecting, query: query, cursor: cursor, filterActive: filterActive))
     currentNotice = nil
+  }
+
+  /// Recorded in `calls`: cursor-only redraws happen between swaps,
+  /// and the orderings the call log pins down include the point.
+  func showCursor(_ position: Int) {
+    shownCursors.append(position)
+    calls.append(.showCursor(position))
   }
 
   func showNotice(_ text: String) {

@@ -22,6 +22,9 @@ final class PanelPresenter {
     commandIsHeld: @escaping @MainActor () -> Bool = {
       CGEventSource.flagsState(.combinedSessionState).contains(.maskCommand)
     },
+    optionIsHeld: @escaping @MainActor () -> Bool = {
+      CGEventSource.flagsState(.combinedSessionState).contains(.maskAlternate)
+    },
     modifierFlags: @escaping @MainActor () -> CGEventFlags = {
       CGEventSource.flagsState(.combinedSessionState)
     },
@@ -46,6 +49,7 @@ final class PanelPresenter {
     self.writeLine = writeLine
     self.closesOnCommandRelease = closesOnCommandRelease
     self.commandIsHeld = commandIsHeld
+    self.optionIsHeld = optionIsHeld
     self.modifierFlags = modifierFlags
     self.commandWatchInterval = commandWatchInterval
     self.keyStatusWatchInterval = keyStatusWatchInterval
@@ -76,7 +80,7 @@ final class PanelPresenter {
   /// The activation handling, kept beside the presenter, calls it off.
   lazy var pendingPress = PendingPressHold(
     listWhenGathered: { [store] in await store.listWhenGathered() },
-    show: { [weak self] items, combination, deliveryDelay, startedAt in
+    show: { [weak self] items, combination, deliveryDelay, startedAt, commitOnCommand in
       guard let self else { return }
       // A press the delay is holding owns every arrival while it
       // waits: the list joins the wait instead of opening a panel.
@@ -89,7 +93,8 @@ final class PanelPresenter {
         for: combination,
         deliveryDelay: deliveryDelay,
         startedAt: startedAt,
-        gatheredOnDemand: true
+        gatheredOnDemand: true,
+        commitOnCommand: commitOnCommand
       )
     }
   )
@@ -136,12 +141,15 @@ final class PanelPresenter {
   lazy var commandWatch = UnreportedReleaseWatch(
     interval: commandWatchInterval,
     isPanelUp: { [weak self] in self?.surface.isPresented ?? false },
-    commandIsHeld: { [weak self] in self?.commandIsHeld() ?? false },
+    commandIsHeld: { [weak self] in self?.commitKeyIsHeld() ?? false },
     // The chosen row is read here and not inside the call, because the
     // call is what clears it. Swift settles the argument before the
     // method runs, so the order is the language's rather than a habit.
     onUnreportedRelease: { [weak self] in
-      self?.wayOut.closeForAnUnreportedRelease(naming: self?.selection.chosenID)
+      self?.wayOut.closeForAnUnreportedRelease(
+        naming: self?.selection.chosenID,
+        commitOnCommand: self?.commitOnCommand ?? true
+      )
     }
   )
 
@@ -174,9 +182,9 @@ final class PanelPresenter {
   /// What a press means to a panel that is up.
   ///
   /// `lazy` because it is handed the way out, which is itself `lazy`. It
-  /// holds nothing of its own — the panel, the chosen row and the ways out
-  /// are all this object's — so the two can share them rather than keep
-  /// second copies.
+  /// holds one appearance's input state, while the panel, the chosen row
+  /// and the ways out are all this object's, so the two can share them
+  /// rather than keep second copies.
   /// The way out and the operations, built beside the presenter, reach it.
   lazy var keyCommands = PanelKeyCommands(
     surface: surface,
@@ -189,7 +197,9 @@ final class PanelPresenter {
     now: now,
     operate: { [weak self] operation, chosen in
       self?.startOperation(operation, naming: chosen)
-    }
+    },
+    startFiltering: { [weak self] in self?.switchToFiltering() },
+    openSettings: { [weak self] in self?.onOpenSettings?() }
   )
 
   /// Carries out the operations on the chosen row. Made beside the
@@ -207,6 +217,33 @@ final class PanelPresenter {
   /// Where a rearranged row order goes for saving. Set by whoever
   /// owns the file; the key commands report through here.
   var onRowOrderChanged: ((ManualRowOrder) -> Void)?
+
+  /// Where opening the settings goes. Set by whoever owns the file.
+  var onOpenSettings: (@MainActor () -> Void)?
+
+  /// The parallel switcher's resolved list settings, beside the main one.
+  var parallelSwitcher = SwitcherSettings.parallel(main: .mainDefaults, overrides: .defaults)
+
+  /// Whether the parallel invocations reach the panel at all. Carbon
+  /// stops delivering them once the switch is off, so a press arriving
+  /// anyway is a race between the switch and the press, and is left alone.
+  var parallelEnabled = true
+
+  /// Which switcher opened the appearance on screen, or the last one
+  /// after it closes. Read by the commit and the diagnostics; each
+  /// appearance sets it as it goes up.
+  private(set) var activeSwitcher = SwitcherIdentity.main
+
+  /// The main switcher's resolved list settings, read off the scope,
+  /// display mode, and grouping fields. Computed so they never drift
+  /// apart: every staging of a legacy field lands here with it.
+  var mainSwitcher: SwitcherSettings {
+    SwitcherSettings(
+      windowScope: windowScope,
+      displayModes: displayModes,
+      subgroupPlacements: grouping.placements
+    )
+  }
 
   /// Whether digits with a jump modifier name rows. Read on every
   /// press, the same timing as above.
@@ -251,12 +288,22 @@ final class PanelPresenter {
   /// Which applications' rows each appearance starts on, handed to the
   /// key commands. A panel that is up keeps its own until it closes.
   var windowScope = WindowScope.allApps {
-    didSet { keyCommands.updateWindowScope(windowScope) }
+    didSet {
+      guard !surface.isPresented || activeSwitcher == .main else { return }
+      keyCommands.updateWindowScope(windowScope)
+    }
   }
 
   /// How the rows are grouped, handed to the key commands like the modes.
+  /// The parked-section placements are the main switcher's; a panel the
+  /// parallel switcher opened keeps its own placements over the shared
+  /// rest.
   var grouping = GroupingPolicy() {
-    didSet { keyCommands.updateGrouping(grouping) }
+    didSet {
+      keyCommands.updateGrouping(
+        AppliedPanelSettings.resolve(settings(for: activeSwitcher), sharedGrouping: grouping).grouping
+      )
+    }
   }
 
   /// The resolved key bindings, handed to the key commands. A change
@@ -298,6 +345,12 @@ final class PanelPresenter {
     // away writes no line at all, so charging it a clock read costs
     // nothing.
     let startedAt = now()
+    // A switched-off parallel switcher owns no press: Carbon stops
+    // delivering its invocations with the switch, so one arriving now
+    // went out before the switch did. It moves nothing and opens nothing.
+    if combination.switcher == .parallel, !parallelEnabled {
+      return
+    }
     if surface.isPresented {
       handlePressWhilePresented(combination)
       return
@@ -317,14 +370,28 @@ final class PanelPresenter {
     // a press held back waiting for the first list can lose its Command
     // too, and that one is already answered — the release calls the
     // pending press off. Here is what nothing else covers.
-    if closesOnCommandRelease(), !commandIsHeld() {
-      writeLine(LogLine(
-        .info,
-        .panel,
-        "turned away \(combination.name); Command was already up by the time "
-          + "the press arrived"
-      ))
-      return
+    // The commit key is what the press still holds: Carbon only fires on
+    // an exact modifier match, so the held modifiers are the invocation's.
+    // A main press answers Command alone, as it long has; a parallel
+    // press without Command answers Option instead. With no monitor the
+    // question is never put, so nothing is asked and the key stays Command.
+    let commitOnCommand: Bool
+    if closesOnCommandRelease() {
+      let commandHeld = commandIsHeld()
+      commitOnCommand = commandHeld
+      let held = commandHeld || (combination.switcher == .parallel && optionIsHeld())
+      guard held else {
+        let key = combination.switcher == .parallel ? "Option" : "Command"
+        writeLine(LogLine(
+          .info,
+          .panel,
+          "turned away \(combination.name) (\(combination.switcher.diagnosticsName)); "
+            + "\(key) was already up by the time the press arrived"
+        ))
+        return
+      }
+    } else {
+      commitOnCommand = true
     }
     // A press is already waiting for the first list and is the one that
     // will put the panel up. The panel is not up yet, so without this a
@@ -335,11 +402,22 @@ final class PanelPresenter {
       return
     }
     if let delay = showDelay {
-      holdForDelay(combination, deliveryDelay: deliveryDelay, startedAt: startedAt, delay: delay)
+      holdForDelay(
+        combination,
+        deliveryDelay: deliveryDelay,
+        startedAt: startedAt,
+        delay: delay,
+        commitOnCommand: commitOnCommand
+      )
       return
     }
     guard let held = store.snapshot else {
-      pendingPress.begin(combination, deliveryDelay: deliveryDelay, startedAt: startedAt)
+      pendingPress.begin(
+        combination,
+        deliveryDelay: deliveryDelay,
+        startedAt: startedAt,
+        commitOnCommand: commitOnCommand
+      )
       return
     }
     show(
@@ -347,7 +425,8 @@ final class PanelPresenter {
       for: combination,
       deliveryDelay: deliveryDelay,
       startedAt: startedAt,
-      gatheredOnDemand: false
+      gatheredOnDemand: false,
+      commitOnCommand: commitOnCommand
     )
   }
 
@@ -366,29 +445,16 @@ final class PanelPresenter {
   /// turned to. Letting the slot go is what stops it.
   func handleCommandRelease() {
     let startedAt = now()
+    if answerWaitingPress(forCommitOnCommand: true, since: startedAt) {
+      return
+    }
+    // An Option-keyed appearance ends on Command only once Option is
+    // already up; while Option stays held the numbers carry on for the
+    // Option release to settle.
+    if !commitOnCommand, lastModifierFlags.contains(.maskAlternate) {
+      return
+    }
     keyCommands.resetNumberInput()
-    if pendingShow.isWaiting {
-      guard let waiting = pendingShow.take() else { return }
-      pendingPress.callOff()
-      guard let items = waiting.items else {
-        wayOut.recordPressCalledOff(since: startedAt)
-        return
-      }
-      // A filtering opener asks for typing, not for taking: letting go
-      // answers with silence rather than a commit or a line.
-      guard waiting.presses.first != .filter else { return }
-      commitWithoutShowing(
-        items,
-        presses: waiting.presses,
-        startedAt: startedAt
-      )
-      return
-    }
-    if pendingPress.isWaiting {
-      pendingPress.callOff()
-      wayOut.recordPressCalledOff(since: startedAt)
-      return
-    }
     guard !keyCommands.isFilteringActive else { return }
     wayOut.commitOnCommandRelease(naming: selection.chosenID, since: startedAt, filter: keyCommands.filterSummary())
   }
@@ -404,15 +470,29 @@ final class PanelPresenter {
 
   /// Acts on Option having been let go.
   ///
-  /// Only a panel that is up answers: unlike Command, letting go of
-  /// Option never calls off a press still waiting for its first list.
-  /// The pending number dies with the release either way, committed or
-  /// not.
+  /// A press still waiting, for its first list or for the show delay,
+  /// is settled first when Option is its commit key, the way Command
+  /// settles its own; one keyed to Command is left for Command.
+  /// While Command stays held the release does nothing and the pending
+  /// number carries on for the Command release to settle; otherwise the
+  /// pending number dies with the release either way, committed or not.
+  /// The tap reports the flags-changed event's flags before the release
+  /// itself, so the held flags read as the state that event left behind.
   func handleOptionRelease() {
     let startedAt = now()
+    if answerWaitingPress(forCommitOnCommand: false, since: startedAt) {
+      return
+    }
+    guard !lastModifierFlags.contains(.maskCommand) else { return }
     keyCommands.resetNumberInput()
     guard !keyCommands.isFilteringActive else { return }
     wayOut.commitOnOptionRelease(naming: selection.chosenID, since: startedAt, filter: keyCommands.filterSummary())
+  }
+
+  /// Switches the presented panel into filtering, stopping the release watch.
+  func switchToFiltering() {
+    keyCommands.activateFiltering()
+    commandWatch.stop()
   }
 
   // MARK: Private
@@ -437,6 +517,13 @@ final class PanelPresenter {
   /// is a decision nothing checks.
   private let commandIsHeld: @MainActor () -> Bool
 
+  /// Whether Option is down on the keyboard at this instant.
+  ///
+  /// Injected for the same reason as the Command question above: the
+  /// commit key of an Option-held appearance is Option, and a test
+  /// process holds no real keys.
+  private let optionIsHeld: @MainActor () -> Bool
+
   /// The modifiers held right now, read where they are used rather
   /// than decided elsewhere: a test process holds no real keys, so
   /// the live state would answer against every test there is. The
@@ -444,18 +531,27 @@ final class PanelPresenter {
   private let modifierFlags: @MainActor () -> CGEventFlags
 
   /// The modifiers held as of the last tap report. Seeded per
-  /// appearance from the held Command, because the tap only reports
-  /// changes and the opening press holds Command already.
+  /// appearance from the live flags, because the tap only reports
+  /// changes and the opening press already holds its Command or
+  /// Option. The releases also read it to tell a release under the
+  /// other key apart.
   private var lastModifierFlags: CGEventFlags = []
 
   /// How long the watch waits between looks (`UnreportedReleaseWatch`'s
   /// number, injected so a test need not wait a real one out).
   private let commandWatchInterval: Duration
 
+  /// Whether the appearance on screen commits on Command. Sampled as
+  /// its press arrived — Carbon only fires on an exact modifier match,
+  /// so the held modifiers are the invocation's — and kept for the
+  /// releases to answer, while a wait keeps its first press's answer.
+  private var commitOnCommand = true
+
   /// The wait one press is owed, or nothing when the delay is off.
   ///
-  /// Read at every press rather than settled at launch, the way the
-  /// other per-press answers are: a change lands on the next press.
+  /// Shared by both switchers. Read at every press rather than settled
+  /// at launch, the way the other per-press answers are: a change lands
+  /// on the next press.
   private var showDelay: Duration? {
     guard let showDelayMs, showDelayMs > 0 else { return nil }
     return .milliseconds(max(1, Int(showDelayMs.rounded())))
@@ -464,6 +560,61 @@ final class PanelPresenter {
   /// Whether the delay holds no press back: the ordinary path.
   private var pendingShowHoldIsOff: Bool {
     showDelay == nil
+  }
+
+  /// Answers a release for the waits, when the wait's commit key matches
+  /// the release. A wait of the other key is left for its own release,
+  /// and no wait at all falls through to the panel.
+  private func answerWaitingPress(
+    forCommitOnCommand key: Bool,
+    since startedAt: ContinuousClock.Instant
+  ) -> Bool {
+    if pendingShow.isWaiting {
+      guard pendingShow.waitingCommitOnCommand == key else { return true }
+      guard let waiting = pendingShow.take() else { return true }
+      pendingPress.callOff()
+      wayOut.switcherIdentity = waiting.presses.first?.switcher ?? .main
+      guard let items = waiting.items else {
+        wayOut.recordPressCalledOff(since: startedAt, trigger: trigger(forCommitOnCommand: key))
+        return true
+      }
+      // A filtering opener asks for typing, not for taking: letting go
+      // answers with silence rather than a commit or a line.
+      guard waiting.presses.first != .filter else { return true }
+      commitWithoutShowing(
+        items,
+        presses: waiting.presses,
+        startedAt: startedAt,
+        commitOnCommand: key
+      )
+      return true
+    }
+    if pendingPress.isWaiting {
+      guard pendingPress.waitingCommitOnCommand == key else { return true }
+      wayOut.switcherIdentity = pendingPress.waitingSwitcher ?? .main
+      pendingPress.callOff()
+      wayOut.recordPressCalledOff(since: startedAt, trigger: trigger(forCommitOnCommand: key))
+      return true
+    }
+    return false
+  }
+
+  /// The trigger a silent ending is recorded by.
+  private func trigger(forCommitOnCommand key: Bool) -> PanelExitMeasurement.Trigger {
+    key ? .commandRelease : .optionRelease
+  }
+
+  /// Whether the commit key of the appearance on screen is still held.
+  private func commitKeyIsHeld() -> Bool {
+    commitOnCommand ? commandIsHeld() : optionIsHeld()
+  }
+
+  /// The resolved settings behind one switcher.
+  private func settings(for switcher: SwitcherIdentity) -> SwitcherSettings {
+    switch switcher {
+    case .main: mainSwitcher
+    case .parallel: parallelSwitcher
+    }
   }
 
   /// Records a rearranged row order and hands it to the file owner.
@@ -499,12 +650,24 @@ final class PanelPresenter {
     _ combination: HotkeyCombination,
     deliveryDelay: Duration?,
     startedAt: ContinuousClock.Instant,
-    delay: Duration
+    delay: Duration,
+    commitOnCommand: Bool
   ) {
     if store.snapshot == nil, !pendingPress.isWaiting {
-      pendingPress.begin(combination, deliveryDelay: deliveryDelay, startedAt: startedAt)
+      pendingPress.begin(
+        combination,
+        deliveryDelay: deliveryDelay,
+        startedAt: startedAt,
+        commitOnCommand: commitOnCommand
+      )
     }
-    pendingShow.begin(combination, deliveryDelay: deliveryDelay, startedAt: startedAt, delay: delay)
+    pendingShow.begin(
+      combination,
+      deliveryDelay: deliveryDelay,
+      startedAt: startedAt,
+      delay: delay,
+      commitOnCommand: commitOnCommand
+    )
     if let held = store.snapshot {
       pendingShow.listArrived(held.items, gatheredOnDemand: false)
     }
@@ -519,7 +682,8 @@ final class PanelPresenter {
       deliveryDelay: waiting.deliveryDelay,
       startedAt: waiting.startedAt,
       gatheredOnDemand: waiting.gatheredOnDemand,
-      replay: Array(waiting.presses.dropFirst())
+      replay: Array(waiting.presses.dropFirst()),
+      commitOnCommand: waiting.commitOnCommand
     )
   }
 
@@ -531,14 +695,16 @@ final class PanelPresenter {
   private func commitWithoutShowing(
     _ items: [WindowItem],
     presses: [HotkeyCombination],
-    startedAt: ContinuousClock.Instant
+    startedAt: ContinuousClock.Instant,
+    commitOnCommand: Bool
   ) {
     let ordered = arrangeDelayedChoice(items, presses: presses)
     wayOut.commitSilently(
       ordered,
       naming: selection.chosenID,
       since: startedAt,
-      filter: keyCommands.filterSummary()
+      filter: keyCommands.filterSummary(),
+      trigger: trigger(forCommitOnCommand: commitOnCommand)
     )
   }
 
@@ -550,11 +716,31 @@ final class PanelPresenter {
   ) -> [WindowItem] {
     tracker.noteSnapshotObserved(store.snapshot?.gatheredAt ?? now())
     let ordered = tracker.ordered(items, skipping: store.snapshot?.skippedOwners ?? [])
+    _ = seedSwitcher(presses.first?.switcher ?? .main)
     keyCommands.beginFiltering(fullWindows: ordered, filtering: presses.first == .filter)
     let layout = keyCommands.shownLayout
     selection.beginSecond(layout.rowIDs, ranking: layout.rankedRows.map(\.id))
     replayDelayedPresses(Array(presses.dropFirst()))
     return ordered
+  }
+
+  /// Seeds the key commands with one switcher's list settings and keeps
+  /// its identity for the commit and the diagnostics to name.
+  ///
+  /// Shared by showing and by the silent commit, so a choice made
+  /// without a panel reads the same rows that switcher's panel would
+  /// have shown.
+  private func seedSwitcher(_ switcher: SwitcherIdentity) -> AppliedPanelSettings {
+    activeSwitcher = switcher
+    wayOut.switcherIdentity = switcher
+    let settings = settings(for: switcher)
+    keyCommands.updateWindowScope(settings.windowScope)
+    keyCommands.updateDisplayModes(settings.displayModes)
+    // The placements fold into the shared grouping, so each appearance
+    // groups alike and parks the kinds where its own switcher says.
+    let applied = AppliedPanelSettings.resolve(settings, sharedGrouping: grouping)
+    keyCommands.updateGrouping(applied.grouping)
+    return applied
   }
 
   /// Walks waiting presses past the first over the fresh choice.
@@ -564,9 +750,11 @@ final class PanelPresenter {
   private func replayDelayedPresses(_ presses: [HotkeyCombination]) {
     for press in presses {
       switch press {
-      case .forward:
+      case .forward,
+           .parallelForward:
         selection.moveToNext()
-      case .reverse:
+      case .reverse,
+           .parallelReverse:
         selection.moveToPrevious()
       case .filter:
         keyCommands.activateFiltering()
@@ -604,13 +792,14 @@ final class PanelPresenter {
       return
     }
     switch combination {
-    case .forward:
+    case .forward,
+         .parallelForward:
       selection.moveToNext()
-    case .reverse:
+    case .reverse,
+         .parallelReverse:
       selection.moveToPrevious()
     case .filter:
-      keyCommands.activateFiltering()
-      commandWatch.stop()
+      switchToFiltering()
     }
   }
 
@@ -650,8 +839,12 @@ final class PanelPresenter {
     deliveryDelay: Duration?,
     startedAt: ContinuousClock.Instant,
     gatheredOnDemand: Bool,
-    replay: [HotkeyCombination] = []
+    replay: [HotkeyCombination] = [],
+    commitOnCommand: Bool
   ) {
+    // Kept per appearance for the releases to answer: the press sampled
+    // it as it arrived, and a wait kept its first press's answer.
+    self.commitOnCommand = commitOnCommand
     // The orderings below are load-bearing, and the statements they
     // hold apart are named one pair at a time.
     //
@@ -672,6 +865,12 @@ final class PanelPresenter {
     // position is free: it has to happen before the panel can go.
     tracker.noteSnapshotObserved(store.snapshot?.gatheredAt ?? now())
     let ordered = tracker.ordered(windows, skipping: store.snapshot?.skippedOwners ?? [])
+    // Each appearance reads its own switcher's list settings: the scope,
+    // the display modes, and the parked-section placements seed this
+    // showing alone, and the identity stays for the commit and the
+    // diagnostics to name. A panel that is up keeps its own until it
+    // closes; the next appearance seeds again.
+    let applied = seedSwitcher(combination.switcher)
     keyCommands.beginFiltering(fullWindows: ordered, filtering: combination == .filter)
     let layout = keyCommands.shownLayout
     let shown = layout.rows
@@ -681,6 +880,7 @@ final class PanelPresenter {
     replayDelayedPresses(replay)
     operations.begin(windows: ordered)
     wirePointerHandlers()
+    surface.applyPanelSettings(applied)
     surface.present(windows: shown, selecting: selection.chosenID, filterActive: keyCommands.isFilteringActive)
     // The tap reports changes only, so the modifiers this press
     // opened under would otherwise leave the numbers down until the

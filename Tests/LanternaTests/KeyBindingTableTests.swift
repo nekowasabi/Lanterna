@@ -71,11 +71,76 @@ struct KeyBindingTableTests {
   func defaultsCoverEveryAction() {
     let table = KeyBindingTable.defaults
     #expect(table.keys.count == KeyBindingAction.allCases.count)
-    #expect(table[.commit].count == 2)
-    #expect(table[.cancel].count == 2)
+    #expect(table[.commit].count == 3)
+    #expect(table[.cancel].count == 3)
     #expect(table[.show] == [key(kVK_Tab, .command)])
-    #expect(table[.closeWindow] == [key(kVK_ANSI_W, .command)])
+    #expect(
+      table[.closeWindow]
+        == [key(kVK_ANSI_W, .command), key(kVK_ANSI_W, .option)]
+    )
+    #expect(
+      table[.quitApplication]
+        == [key(kVK_ANSI_Q, .command), key(kVK_ANSI_Q, .option)]
+    )
+    #expect(
+      table[.hideApplication]
+        == [key(kVK_ANSI_H, .command), key(kVK_ANSI_H, .option)]
+    )
+    #expect(
+      table[.minimizeWindow]
+        == [key(kVK_ANSI_M, .command), key(kVK_ANSI_M, .option)]
+    )
     #expect(table[.toggleScope] == [key(kVK_ANSI_Slash, .command)])
+    #expect(
+      table[.next]
+        == [key(kVK_DownArrow), key(kVK_ANSI_J), key(kVK_ANSI_N), key(kVK_ANSI_N, .control)]
+    )
+    #expect(
+      table[.previous]
+        == [key(kVK_UpArrow), key(kVK_ANSI_K), key(kVK_ANSI_P), key(kVK_ANSI_P, .control)]
+    )
+    #expect(table[.startFiltering] == [key(kVK_ANSI_S)])
+    #expect(
+      table[.openSettings]
+        == [key(kVK_ANSI_Comma, .command), key(kVK_ANSI_Comma, .option)]
+    )
+    #expect(
+      table[.moveCursorLeft] == [key(kVK_LeftArrow), key(kVK_ANSI_B, .control)]
+    )
+    #expect(
+      table[.moveCursorRight] == [key(kVK_RightArrow), key(kVK_ANSI_F, .control)]
+    )
+    #expect(table[.moveCursorToStart] == [key(kVK_ANSI_A, .control)])
+    #expect(table[.moveCursorToEnd] == [key(kVK_ANSI_E, .control)])
+    #expect(
+      table[.deleteForward] == [key(kVK_ForwardDelete), key(kVK_ANSI_D, .control)]
+    )
+    #expect(table[.deleteWordBackward] == [key(kVK_ANSI_W, .control)])
+    #expect(table[.deleteToStart] == [key(kVK_ANSI_U, .control)])
+    #expect(table[.deleteToEnd] == [key(kVK_ANSI_K, .control)])
+    #expect(
+      table[.deleteBackward] == [key(kVK_Delete), key(kVK_ANSI_H, .control)]
+    )
+    #expect(
+      table[.commit].last == key(kVK_ANSI_M, .control)
+    )
+    #expect(
+      table[.cancel].last == key(kVK_ANSI_G, .control)
+    )
+  }
+
+  /// The cursor and deletion steps ride the shared panel rules: bare
+  /// keys are allowed, like the deletion already there.
+  @Test
+  func editingStepsShareTheBareMode() {
+    #expect(KeyBindingAction.moveCursorLeft.mode == .bare)
+    #expect(KeyBindingAction.moveCursorRight.mode == .bare)
+    #expect(KeyBindingAction.moveCursorToStart.mode == .bare)
+    #expect(KeyBindingAction.moveCursorToEnd.mode == .bare)
+    #expect(KeyBindingAction.deleteForward.mode == .bare)
+    #expect(KeyBindingAction.deleteWordBackward.mode == .bare)
+    #expect(KeyBindingAction.deleteToStart.mode == .bare)
+    #expect(KeyBindingAction.deleteToEnd.mode == .bare)
   }
 
   /// The scope key is held to a modifier, the way the window operations
@@ -98,6 +163,10 @@ struct KeyBindingTableTests {
     #expect(KeyBindingTable.defaults[.minimizeWindow].first?.displayName == "Cmd+M")
     #expect(ResolvedKey(keyCode: UInt16(kVK_F5), modifiers: []).displayName == "key 96")
     #expect(ResolvedKey(keyCode: UInt16(kVK_ANSI_Keypad1), modifiers: []).displayName == "Keypad 1")
+    #expect(ResolvedKey(keyCode: UInt16(kVK_LeftArrow), modifiers: []).displayName == "Left")
+    #expect(ResolvedKey(keyCode: UInt16(kVK_RightArrow), modifiers: []).displayName == "Right")
+    #expect(ResolvedKey(keyCode: UInt16(kVK_ForwardDelete), modifiers: []).displayName == "Forward Delete")
+    #expect(ResolvedKey(keyCode: UInt16(kVK_ANSI_A), modifiers: .control).displayName == "Ctrl+A")
   }
 
   @Test(arguments: ansiLabels)
@@ -275,19 +344,31 @@ struct KeyBindingTableTests {
 
   @Test
   func panelCustomizationDisplacesUntouchedDefaults() {
-    // commit takes Cmd+W, which closeWindow holds only by default:
-    // the untouched default gives way and ends up unbound.
+    // commit takes Cmd+W, which closeWindow holds by default alongside
+    // Opt+W: the untouched default gives up only the taken key.
     let (table, issues) = KeyBindingResolver.resolve(
       [.commit: [raw(kVK_ANSI_W, "cmd")]],
       order: [.commit]
     )
     #expect(table[.commit] == [key(kVK_ANSI_W, .command)])
-    #expect(table[.closeWindow] == [])
-    #expect(issues.count == 2)
+    #expect(table[.closeWindow] == [key(kVK_ANSI_W, .option)])
+    #expect(issues.count == 1)
     #expect(issues[0].action == .closeWindow)
     #expect(issues[0].reason == .conflict)
-    #expect(issues[1].action == .closeWindow)
-    #expect(issues[1].detail.contains("unbound"))
+    // Taking every default key leaves the action with nothing to read,
+    // which stays unbound.
+    let (emptied, emptiedIssues) = KeyBindingResolver.resolve(
+      [.commit: [raw(kVK_ANSI_W, "cmd"), raw(kVK_ANSI_W, "opt")]],
+      order: [.commit]
+    )
+    #expect(emptied[.closeWindow] == [])
+    #expect(emptiedIssues.count == 3)
+    #expect(emptiedIssues[0].action == .closeWindow)
+    #expect(emptiedIssues[0].reason == .conflict)
+    #expect(emptiedIssues[1].action == .closeWindow)
+    #expect(emptiedIssues[1].reason == .conflict)
+    #expect(emptiedIssues[2].action == .closeWindow)
+    #expect(emptiedIssues[2].detail.contains("unbound"))
   }
 
   @Test
@@ -302,10 +383,10 @@ struct KeyBindingTableTests {
       order: [.closeWindow, .quitApplication]
     )
     #expect(table[.quitApplication] == [key(kVK_ANSI_W, .command)])
-    #expect(table[.closeWindow] == [])
-    #expect(issues.count == 2)
-    #expect(issues[1].action == .closeWindow)
-    #expect(issues[1].detail.contains("unbound"))
+    #expect(table[.closeWindow] == [key(kVK_ANSI_W, .option)])
+    #expect(issues.count == 1)
+    #expect(issues[0].action == .closeWindow)
+    #expect(issues[0].reason == .invalid)
   }
 
   @Test
@@ -402,6 +483,64 @@ struct KeyBindingTableTests {
       to: .next,
       in: .defaults
     ) == .heldBy([.cancel, .clearQuery]))
+  }
+
+  @Test
+  func bareAnswersFollowFiltering() {
+    let bare = key(kVK_ANSI_J)
+    let guarded = key(kVK_ANSI_J, .command)
+    func stroke(_ modifiers: NSEvent.ModifierFlags, _ characters: String) -> PanelKeystroke {
+      PanelKeystroke(
+        keyCode: UInt16(kVK_ANSI_J),
+        modifiers: modifiers,
+        isARepeat: false,
+        characters: characters
+      )
+    }
+    #expect(guarded.answers(stroke(.command, "j"), filtering: false))
+    #expect(guarded.answers(stroke(.command, "j"), filtering: true))
+    #expect(guarded.answers(stroke(.command, ""), filtering: true))
+    #expect(bare.answers(stroke([], ""), filtering: false))
+    #expect(bare.answers(stroke([], "/"), filtering: false))
+    #expect(bare.answers(stroke([], "j"), filtering: false))
+    #expect(bare.answers(stroke([], ""), filtering: true))
+    #expect(bare.answers(stroke([], "/"), filtering: true))
+    #expect(!bare.answers(stroke([], "j"), filtering: true))
+    #expect(bare.answers(stroke(.command, "j"), filtering: false))
+    #expect(!bare.answers(stroke(.command, "j"), filtering: true))
+  }
+
+  @Test
+  func matchesWithoutFilteringKeepsFiltering() {
+    var table = KeyBindingTable.defaults
+    table.keys[.next] = [key(kVK_ANSI_J)]
+    let press = PanelKeystroke(
+      keyCode: UInt16(kVK_ANSI_J),
+      modifiers: [],
+      isARepeat: false,
+      characters: "j"
+    )
+    #expect(!table.matches(press, action: .next))
+    #expect(table.matches(press, action: .next, filtering: false))
+  }
+
+  @Test
+  func settingsAssignmentRefusalSpellsTheRules() {
+    #expect(KeyBindingTable.refusal(
+      assigning: key(kVK_ANSI_Comma),
+      to: .openSettings,
+      in: .defaults
+    ) == .needsModifiers)
+    #expect(KeyBindingTable.refusal(
+      assigning: key(kVK_ANSI_F),
+      to: .startFiltering,
+      in: .defaults
+    ) == nil)
+    #expect(KeyBindingTable.refusal(
+      assigning: key(kVK_ANSI_S),
+      to: .startFiltering,
+      in: .defaults
+    ) == .alreadyHeld)
   }
 
   @Test

@@ -10,10 +10,16 @@ import Carbon.HIToolbox
 enum HotkeyCombination: Sendable, CaseIterable, Hashable {
   case forward
   case reverse
-  /// The filter invocation. Registered and diagnosed like the other two:
-  /// `HotkeyManager` and the disable/restore discipline iterate `all`, so
-  /// adding the case is what reaches them.
+  /// The filter invocation. Registered and diagnosed like the other main
+  /// invocations: `HotkeyManager` iterates `all`, and the disable/restore
+  /// discipline reaches it through `SystemSwitcherShortcuts.systemCounterparts`
+  /// and the window server's shortcut it maps to.
   case filter
+  /// The parallel switcher's invocations. Registered like the main ones;
+  /// the window server holds no counterpart, so the disable/restore
+  /// discipline leaves them alone.
+  case parallelForward
+  case parallelReverse
 
   // MARK: Lifecycle
 
@@ -28,8 +34,8 @@ enum HotkeyCombination: Sendable, CaseIterable, Hashable {
 
   // MARK: Internal
 
-  /// Everything that gets registered. Registration is all-or-each: the two
-  /// are registered separately and either can fail on its own.
+  /// Everything that gets registered. Registration is all-or-each: each
+  /// combination is registered separately and any one can fail on its own.
   static var all: [HotkeyCombination] {
     allCases
   }
@@ -42,13 +48,17 @@ enum HotkeyCombination: Sendable, CaseIterable, Hashable {
     case .forward: 1
     case .reverse: 2
     case .filter: 3
+    case .parallelForward: 4
+    case .parallelReverse: 5
     }
   }
 
   var keyCode: UInt32 {
     switch self {
     case .forward,
-         .reverse: UInt32(kVK_Tab)
+         .reverse,
+         .parallelForward,
+         .parallelReverse: UInt32(kVK_Tab)
     case .filter: UInt32(kVK_Space)
     }
   }
@@ -58,6 +68,20 @@ enum HotkeyCombination: Sendable, CaseIterable, Hashable {
     case .forward,
          .filter: UInt32(cmdKey)
     case .reverse: UInt32(cmdKey | shiftKey)
+    case .parallelForward: UInt32(optionKey)
+    case .parallelReverse: UInt32(optionKey | shiftKey)
+    }
+  }
+
+  /// Which switcher this invocation opens: the parallel invocations open
+  /// the parallel switcher, everything else the main one.
+  var switcher: SwitcherIdentity {
+    switch self {
+    case .forward,
+         .reverse,
+         .filter: .main
+    case .parallelForward,
+         .parallelReverse: .parallel
     }
   }
 
@@ -68,6 +92,8 @@ enum HotkeyCombination: Sendable, CaseIterable, Hashable {
     case .forward: "Cmd+Tab"
     case .reverse: "Shift+Cmd+Tab"
     case .filter: "Cmd+Space"
+    case .parallelForward: "Opt+Tab"
+    case .parallelReverse: "Shift+Opt+Tab"
     }
   }
 }
@@ -84,7 +110,8 @@ struct HotkeyBinding: Equatable, Sendable {
 
   // MARK: Internal
 
-  /// The long-standing three bindings.
+  /// The bindings an unchanged file resolves to: the main invocations
+  /// beside the parallel ones.
   static var defaults: [HotkeyBinding] {
     bindings(for: .defaults)
   }
@@ -108,13 +135,19 @@ struct HotkeyBinding: Equatable, Sendable {
   }
 
   /// One binding per key of every invocation action, in a fixed
-  /// order: show, then reverse, then filter.
-  static func bindings(for table: KeyBindingTable) -> [HotkeyBinding] {
+  /// order: show, then reverse, then filter, then the parallel ones.
+  /// A switched-off parallel switcher asks for no bindings, so its keys
+  /// stay with the front application; the table itself keeps them for
+  /// the day it is switched back on.
+  static func bindings(for table: KeyBindingTable, parallelEnabled: Bool = true) -> [HotkeyBinding] {
     let actions: [(HotkeyCombination, KeyBindingAction)] = [
       (.forward, .show),
       (.reverse, .showReverse),
       (.filter, .showFilter),
+      (.parallelForward, .showParallel),
+      (.parallelReverse, .showParallelReverse),
     ]
+    .filter { parallelEnabled || $0.0.switcher == .main }
     return actions.flatMap { combination, action in
       table[action].enumerated().map { slot, key in
         HotkeyBinding(

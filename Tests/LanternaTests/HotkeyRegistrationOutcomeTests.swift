@@ -15,7 +15,9 @@ struct HotkeyRegistrationOutcomeTests {
 
   @Test
   func allTakenReadsAsOneList() {
-    #expect(Self.everything.summaryLine == "registered Cmd+Tab, Shift+Cmd+Tab, Cmd+Space")
+    #expect(Self.everything
+      .summaryLine ==
+      "registered Cmd+Tab (main), Shift+Cmd+Tab (main), Cmd+Space (main), Opt+Tab (parallel), Shift+Opt+Tab (parallel)")
     #expect(Self.everything.isTotalFailure == false)
     #expect(Self.everything.logLevel == .info)
   }
@@ -26,7 +28,7 @@ struct HotkeyRegistrationOutcomeTests {
   func oneRefusalSitsBesideTheOnesThatWorked() {
     #expect(
       Self.allButForward.summaryLine
-        == "registered Shift+Cmd+Tab, Cmd+Space; could not register Cmd+Tab (error -9878)"
+        == "registered Shift+Cmd+Tab (main), Cmd+Space (main), Opt+Tab (parallel), Shift+Opt+Tab (parallel); could not register Cmd+Tab (main) (error -9878)"
     )
     #expect(Self.allButForward.isTotalFailure == false)
     #expect(Self.allButForward.logLevel == .warning)
@@ -36,8 +38,9 @@ struct HotkeyRegistrationOutcomeTests {
   func nothingTakenSaysWhyAndSaysItIsLeaving() {
     #expect(
       Self.nothing.summaryLine
-        == "could not register Cmd+Tab (error -9878), "
-        + "Shift+Cmd+Tab (error -9878), Cmd+Space (error -9878); no hotkey registered, exiting"
+        == "could not register Cmd+Tab (main) (error -9878), "
+        + "Shift+Cmd+Tab (main) (error -9878), Cmd+Space (main) (error -9878), Opt+Tab (parallel) (error -9878), "
+        + "Shift+Opt+Tab (parallel) (error -9878); no hotkey registered, exiting"
     )
     #expect(Self.nothing.isTotalFailure)
     #expect(Self.nothing.logLevel == .error)
@@ -69,7 +72,7 @@ struct HotkeyRegistrationOutcomeTests {
   )
 
   private static let allButForward = HotkeyRegistrationOutcome(
-    registered: [.reverse, .filter],
+    registered: [.reverse, .filter, .parallelForward, .parallelReverse],
     failures: [failure(.forward)]
   )
 

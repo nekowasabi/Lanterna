@@ -79,6 +79,29 @@ struct SettingsSaveTests {
     )
   }
 
+  /// A sectioned file survives the disk round trip a restart performs:
+  /// the main switcher keeps its own scope, and the parallel switcher
+  /// keeps its own display modes.
+  @Test
+  func switcherSectionsSurviveADiskRoundTrip() throws {
+    let url = try temporaryFile()
+    var values = SettingsValues.defaults
+    values.windowScope = .frontApp
+    values.parallelOverrides.minimizedMode = .own(.show)
+    let config = values.configuration(
+      version: 1,
+      sampleCount: nil,
+      stopMonitorEverySeconds: nil,
+      diskHasSwitcherSections: false,
+      switcherSettingsChanged: true
+    )
+    #expect(SettingsSaver.save(config, to: url, replacingInvalidFile: false) == .saved)
+    let decoded = try #require(AppConfiguration.decode(try Data(contentsOf: url)).successValue)
+    let reloaded = SettingsValues.effective(from: decoded.config)
+    #expect(reloaded.mainSwitcher.windowScope == .frontApp)
+    #expect(reloaded.parallelSwitcher.displayModes.minimized == .show)
+  }
+
   // MARK: Private
 
   private func temporaryFile() throws -> URL {

@@ -33,9 +33,24 @@ enum KeyBindingCategory: CaseIterable, Equatable, Hashable, Sendable {
   /// The actions under the category, in file order.
   var actions: [KeyBindingAction] {
     switch self {
-    case .switcher: [.show, .showReverse, .showFilter]
-    case .navigation: [.next, .previous, .commit, .cancel, .toggleScope, .numberJump, .moveRowUp, .moveRowDown]
-    case .query: [.deleteBackward, .clearQuery]
+    case .switcher: [.show, .showReverse, .showFilter, .showParallel, .showParallelReverse]
+
+    case .navigation: [.next, .previous, .commit, .cancel, .openSettings, .toggleScope, .numberJump, .moveRowUp, .moveRowDown]
+
+    case .query: [
+        .startFiltering,
+        .moveCursorLeft,
+        .moveCursorRight,
+        .moveCursorToStart,
+        .moveCursorToEnd,
+        .deleteBackward,
+        .deleteForward,
+        .deleteWordBackward,
+        .deleteToStart,
+        .deleteToEnd,
+        .clearQuery,
+      ]
+
     case .windowActions: [.closeWindow, .quitApplication, .hideApplication, .minimizeWindow]
     }
   }
@@ -46,15 +61,27 @@ enum KeyBindingCategory: CaseIterable, Equatable, Hashable, Sendable {
     case .show: "Show"
     case .showReverse: "Show in reverse"
     case .showFilter: "Show for filtering"
+    case .showParallel: "Show parallel"
+    case .showParallelReverse: "Show parallel in reverse"
     case .next: "Next"
     case .previous: "Previous"
     case .commit: "Commit"
     case .cancel: "Cancel"
+    case .openSettings: "Open settings"
     case .toggleScope: "Toggle active app only"
     case .numberJump: "Jump to row number"
     case .moveRowUp: "Move row up"
     case .moveRowDown: "Move row down"
+    case .startFiltering: "Start filtering"
+    case .moveCursorLeft: "Move cursor left"
+    case .moveCursorRight: "Move cursor right"
+    case .moveCursorToStart: "Move cursor to start"
+    case .moveCursorToEnd: "Move cursor to end"
     case .deleteBackward: "Delete backward"
+    case .deleteForward: "Delete forward"
+    case .deleteWordBackward: "Delete word backward"
+    case .deleteToStart: "Delete to start"
+    case .deleteToEnd: "Delete to end"
     case .clearQuery: "Clear query"
     case .closeWindow: "Close window"
     case .quitApplication: "Quit application"

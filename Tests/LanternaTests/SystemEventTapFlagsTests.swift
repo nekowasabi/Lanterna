@@ -2,7 +2,7 @@ import CoreGraphics
 @testable import Lanterna
 import Testing
 
-/// Which modifier changes count as Command being let go.
+/// Which modifier changes count as Command, or Option, being let go.
 ///
 /// Pairs of states rather than single states, because that is the whole
 /// question: a `.flagsChanged` carrying no `.maskCommand` is either Command
@@ -108,6 +108,30 @@ struct SystemEventTapFlagsTests {
       !SystemEventTap.shouldReportRelease(
         previous: noise,
         current: [.maskShift, noise]
+      )
+    )
+  }
+
+  /// The Option edge, read the same way: letting go of Option is a
+  /// release whatever else stays down.
+  @Test
+  func lettingGoOfOptionWhileControlStaysDownIsAnOptionRelease() {
+    #expect(
+      SystemEventTap.shouldReportOptionRelease(
+        previous: [.maskAlternate, .maskControl],
+        current: .maskControl
+      )
+    )
+  }
+
+  /// Control coming up under a held Option ends nothing: the Option bit
+  /// never moved, so an Option-keyed panel stays up.
+  @Test
+  func lettingGoOfControlWhileOptionIsHeldIsNotAnOptionRelease() {
+    #expect(
+      !SystemEventTap.shouldReportOptionRelease(
+        previous: [.maskAlternate, .maskControl],
+        current: .maskAlternate
       )
     )
   }

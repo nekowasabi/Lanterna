@@ -24,7 +24,7 @@ struct MRUShowLineTests {
       ).summaryLine
         == "panel shown 4.8 ms after Cmd+Tab (12 entries)"
         + "; not taking keys (they reach the frontmost application)"
-        + "; mru first (window 42) via commit"
+        + "; mru first (window 42) via commit; main switcher"
     )
   }
 
@@ -37,7 +37,7 @@ struct MRUShowLineTests {
       ).summaryLine
         == "panel shown 4.8 ms after Cmd+Tab (12 entries)"
         + "; not taking keys (they reach the frontmost application)"
-        + "; mru first (window 7) via external"
+        + "; mru first (window 7) via external; main switcher"
     )
   }
 
@@ -47,7 +47,7 @@ struct MRUShowLineTests {
       Self.measurement(firstID: nil, source: .none).summaryLine
         == "panel shown 4.8 ms after Cmd+Tab (12 entries)"
         + "; not taking keys (they reach the frontmost application)"
-        + "; mru first none via none"
+        + "; mru first none via none; main switcher"
     )
   }
 

@@ -7,6 +7,7 @@ import SwiftUI
 enum SettingsTab: CaseIterable {
   case general
   case appearance
+  case switchers
   case filter
   case groups
   case keyboard
@@ -17,6 +18,7 @@ enum SettingsTab: CaseIterable {
     switch self {
     case .general: "General"
     case .appearance: "Appearance"
+    case .switchers: "Switchers"
     case .filter: "Filter"
     case .groups: "Groups"
     case .keyboard: "Keyboard"
@@ -27,6 +29,7 @@ enum SettingsTab: CaseIterable {
     switch self {
     case .general: "gearshape"
     case .appearance: "paintbrush"
+    case .switchers: "rectangle.on.rectangle"
     case .filter: "line.3.horizontal.decrease.circle"
     case .groups: "square.3.layers.3d"
     case .keyboard: "keyboard"
@@ -118,7 +121,20 @@ final class SettingsWindow: NSWindow {
     )))
     keyboardHost.preferredContentSize = NSSize(width: Self.contentWidth, height: contentHeight)
     keyboardHost.sizingOptions = []
-    let hosts: [NSHostingController<AnyView>] = [generalHost, appearanceHost, filterHost, groupsHost, keyboardHost]
+    let switchersHost = NSHostingController(rootView: AnyView(SettingsTabRoot(
+      model: model,
+      content: { SettingsSwitchersView(values: $0) }
+    )))
+    switchersHost.preferredContentSize = NSSize(width: Self.contentWidth, height: contentHeight)
+    switchersHost.sizingOptions = []
+    let hosts: [NSHostingController<AnyView>] = [
+      generalHost,
+      appearanceHost,
+      switchersHost,
+      filterHost,
+      groupsHost,
+      keyboardHost,
+    ]
     for (tab, host) in zip(SettingsTab.allCases, hosts) {
       let item = NSTabViewItem(viewController: host)
       item.label = tab.title

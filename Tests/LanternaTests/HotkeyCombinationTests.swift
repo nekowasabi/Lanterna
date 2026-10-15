@@ -18,7 +18,7 @@ struct HotkeyCombinationTests {
     #expect(identifiers.allSatisfy { $0 != 0 })
   }
 
-  @Test(arguments: [0, 4, 99, UInt32.max] as [UInt32])
+  @Test(arguments: [0, 6, 99, UInt32.max] as [UInt32])
   func anIdentifierThisAppNeverHandedOutIsRejected(identifier: UInt32) {
     #expect(HotkeyCombination(id: identifier) == nil)
   }

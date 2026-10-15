@@ -118,7 +118,7 @@ struct PanelExitSwitchTests {
     #expect(
       lines[1]
         == "committed \(row.appName) — \(row.displayTitle) "
-        + "(\(row.id.logWord)) 4.8 ms after Command was released"
+        + "(\(row.id.logWord)) 4.8 ms after Command was released; main switcher"
     )
     #expect(
       lines[2]

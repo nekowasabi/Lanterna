@@ -38,6 +38,62 @@ struct PanelFilterTests {
 
   // MARK: Internal
 
+  /// Typing after moving lands at the point, and the narrowed list is
+  /// the same as typing the whole query straight.
+  @Test
+  func typingAfterMovingMatchesTypingItStraight() {
+    let moved = makeFilter()
+    moved.filter.append("safri")
+    moved.filter.edit(.moveLeft)
+    moved.filter.edit(.moveLeft)
+    moved.filter.append("a")
+    let straight = makeFilter()
+    straight.filter.append("safari")
+    #expect(moved.surface.updatedQueries.last == straight.surface.updatedQueries.last)
+    #expect(
+      moved.surface.updatedLists.last?.map(\.id)
+        == straight.surface.updatedLists.last?.map(\.id)
+    )
+    #expect(moved.selection.chosenID == straight.selection.chosenID)
+    #expect(moved.surface.updatedCursors.last == 4)
+  }
+
+  /// Moving the point alone changes neither the list nor the choice;
+  /// only the mark is redrawn.
+  @Test
+  func movingThePointAloneRedrawsOnlyTheMark() {
+    let made = makeFilter()
+    made.filter.append("sa")
+    let lists = made.surface.updatedLists.count
+    let choice = made.selection.chosenID
+    made.filter.edit(.moveLeft)
+    #expect(made.surface.updatedLists.count == lists)
+    #expect(made.selection.chosenID == choice)
+    #expect(made.surface.shownCursors.last == 1)
+  }
+
+  /// Stepping past either end moves nothing, deletes nothing, and
+  /// leaves the panel up.
+  @Test
+  func steppingPastTheEndsChangesNothing() {
+    let made = makeFilter()
+    let lists = made.surface.updatedLists.count
+    made.filter.edit(.moveLeft)
+    made.filter.edit(.deleteBackward)
+    #expect(made.surface.updatedLists.count == lists)
+    made.filter.append("ab")
+    let narrowed = made.surface.updatedLists.count
+    made.filter.edit(.moveToEnd)
+    made.filter.edit(.moveRight)
+    made.filter.edit(.deleteForward)
+    made.filter.edit(.moveToStart)
+    made.filter.edit(.moveLeft)
+    made.filter.edit(.deleteBackward)
+    #expect(made.surface.updatedLists.count == narrowed)
+    #expect(made.surface.updatedQueries.last == "ab")
+    #expect(made.surface.isPresented)
+  }
+
   /// A minimized row stays out of the list without a query when its mode
   /// is hide.
   @Test
@@ -163,6 +219,35 @@ struct PanelFilterTests {
     #expect(made.selection.chosenID == chosen)
   }
 
+  /// Removing from an empty query rebuilds no list: only the insertion
+  /// point is redrawn.
+  @Test
+  func removingFromAnEmptyQueryRedrawsOnlyTheCursor() {
+    let made = makeFilter()
+    let updates = made.surface.updatedLists.count
+    made.filter.removeLast()
+    #expect(made.surface.updatedLists.count == updates)
+    #expect(made.surface.shownCursors == [0])
+  }
+
+  /// Removing at the start leaves the query and the list alone: only
+  /// the insertion point is redrawn.
+  @Test
+  func removingAtTheStartLeavesTheQueryAndTheListAlone() {
+    let made = makeFilter()
+    made.filter.append("ab")
+    made.filter.edit(.moveToStart)
+    let updates = made.surface.updatedLists.count
+    let redraws = made.surface.shownCursors.count
+    let chosen = made.selection.chosenID
+    made.filter.removeLast()
+    #expect(made.surface.updatedQueries.last == "ab")
+    #expect(made.surface.updatedLists.count == updates)
+    #expect(made.surface.shownCursors.count == redraws + 1)
+    #expect(made.surface.shownCursors.last == 0)
+    #expect(made.selection.chosenID == chosen)
+  }
+
   /// Clearing restores the whole list and leaves the panel up.
   @Test
   func clearingRestoresTheWholeListAndKeepsThePanelUp() {
@@ -263,6 +348,41 @@ struct PanelFilterTests {
     #expect(made.surface.updatedQueries.last == "safa")
     #expect(made.surface.updatedLists.last?.map(\.id) == [renewed[0].id])
     #expect(made.selection.chosenID == renewed[0].id)
+  }
+
+  /// A swap keeps the insertion point beside the query it carries.
+  @Test
+  func replacingTheListKeepsTheCursor() {
+    let made = makeFilter()
+    made.filter.append("sa")
+    made.filter.edit(.moveLeft)
+    made.filter.replace(fullWindows: made.rows)
+    #expect(made.surface.updatedQueries.last == "sa")
+    #expect(made.surface.updatedCursors.last == 1)
+  }
+
+  /// Switching a presented panel into filtering starts on an empty
+  /// query with the point at the start.
+  @Test
+  func switchingIntoFilteringStartsOver() {
+    let made = makeFilter(active: false)
+    made.filter.activate()
+    made.filter.append("sa")
+    made.filter.edit(.moveLeft)
+    made.filter.begin(fullWindows: made.rows, filtering: false)
+    made.filter.activate()
+    #expect(made.surface.updatedQueries.last == "")
+    #expect(made.surface.updatedCursors.last == 0)
+  }
+
+  /// The commit names the whole query, wherever the point stands.
+  @Test
+  func theCommitNamesTheWholeQuery() {
+    let made = makeFilter()
+    made.filter.append("safari")
+    made.filter.edit(.moveLeft)
+    made.filter.edit(.moveLeft)
+    #expect(made.filter.logSummary().query == "safari")
   }
 
   /// A swap that keeps the chosen row keeps the remembered row: a row the

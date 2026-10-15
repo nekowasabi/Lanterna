@@ -39,6 +39,10 @@ struct SwitcherView: View {
   /// is on. Empty shows its guidance wording instead of drawing nothing.
   var query: String
 
+  /// How many characters stand before the insertion point. Drawn as a
+  /// mark in the query row; moving it alone redraws nothing else.
+  var cursor = 0
+
   /// Whether the query row belongs on screen. Off draws no chrome,
   /// whatever the query reads.
   var filterActive: Bool
@@ -109,13 +113,28 @@ struct SwitcherView: View {
             .font(.system(size: scaled(18)))
             .foregroundStyle(.secondary)
           if query.isEmpty {
-            Text("Type to filter")
-              .font(.system(size: scaled(20)))
-              .foregroundStyle(.tertiary)
+            HStack(spacing: 0) {
+              cursorMark
+              Text("Type to filter")
+                .font(.system(size: scaled(20)))
+                .foregroundStyle(.tertiary)
+            }
           } else {
-            Text(query)
-              .font(.system(size: scaled(20)))
-              .foregroundStyle(.primary)
+            let split = Self.splitQuery(query, at: cursor)
+            HStack(spacing: 0) {
+              Text(split.before)
+                .font(.system(size: scaled(20)))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.head)
+                .layoutPriority(1)
+              cursorMark
+              Text(split.after)
+                .font(.system(size: scaled(20)))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            }
           }
           Spacer(minLength: 0)
           Text(countWording)
@@ -199,6 +218,15 @@ struct SwitcherView: View {
     .adaptiveGlass(cornerRadius: 16)
   }
 
+  /// The query in two halves around the insertion point. The halves
+  /// trim from the far ends, so the mark always stands where the next
+  /// character would land.
+  static func splitQuery(_ query: String, at cursor: Int) -> (before: String, after: String) {
+    let clamped = min(max(cursor, 0), query.count)
+    let index = query.index(query.startIndex, offsetBy: clamped)
+    return (String(query[..<index]), String(query[index...]))
+  }
+
   /// The query row count wording for one split of the list. It counts the
   /// window rows the list draws, ordinary and subgrouped alike, and not the
   /// heading rows, unlike `PanelMetrics.drawnRowCount`. Singular for one
@@ -218,6 +246,15 @@ struct SwitcherView: View {
   }
 
   // MARK: Private
+
+  /// The insertion point mark: a still vertical bar the height of the
+  /// query text, never blinking. Fixed in width so a query longer than
+  /// the row trims the texts around it instead of trimming the mark.
+  private var cursorMark: some View {
+    Rectangle()
+      .fill(.primary)
+      .frame(width: 2, height: scaled(20))
+  }
 
   /// The query row count wording for the rows on screen.
   private var countWording: String {

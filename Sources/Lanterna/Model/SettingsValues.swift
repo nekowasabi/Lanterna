@@ -35,6 +35,8 @@ struct SettingsValues: Equatable, Sendable {
     showDelayMs: nil,
     windowScope: .allApps,
     grouping: GroupingPolicy(),
+    parallelOverrides: .defaults,
+    hasSwitchersSection: false,
     keyBindings: .defaults,
     keyBindingSection: nil,
     loadedKeyBindings: .defaults
@@ -101,6 +103,10 @@ struct SettingsValues: Equatable, Sendable {
   /// How the list groups its rows. Absent in the file means one list,
   /// with every parked section at the end.
   var grouping: GroupingPolicy
+  /// What the parallel switcher spells beside the main one.
+  var parallelOverrides: ParallelOverrides
+  /// Whether the loaded file held a switchers section.
+  var hasSwitchersSection: Bool
   /// The resolved key bindings. Never partial: absent in the file
   /// means all defaults.
   var keyBindings: KeyBindingTable
@@ -110,6 +116,21 @@ struct SettingsValues: Equatable, Sendable {
   /// The table as loaded, for telling an untouched round trip apart
   /// from an edited table.
   var loadedKeyBindings: KeyBindingTable
+
+  /// The main switcher's resolved list settings, read off the top-level
+  /// fields above. Computed so the two never drift apart.
+  var mainSwitcher: SwitcherSettings {
+    SwitcherSettings(
+      windowScope: windowScope,
+      displayModes: displayModes,
+      subgroupPlacements: grouping.placements
+    )
+  }
+
+  /// The parallel switcher's resolved list settings.
+  var parallelSwitcher: SwitcherSettings {
+    SwitcherSettings.parallel(main: mainSwitcher, overrides: parallelOverrides)
+  }
 
   /// The values for one run: present keys win, absent keys mean
   /// the defaults.
@@ -146,6 +167,8 @@ struct SettingsValues: Equatable, Sendable {
         names: config.groupNames,
         assignments: config.groupAssignments
       ),
+      parallelOverrides: config.parallelOverrides,
+      hasSwitchersSection: config.hasSwitchersSection,
       keyBindings: config.keyBindings,
       keyBindingSection: config.keyBindingSection,
       loadedKeyBindings: config.keyBindings
@@ -157,7 +180,9 @@ struct SettingsValues: Equatable, Sendable {
   func configuration(
     version: Int,
     sampleCount: Int?,
-    stopMonitorEverySeconds: Int?
+    stopMonitorEverySeconds: Int?,
+    diskHasSwitcherSections: Bool = false,
+    switcherSettingsChanged: Bool = false
   ) -> ValidConfiguration {
     var config = ValidConfiguration(
       version: version,
@@ -247,6 +272,11 @@ struct SettingsValues: Equatable, Sendable {
     } else {
       config.keyBindingSection = Self.customizedSection(keyBindings)
     }
+    shapeSwitcherSections(
+      into: &config,
+      diskHasSections: diskHasSwitcherSections,
+      settingsChanged: switcherSettingsChanged
+    )
     return config
   }
 
@@ -280,6 +310,30 @@ struct SettingsValues: Equatable, Sendable {
         RawKeyBinding(keyCode: Int($0.keyCode), modifiers: $0.modifierWords)
       })
     })
+  }
+
+  /// Spells the switcher sections for saving, or leaves the top-level
+  /// shape alone. The sections win when the disk already holds them,
+  /// when either switcher's settings changed in this save, or when the
+  /// parallel switcher spells anything at all.
+  private func shapeSwitcherSections(
+    into config: inout ValidConfiguration,
+    diskHasSections: Bool,
+    settingsChanged: Bool
+  ) {
+    let parallel = AppConfiguration.spelledParallelSection(parallelOverrides)
+    guard diskHasSections || settingsChanged || !parallel.isEmpty else { return }
+    let main = AppConfiguration.spelledMainSection(mainSwitcher)
+    guard !main.isEmpty || !parallel.isEmpty else { return }
+    config.otherSpaceMode = nil
+    config.hiddenAppMode = nil
+    config.minimizedMode = nil
+    config.fullscreenMode = nil
+    config.windowlessAppMode = nil
+    config.windowScope = nil
+    config.subgroupPlacements = [:]
+    config.mainSection = main.isEmpty ? nil : main
+    config.parallelSection = parallel.isEmpty ? nil : parallel
   }
 
 }

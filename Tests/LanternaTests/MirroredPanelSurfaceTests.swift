@@ -54,11 +54,33 @@ struct MirroredPanelSurfaceTests {
     let rows = windows()
     surface.present(windows: rows, selecting: nil)
     surface.showSelection(rows[2].id)
-    surface.updateList(windows: [rows[0]], selecting: rows[0].id, query: "a", filterActive: true)
+    surface.updateList(windows: [rows[0]], selecting: rows[0].id, query: "a", cursor: 1, filterActive: true)
     for fake in [first, second] {
       #expect(fake.shownSelections.last == rows[2].id)
       #expect(fake.updatedLists.last?.map(\.id) == [rows[0].id])
       #expect(fake.updatedQueries.last == "a")
+      #expect(fake.updatedCursors.last == 1)
+    }
+  }
+
+  /// The insertion point reaches every mirror with the list, and its
+  /// redraws alone reach them too.
+  @Test
+  func cursorAndItsRedrawsFanOut() {
+    let first = FakeSurface()
+    let second = FakeSurface()
+    let surface = MirroredPanelSurface(
+      panels: [first, second],
+      keyResolver: resolver(cursor: nil)
+    )
+    surface.displayTarget = .all
+    let rows = windows()
+    surface.present(windows: rows, selecting: nil)
+    surface.updateList(windows: [rows[0]], selecting: rows[0].id, query: "sa", cursor: 2, filterActive: true)
+    surface.showCursor(1)
+    for fake in [first, second] {
+      #expect(fake.updatedCursors.last == 2)
+      #expect(fake.shownCursors.last == 1)
     }
   }
 

@@ -31,7 +31,7 @@ struct PanelPresenterCommitTests {
     #expect(
       fixture.log.lines.first(where: { $0.hasPrefix("committed ") })
         == "committed \(second.appName) — \(second.displayTitle) "
-        + "(\(second.id.logWord)) 4.8 ms after Command was released"
+        + "(\(second.id.logWord)) 4.8 ms after Command was released; main switcher"
     )
   }
 
@@ -72,7 +72,7 @@ struct PanelPresenterCommitTests {
     #expect(
       fixture.log.lines.first(where: { $0.hasPrefix("committed ") })
         == "committed \(second.appName) — \(second.displayTitle) "
-        + "(\(second.id.logWord)) 9.6 ms after Command was released"
+        + "(\(second.id.logWord)) 9.6 ms after Command was released; main switcher"
     )
   }
 
@@ -91,7 +91,7 @@ struct PanelPresenterCommitTests {
     #expect(fixture.surface.dismissCount == 1)
     #expect(
       fixture.log.lines.last
-        == "committed nothing 9.6 ms after Command was released (the list was empty)"
+        == "committed nothing 9.6 ms after Command was released (the list was empty); main switcher"
     )
   }
 
@@ -104,7 +104,7 @@ struct PanelPresenterCommitTests {
     #expect(fixture.surface.dismissCount == 1)
     #expect(
       fixture.log.lines.last
-        == "committed nothing 4.8 ms after Command was released (the list was empty)"
+        == "committed nothing 4.8 ms after Command was released (the list was empty); main switcher"
     )
   }
 
@@ -279,7 +279,7 @@ struct PanelPresenterCommitTests {
     #expect(!fixture.surface.isPresented)
     #expect(
       fixture.log.lines == [
-        "turned away Cmd+Tab; Command was already up by the time the press arrived"
+        "turned away Cmd+Tab (main); Command was already up by the time the press arrived"
       ]
     )
   }
@@ -346,7 +346,7 @@ struct PanelPresenterCallOffTests {
     #expect(
       fixture.log.lines == [
         "press called off 4.8 ms after Command was released, "
-          + "before the panel appeared"
+          + "before the panel appeared; main switcher"
       ]
     )
   }
@@ -374,7 +374,7 @@ struct PanelPresenterCallOffTests {
     #expect(
       fixture.log.lines == [
         "press called off 4.8 ms after Command was released, "
-          + "before the panel appeared"
+          + "before the panel appeared; main switcher"
       ]
     )
   }

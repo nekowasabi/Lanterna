@@ -21,10 +21,39 @@ import SwitchSequence from "../../../components/SwitchSequence.astro";
   ]}
 />
 
-|                                        |                                                                                               |
-| -------------------------------------- | --------------------------------------------------------------------------------------------- |
-| <kbd>⌘</kbd><kbd>Tab</kbd>             | Shows the switcher. Keep holding `Cmd` and press `Tab` to move, then release `Cmd` to switch. |
-| <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Tab</kbd> | Moves in the reverse direction.                                                               |
+|                                        |                                                                                                                                                                         |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <kbd>⌘</kbd><kbd>Tab</kbd>             | Shows the switcher. Keep holding `Cmd` and press `Tab` to move, then release `Cmd` to switch.                                                                           |
+| <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Tab</kbd> | Moves in the reverse direction.                                                                                                                                         |
+| <kbd>⌥</kbd><kbd>Tab</kbd>             | Shows the parallel switcher: the same panel with its own settings, starting on the front app's windows alone. Keep holding `Opt` to move, then release `Opt` to switch. |
+| <kbd>⇧</kbd><kbd>⌥</kbd><kbd>Tab</kbd> | Moves the parallel switcher in the reverse direction.                                                                                                                   |
+| <kbd>⌘</kbd><kbd>J</kbd>/<kbd>N</kbd>  | Moves to the next row, like <kbd>↓</kbd>.                                                                                                                               |
+| <kbd>⌘</kbd><kbd>K</kbd>/<kbd>P</kbd>  | Moves to the previous row, like <kbd>↑</kbd>.                                                                                                                           |
+| <kbd>⌘</kbd><kbd>S</kbd>               | Switches the open switcher to filter mode.                                                                                                                              |
+| <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>,</kbd>  | Closes the switcher and opens Settings.                                                                                                                                 |
+
+## Parallel switcher
+
+`Opt+Tab` opens a second switcher beside `Cmd+Tab`: the same panel and the same keys, but with its own settings. Out of the box it lists only the front app's windows, so you can hop between one app's windows without pressing `Cmd+/` first. `Cmd+Tab` keeps listing every app's windows. Letting go of `Opt` switches, the way letting go of `Cmd` does on the main switcher.
+
+The Switchers tab of Settings holds one sub-tab per switcher, `Cmd+Tab` and `Opt+Tab`, with the same rows in each: which apps' windows to list, how to treat windows on other Spaces, hidden apps, minimized and fullscreen windows, and apps without windows, and where those kinds go when the list is grouped. Each `Opt+Tab` row is linked to `Cmd+Tab` and follows it until you unlink it, except Show windows of, which starts unlinked on Active app; Link all to Cmd+Tab links every row again. Everything else, such as the sort order, fuzzy matching, how the list groups, the panel's display, width, and text size, the show delay, and the gestures inside the panel, is shared by both switchers and stays in its own tab. Switching the parallel switcher off hands `Opt+Tab` and `Shift+Opt+Tab` back to the front application; switching it back on answers them again without a restart.
+
+The config file writes the two switchers side by side under `switchers`, with `main` for `Cmd+Tab` and `parallel` for the parallel switcher. A `parallel` row reads `"inherit"` to follow the main switcher. Shared settings belong at the top level; written under `main` or `parallel` they are ignored with a diagnostics entry:
+
+```json
+{
+  "switchers": {
+    "main": { "windowScope": "allApps" },
+    "parallel": {
+      "windowScope": "inherit",
+      "minimizedMode": "show",
+      "enabled": false
+    }
+  }
+}
+```
+
+Without a `switchers` section the file reads as before, and the parallel switcher lists the front app's windows alone.
 
 ## Filtering
 
@@ -36,14 +65,25 @@ import SwitchSequence from "../../../components/SwitchSequence.astro";
   ]}
 />
 
-|                              |                                                                                                                                                                            |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <kbd>⌘</kbd><kbd>Space</kbd> | Shows the switcher in filter mode. In this mode, releasing `Cmd` does not close it. Pressing it in a switcher opened with `Cmd+Tab` switches that switcher to filter mode. |
-| <kbd>A–Z</kbd>               | Keeps only the rows whose app name or window title contains what you typed. Case is ignored.                                                                               |
-| <kbd>↑</kbd><kbd>↓</kbd>     | Moves the selection.                                                                                                                                                       |
-| <kbd>↩</kbd>                 | Switches to the chosen window.                                                                                                                                             |
-| <kbd>⌫</kbd>                 | Deletes one character.                                                                                                                                                     |
-| <kbd>esc</kbd>               | Clears what you typed. With nothing typed, closes the switcher.                                                                                                            |
+|                                                                    |                                                                                                                                                                                                      |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <kbd>⌘</kbd><kbd>Space</kbd>                                       | Shows the switcher in filter mode. In this mode, releasing `Cmd` does not close it. Pressing it in a switcher opened with `Cmd+Tab` switches that switcher to filter mode, and so does <kbd>S</kbd>. |
+| <kbd>A–Z</kbd>                                                     | Keeps only the rows whose app name or window title contains what you typed. Case is ignored.                                                                                                         |
+| <kbd>↑</kbd><kbd>↓</kbd>                                           | Moves the selection.                                                                                                                                                                                 |
+| <kbd>↩</kbd>                                                       | Switches to the chosen window.                                                                                                                                                                       |
+| <kbd>⌫</kbd>                                                       | Deletes one character.                                                                                                                                                                               |
+| <kbd>←</kbd><kbd>→</kbd>, <kbd>Ctrl</kbd><kbd>B</kbd>/<kbd>F</kbd> | Moves the insertion point one character.                                                                                                                                                             |
+| <kbd>Ctrl</kbd><kbd>A</kbd>/<kbd>E</kbd>                           | Jumps to the start or the end.                                                                                                                                                                       |
+| <kbd>Ctrl</kbd><kbd>H</kbd>                                        | Deletes one character, like <kbd>⌫</kbd>.                                                                                                                                                            |
+| fn+<kbd>⌫</kbd>, <kbd>Ctrl</kbd><kbd>D</kbd>                       | Deletes the next character.                                                                                                                                                                          |
+| <kbd>Ctrl</kbd><kbd>W</kbd>                                        | Deletes one word.                                                                                                                                                                                    |
+| <kbd>Ctrl</kbd><kbd>U</kbd>/<kbd>K</kbd>                           | Deletes back to the start or forward to the end.                                                                                                                                                     |
+| <kbd>Ctrl</kbd><kbd>N</kbd>/<kbd>P</kbd>                           | Moves the selection, like <kbd>↓</kbd>/<kbd>↑</kbd>.                                                                                                                                                 |
+| <kbd>Ctrl</kbd><kbd>M</kbd>                                        | Switches to the chosen window, like <kbd>↩</kbd>.                                                                                                                                                    |
+| <kbd>Ctrl</kbd><kbd>G</kbd>                                        | Closes the switcher at once, keeping what you typed.                                                                                                                                                 |
+| <kbd>esc</kbd>                                                     | Clears what you typed. With nothing typed, closes the switcher.                                                                                                                                      |
+
+A `Ctrl` letter with no row above types nothing while filtering: it is dropped.
 
 :::note
 While Lanterna runs, the Spotlight `Cmd+Space` shortcut is off. It comes back when you quit Lanterna.
@@ -71,29 +111,29 @@ A missing or broken dictionary falls back to kana-only matching. To turn kanji m
 
 ## Window actions
 
-While the switcher is up, hold `Cmd` and press one of these keys to act on the chosen row. The switcher stays up and the list updates in place.
+While the switcher is up, hold `Cmd` or `Opt` and press one of these keys to act on the chosen row. The switcher stays up and the list updates in place.
 
-|                          |                       |
-| ------------------------ | --------------------- |
-| <kbd>⌘</kbd><kbd>W</kbd> | Closes the window.    |
-| <kbd>⌘</kbd><kbd>Q</kbd> | Quits the app.        |
-| <kbd>⌘</kbd><kbd>H</kbd> | Hides the app.        |
-| <kbd>⌘</kbd><kbd>M</kbd> | Minimizes the window. |
+|                                       |                       |
+| ------------------------------------- | --------------------- |
+| <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>W</kbd> | Closes the window.    |
+| <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>Q</kbd> | Quits the app.        |
+| <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>H</kbd> | Hides the app.        |
+| <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>M</kbd> | Minimizes the window. |
 
 By default, hidden apps and minimized windows move below the other windows, grouped under headings such as HIDDEN APPS and MINIMIZED. If an action fails, the list goes back to how it was and a short note appears. You cannot act on Lanterna's own row. On the row of an app with no open window, closing and minimizing have nothing to act on and say so, while quitting and hiding act on the app.
 
 ## Narrowing and grouping the list
 
-Press <kbd>⌘</kbd><kbd>/</kbd> while the switcher is up to list only the windows of the app that was in front when it opened. A band above the list names that app, the query stays as typed, and pressing the key again brings every app back. The next time the switcher opens it starts on the Show windows of setting in the Filter tab, which can make Active app the starting point.
+Press <kbd>⌘</kbd><kbd>/</kbd> while the switcher is up to list only the windows of the app that was in front when it opened. A band above the list names that app, the query stays as typed, and pressing the key again brings every app back. The next time the switcher opens it starts on its Show windows of setting in the Switchers tab, which can make Active app the starting point.
 
-Apps that are running with no open window can be listed as rows of their own, reading "No open windows". Choosing one brings the app forward. Apps without windows in the Filter tab shows them, hides them, or keeps them below the other windows under APPS WITHOUT WINDOWS. Hidden is the default, and a query naming such an app still finds it.
+Apps that are running with no open window can be listed as rows of their own, reading "No open windows". Choosing one brings the app forward. Apps without windows in the Switchers tab shows them, hides them, or keeps them below the other windows under APPS WITHOUT WINDOWS. Hidden is the default, and a query naming such an app still finds it.
 
 The Groups tab can group the list:
 
 - By Space puts the windows of each Space under a heading naming the desktop, and the display when there is more than one. Spaces in view come first. Windows on another Space join their own group instead of a section below.
 - Manually lets you choose up to nine groups and assign apps to them by bundle ID, either from the running apps or by typing the ID. Headings show the group number, a name you give the group, or the names of the apps in it. Apps you have not assigned join the first group.
 
-When the list is grouped, each kind of section below the windows, such as MINIMIZED, can go at the end of the list or inside each group. By Space is the exception for two kinds: apps without windows always go after the last group, since they are on no Space, and the setting for windows on another Space does not apply, since those windows join their own group. A list with only one group shows no heading.
+When the list is grouped, each kind of section below the windows, such as MINIMIZED, can go at the end of the list or inside each group, under Placement when grouped in the Switchers tab. By Space is the exception for two kinds: apps without windows always go after the last group, since they are on no Space, and the setting for windows on another Space does not apply, since those windows join their own group. A list with only one group shows no heading.
 
 ## Panel display and width
 
@@ -103,33 +143,45 @@ Panel Width in the same tab scales the panel from Narrow to Wide in five steps. 
 
 Show delay in the same tab waits before showing the panel, from 0 to 1000 milliseconds in steps of 50. At 0, shown as Off, the panel appears at once as before. With a wait set, letting go before it runs out switches without showing anything, and holding on opens the panel as usual. A new wait takes effect the next time the panel opens.
 
-Hover to select in the same tab moves the selection to the row under the pointer. Off by default; the choice follows the pointer once it is on. The panel never moves under a pointer that has not moved since it opened. Scroll to select moves the selection by scrolling instead of scrolling the view, and the view follows the selection. Off by default. Clicking a row picks it and switches to it with either switch off or on. Number jump in the same tab jumps to a row by its number: hold left or right Command or Option, press the digits in order, and let go to switch. Row numbers show while the modifier is held. Off by default. Row numbers names which rows numbers cover: window rows alone, or every row. Reorder rows in the same tab moves the selected row with Shift and arrow keys inside grouped lists, keeping the order across restarts. Off by default.
+Hover to select in the same tab moves the selection to the row under the pointer. Off by default; the choice follows the pointer once it is on. The panel never moves under a pointer that has not moved since it opened. Scroll to select moves the selection by scrolling instead of scrolling the view, and the view follows the selection. Off by default. Clicking a row picks it and switches to it with either switch off or on. Number jump in the same tab jumps to a row by its number: hold left or right Command or Option, press the digits in order, and let go to switch. When both Command and Option are held, a `Cmd+Tab` panel switches on releasing Command, and an `Opt+Tab` panel switches on releasing whichever of the two goes up last. Row numbers show while the modifier is held. Off by default. Row numbers names which rows numbers cover: window rows alone, or every row. Reorder rows in the same tab moves the selected row with Shift and arrow keys inside grouped lists, keeping the order across restarts. Off by default.
 
 ## Customizing keybindings
 
 Every keybinding below can be changed through the `keybindings` section of the config file or the Keyboard tab of Settings. Keys are physical positions, so they work the same under any input source.
 
-| Action                 | Default keys                                      |
-| ---------------------- | ------------------------------------------------- |
-| Show                   | <kbd>⌘</kbd><kbd>Tab</kbd>                        |
-| Show in reverse        | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Tab</kbd>            |
-| Show for filtering     | <kbd>⌘</kbd><kbd>Space</kbd>                      |
-| Next                   | <kbd>↓</kbd>                                      |
-| Previous               | <kbd>↑</kbd>                                      |
-| Commit                 | <kbd>↩</kbd>, keypad `Enter`                      |
-| Cancel                 | <kbd>esc</kbd>, <kbd>⌘</kbd><kbd>.</kbd>          |
-| Toggle active app only | <kbd>⌘</kbd><kbd>/</kbd>                          |
-| Delete backward        | <kbd>⌫</kbd>                                      |
-| Clear query            | <kbd>esc</kbd>                                    |
-| Close window           | <kbd>⌘</kbd><kbd>W</kbd>                          |
-| Quit application       | <kbd>⌘</kbd><kbd>Q</kbd>                          |
-| Hide application       | <kbd>⌘</kbd><kbd>H</kbd>                          |
-| Minimize window        | <kbd>⌘</kbd><kbd>M</kbd>                          |
-| Jump to row number     | <kbd>⌘</kbd>/<kbd>⌥</kbd> digits                  |
-| Move row up            | <kbd>⇧</kbd><kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>↑</kbd> |
-| Move row down          | <kbd>⇧</kbd><kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>↓</kbd> |
+| Action                   | Default keys                                                          |
+| ------------------------ | --------------------------------------------------------------------- |
+| Show                     | <kbd>⌘</kbd><kbd>Tab</kbd>                                            |
+| Show in reverse          | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Tab</kbd>                                |
+| Show for filtering       | <kbd>⌘</kbd><kbd>Space</kbd>                                          |
+| Show parallel            | <kbd>⌥</kbd><kbd>Tab</kbd>                                            |
+| Show parallel in reverse | <kbd>⇧</kbd><kbd>⌥</kbd><kbd>Tab</kbd>                                |
+| Next                     | <kbd>↓</kbd>, <kbd>J</kbd>, <kbd>N</kbd>, <kbd>Ctrl</kbd><kbd>N</kbd> |
+| Previous                 | <kbd>↑</kbd>, <kbd>K</kbd>, <kbd>P</kbd>, <kbd>Ctrl</kbd><kbd>P</kbd> |
+| Commit                   | <kbd>↩</kbd>, keypad `Enter`, <kbd>Ctrl</kbd><kbd>M</kbd>             |
+| Cancel                   | <kbd>esc</kbd>, <kbd>⌘</kbd><kbd>.</kbd>, <kbd>Ctrl</kbd><kbd>G</kbd> |
+| Toggle active app only   | <kbd>⌘</kbd><kbd>/</kbd>                                              |
+| Move cursor left         | <kbd>←</kbd>, <kbd>Ctrl</kbd><kbd>B</kbd>                             |
+| Move cursor right        | <kbd>→</kbd>, <kbd>Ctrl</kbd><kbd>F</kbd>                             |
+| Move cursor to start     | <kbd>Ctrl</kbd><kbd>A</kbd>                                           |
+| Move cursor to end       | <kbd>Ctrl</kbd><kbd>E</kbd>                                           |
+| Delete backward          | <kbd>⌫</kbd>, <kbd>Ctrl</kbd><kbd>H</kbd>                             |
+| Delete forward           | fn+<kbd>⌫</kbd>, <kbd>Ctrl</kbd><kbd>D</kbd>                          |
+| Delete word backward     | <kbd>Ctrl</kbd><kbd>W</kbd>                                           |
+| Delete to start          | <kbd>Ctrl</kbd><kbd>U</kbd>                                           |
+| Delete to end            | <kbd>Ctrl</kbd><kbd>K</kbd>                                           |
+| Clear query              | <kbd>esc</kbd>                                                        |
+| Close window             | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>W</kbd>                                 |
+| Quit application         | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>Q</kbd>                                 |
+| Hide application         | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>H</kbd>                                 |
+| Minimize window          | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>M</kbd>                                 |
+| Start filtering          | <kbd>S</kbd>                                                          |
+| Open settings            | <kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>,</kbd>                                 |
+| Jump to row number       | <kbd>⌘</kbd>/<kbd>⌥</kbd> digits                                      |
+| Move row up              | <kbd>⇧</kbd><kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>↑</kbd>                     |
+| Move row down            | <kbd>⇧</kbd><kbd>⌘</kbd>/<kbd>⌥</kbd><kbd>↓</kbd>                     |
 
-Show, Show in reverse, and Show for filtering reach across the system, and the window actions and Toggle active app only would fire while typing, so every key for those needs `Cmd`, `Ctrl`, or `Opt`. A key already used by another action is refused, except that Clear query and Cancel may share keys. An action left with no keys falls back to its defaults, but if the defaults are also taken the action can stay unbound with a diagnostics entry. Invocation changes apply at once.
+Show, Show in reverse, and Show for filtering reach across the system, and the window actions, Toggle active app only and Open settings would fire while typing, so every key for those needs `Cmd`, `Ctrl`, or `Opt`. The two parallel invocations need `Cmd` or `Opt`: a key holding neither leaves no release to switch on. Jump to row number, Move row up and Move row down also need `Cmd`, `Ctrl`, or `Opt`. Letter and number keys with no modifier act only while not filtering; while filtering they type into the query. A `Ctrl` key with no binding types nothing while filtering. Where bindings ask for the same count of modifiers, the one asking for `Ctrl` answers first. A key already used by another action is refused, except that Clear query and Cancel may share keys. An action left with no keys falls back to its defaults, but if the defaults are also taken the action can stay unbound with a diagnostics entry. Invocation changes apply at once.
 
 ## Links
 

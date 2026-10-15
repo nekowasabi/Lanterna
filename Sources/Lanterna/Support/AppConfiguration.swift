@@ -64,6 +64,7 @@ enum AppConfiguration {
     "groupHeadingStyle",
     "groupNames",
     "groupAssignments",
+    "switchers",
   ]
 
   /// The scaffold written when no file exists (FR-012).
@@ -121,7 +122,11 @@ struct ValidConfiguration: Equatable, Sendable {
     groupNames: [Int: String] = [:],
     groupAssignments: [GroupAssignment] = [],
     keyBindings: KeyBindingTable = .defaults,
-    keyBindingSection: [KeyBindingAction: [RawKeyBinding]]? = nil
+    keyBindingSection: [KeyBindingAction: [RawKeyBinding]]? = nil,
+    parallelOverrides: ParallelOverrides = .defaults,
+    hasSwitchersSection: Bool = false,
+    mainSection: [String: SectionValue]? = nil,
+    parallelSection: [String: SectionValue]? = nil
   ) {
     self.version = version
     self.sampleCount = sampleCount
@@ -161,6 +166,10 @@ struct ValidConfiguration: Equatable, Sendable {
     self.groupAssignments = groupAssignments
     self.keyBindings = keyBindings
     self.keyBindingSection = keyBindingSection
+    self.parallelOverrides = parallelOverrides
+    self.hasSwitchersSection = hasSwitchersSection
+    self.mainSection = mainSection
+    self.parallelSection = parallelSection
   }
 
   // MARK: Internal
@@ -251,6 +260,19 @@ struct ValidConfiguration: Equatable, Sendable {
   /// The customized section as spelled, kept so saving writes back what
   /// lost rather than what won. Nil means absent, meaning all defaults.
   var keyBindingSection: [KeyBindingAction: [RawKeyBinding]]?
+  /// What the parallel switcher spells beside the main one, normalized
+  /// so absent keys read as their defaults. Kept so saving writes back
+  /// following versus owned per item.
+  var parallelOverrides: ParallelOverrides
+  /// Whether the file held a switchers section at all. Saving consults
+  /// the disk again, but resolution reads this for the run's own shape.
+  var hasSwitchersSection: Bool
+  /// The main section as spelled for saving. Nil means the main settings
+  /// live at the top level.
+  var mainSection: [String: SectionValue]?
+  /// The parallel section as spelled for saving. Nil means no parallel
+  /// section is written.
+  var parallelSection: [String: SectionValue]?
   /// Keys this build does not know, sorted for stability, kept so saving
   /// writes them back. Empty means none, which means nothing to preserve.
   var unknownFields = [UnknownField]()
@@ -322,6 +344,8 @@ struct DecodedConfiguration: Equatable, Sendable {
   var groupAssignmentIssues = [GroupAssignmentIssue]()
   /// One entry per skipped row-order entry, for the diagnostics lines.
   var rowOrderIssues = [RowOrderIssue]()
+  /// One line per switcher-section fallback, for the diagnostics lines.
+  var switcherNotes = [String]()
 }
 
 // MARK: - ConfigLoadOutcome
@@ -417,6 +441,7 @@ extension AppConfiguration {
       return resolvedKeyBindings(dict, data: data, config: config, assumed: assumed)
         .flatMap { withGroupAssignments(dict, decoded: $0) }
         .flatMap { withRowOrder(dict, decoded: $0) }
+        .flatMap { withSwitcherSections(dict, decoded: $0) }
         .map { decoded in
           var decoded = decoded
           decoded.config.unknownFields = unknowns

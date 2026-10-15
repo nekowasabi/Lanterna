@@ -65,6 +65,11 @@ final class PanelExit {
   /// operations swap it only for a list the panel draws in the same step.
   var presentedWindows = [WindowItem]()
 
+  /// Which switcher the appearance on screen belongs to, for the lines
+  /// to name. Set as the panel goes up — and for a silent ending, from
+  /// the waiting press — so a customized key still says whose panel it was.
+  var switcherIdentity = SwitcherIdentity.main
+
   /// Takes down the list an appearance is showing.
   ///
   /// `startedAt` is the clock read the appearance began with, handed in
@@ -124,7 +129,8 @@ final class PanelExit {
     _ windows: [WindowItem],
     naming id: WindowItem.Identifier?,
     since startedAt: ContinuousClock.Instant,
-    filter filterSummary: FilterLogSummary? = nil
+    filter filterSummary: FilterLogSummary? = nil,
+    trigger: PanelExitMeasurement.Trigger = .commandRelease
   ) {
     presentedWindows = windows
     let target = row(for: id).map { Self.target(of: $0) }
@@ -136,18 +142,21 @@ final class PanelExit {
       recordCommit(take.id, take.ownerProcessIdentifier)
       let outcome = switcher.switchTo(take)
       noteSwitchReturned()
-      recordCommitPair(take, outcome, by: .commandRelease, elapsed: elapsed, filter: filterSummary)
+      recordCommitPair(take, outcome, by: trigger, elapsed: elapsed, filter: filterSummary)
 
     case .none:
-      record(.nothingToCommit, by: .commandRelease, elapsed: elapsed, filter: filterSummary)
+      record(.nothingToCommit, by: trigger, elapsed: elapsed, filter: filterSummary)
     }
     presentedWindows = []
   }
 
   /// Writes down a press given up on before it ever became a panel, apart
   /// from a commit over an empty list, which had one and found nothing.
-  func recordPressCalledOff(since startedAt: ContinuousClock.Instant) {
-    record(.pressCalledOff, by: .commandRelease, since: startedAt)
+  func recordPressCalledOff(
+    since startedAt: ContinuousClock.Instant,
+    trigger: PanelExitMeasurement.Trigger = .commandRelease
+  ) {
+    record(.pressCalledOff, by: trigger, since: startedAt)
   }
 
   /// Commits the highlighted row for a key that means take this one.
@@ -216,6 +225,19 @@ final class PanelExit {
     record(.cancelled, by: .cancelKey(key), since: startedAt, filter: filterSummary)
   }
 
+  /// Hides the panel to open the settings.
+  ///
+  /// Dismisses before recording like a cancellation, so the figure spans the
+  /// call that hides the panel and none of making the settings.
+  func leaveForSettings(
+    by key: SettingsKey,
+    since startedAt: ContinuousClock.Instant,
+    filter filterSummary: FilterLogSummary? = nil
+  ) {
+    dismissPanel()
+    record(.leftForSettings, by: .settingsKey(key), since: startedAt, filter: filterSummary)
+  }
+
   /// Takes the panel down for a release that came by no route at all.
   ///
   /// Plainly worded rather than measured, and deliberately not put through
@@ -231,7 +253,7 @@ final class PanelExit {
   /// Flattened by the same code a commit's is, so one row cannot be named
   /// two ways and a window titled across two lines cannot print this event
   /// as two.
-  func closeForAnUnreportedRelease(naming id: WindowItem.Identifier?) {
+  func closeForAnUnreportedRelease(naming id: WindowItem.Identifier?, commitOnCommand: Bool) {
     let named = row(for: id).map {
       PanelExitMeasurement.rowDescription(
         appName: $0.appName,
@@ -240,11 +262,12 @@ final class PanelExit {
       )
     }
     dismissPanel()
+    let key = commitOnCommand ? "Command" : "Option"
     writeLine(LogLine(
       .info,
       .activate,
       "closed the panel showing \(named ?? "nothing"); "
-        + "Command was let go and the tap never said so"
+        + "\(key) was let go and the tap never said so"
     ))
   }
 
@@ -472,7 +495,10 @@ final class PanelExit {
       elapsed: elapsed,
       filterSummary: filterSummary
     )
-    writeLine(LogLine(.info, .panel, measurement.summaryLine, context: measurement.context))
+    let line = measurement.summaryLine + "; \(switcherIdentity.diagnosticsName) switcher"
+    var context = measurement.context
+    context["switcher"] = .string(switcherIdentity.diagnosticsName)
+    writeLine(LogLine(.info, .panel, line, context: context))
   }
 
 }
