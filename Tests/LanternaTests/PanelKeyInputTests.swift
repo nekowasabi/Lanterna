@@ -131,7 +131,7 @@ struct PanelKeyInputTests {
   @Test
   func holdingACursorKeyRepeatsTheMoving() {
     #expect(
-      PanelKeyInput.action(for: press(kVK_ANSI_B, .control, characters: "b", repeating: true))
+      PanelKeyInput.action(for: press(kVK_ANSI_B, .control, repeating: true, characters: "b"))
         == .editQuery(.moveLeft)
     )
     #expect(
@@ -187,11 +187,11 @@ struct PanelKeyInputTests {
   @Test
   func holdingSelectionRepeatsButCommittingDoesNot() {
     #expect(
-      PanelKeyInput.action(for: press(kVK_ANSI_N, .control, characters: "n", repeating: true))
+      PanelKeyInput.action(for: press(kVK_ANSI_N, .control, repeating: true, characters: "n"))
         == .selectNext
     )
     #expect(
-      PanelKeyInput.action(for: press(kVK_ANSI_P, .control, characters: "p", repeating: true))
+      PanelKeyInput.action(for: press(kVK_ANSI_P, .control, repeating: true, characters: "p"))
         == .selectPrevious
     )
     #expect(PanelKeyInput.action(for: press(kVK_ANSI_M, .control, repeating: true)) == .absorb)
