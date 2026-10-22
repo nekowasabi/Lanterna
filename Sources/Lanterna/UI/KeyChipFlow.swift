@@ -47,10 +47,14 @@ struct KeyChipFlow: Layout {
     return CGSize(width: width, height: height)
   }
 
-  func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
+  func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
     let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
     var y = bounds.minY
-    for line in Self.lines(widths: sizes.map(\.width), maxWidth: bounds.width, spacing: spacing) {
+    // Breaking against the proposal sizeThatFits saw, not the bounds it
+    // reported back, keeps fractional widths from wrapping a chip onto a
+    // line outside the reported height.
+    let lines = Self.lines(widths: sizes.map(\.width), maxWidth: proposal.width ?? .infinity, spacing: spacing)
+    for line in lines {
       let height = lineHeight(sizes[line])
       var x = bounds.maxX - lineWidth(sizes[line])
       for index in line {
