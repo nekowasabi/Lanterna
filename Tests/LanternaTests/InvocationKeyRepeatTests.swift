@@ -5,10 +5,6 @@ import Testing
 // MARK: - InvocationKeyRepeatTests
 
 /// The hold decision, with no panel and no keyboard.
-///
-/// These are the same answers `scripts/check-invocation-key-repeat.swift`
-/// asks. The script is what a host without the macOS SDK can run. This
-/// suite is what `swift test` runs.
 struct InvocationKeyRepeatTests {
 
   @Test
