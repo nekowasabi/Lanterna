@@ -32,9 +32,9 @@ struct WindowSwitcherTests {
   }
 
   /// A row for a window on another Space is not in the list, and is
-  /// found through the remote lookup instead.
+  /// found through the probe instead.
   @Test
-  func aWindowOnAnotherSpaceResolvesThroughTheRemoteLookup() {
+  func aWindowOnAnotherSpaceResolvesThroughTheProbe() {
     let peer = ScriptedAccessibility(windowCount: 2)
     peer.otherSpaceIndices = [1]
     let outcome = peer.switcher().switchTo(target())
@@ -296,7 +296,7 @@ private final class ScriptedAccessibility: @unchecked Sendable {
   private(set) var operated = [ObjectIdentifier]()
 
   var windowsError = AXError.success
-  /// Windows the list leaves out and the remote lookup answers with.
+  /// Windows the list leaves out and the probe answers with.
   var otherSpaceIndices = Set<Int>()
   /// Answers a list that is not a list.
   var malformedList = false
@@ -351,7 +351,10 @@ private final class ScriptedAccessibility: @unchecked Sendable {
           clock = clock.advanced(by: idCost)
           return idAnswers[index] ?? (.success, CGWindowID(100 + index))
         },
-        remoteWindows: { [self] _ in otherSpaceIndices.sorted().map { windows[$0] } },
+        probesOtherSpaces: { true },
+        probeWindows: { [self] _, _, _ in
+          otherSpaceIndices.sorted().map { ProbedWindow(element: windows[$0], windowID: CGWindowID(100 + $0)) }
+        },
         now: { [self] in clock }
       ),
       activateApplication: { [self] _ in

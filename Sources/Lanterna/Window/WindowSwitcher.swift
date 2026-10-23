@@ -1,6 +1,5 @@
 import AppKit
 import ApplicationServices
-import PrivateAPIs
 
 // MARK: - ActivationTarget
 

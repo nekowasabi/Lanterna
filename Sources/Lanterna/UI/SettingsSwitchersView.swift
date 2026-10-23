@@ -88,7 +88,7 @@ struct SettingsSwitchersView: View {
           SettingsFormLabel(
             title: "Windows on all desktops",
             caption: "List windows on every Mission Control desktop, not only the ones showing. "
-              + "Reading them takes longer."
+              + "Lanterna asks each app for more in the background, which uses more CPU."
           )
         }
       } footer: {

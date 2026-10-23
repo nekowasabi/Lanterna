@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     self.lanternaDirectory = lanternaDirectory
     self.tableDirectory = tableDirectory
     currentValues = initialValues
+    otherSpaces = OtherSpacesSetting(isOn: initialValues.listWindowsOnAllSpaces)
     self.savedLogs = savedLogs
     super.init()
   }
@@ -71,8 +72,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   let tableDirectory: URL?
   /// This run's saved launches, if their folder resolved at launch.
   let savedLogs: SavedLogs?
-  /// The values this run uses, kept current as the settings change.
-  var currentValues: SettingsValues
+  /// What the switcher, closer and minimizer read the setting through; they
+  /// outlive any one value and are not on the main actor.
+  let otherSpaces: OtherSpacesSetting
   /// The permission answers for this launch, shown in the settings.
   var launchPermissionState = PermissionState(
     accessibilityGranted: false,
@@ -81,6 +83,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   /// Held so the settings window stays up until the user closes it,
   /// the way the guide windows are held.
   var settingsWindow: SettingsWindow?
+
+  /// The values this run uses, kept current as the settings change.
+  var currentValues: SettingsValues {
+    didSet { otherSpaces.isOn = currentValues.listWindowsOnAllSpaces }
+  }
 
   func applicationDidFinishLaunching(_: Notification) {
     // App Nap suspends idle background processes, and this one sits idle

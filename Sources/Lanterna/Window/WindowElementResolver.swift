@@ -1,12 +1,20 @@
 import ApplicationServices
 import PrivateAPIs
+import Synchronization
+
+// MARK: - WindowElementResolver
 
 /// Turns a shown row back into its accessibility element.
 ///
-/// Shared by the switcher-shaped operations — switching, closing and
-/// minimizing read only the owning application's own window list, never a
-/// fresher one: the target is what the appearance showed. One derivation of
-/// resolving for all three, so a row gone missing reads the same way in each.
+/// Shared by the switcher-shaped operations: switching, closing and
+/// minimizing. The target is what the appearance showed, so it is looked up
+/// in the owning application's window list and never in a fresher list of
+/// rows. One derivation of resolving for all three, so a row gone missing
+/// reads the same way in each.
+///
+/// With the setting on, a target the list lacks is also looked for by probing
+/// the application's element ids, because the list leaves out windows on
+/// Spaces no display is showing.
 struct WindowElementResolver: Sendable {
 
   // MARK: Lifecycle
@@ -31,8 +39,9 @@ struct WindowElementResolver: Sendable {
       let error = _AXUIElementGetWindow(element, &windowID)
       return (error, windowID)
     },
-    remoteWindows: @escaping @Sendable (pid_t) -> [AXUIElement] = {
-      RemoteWindowElements.windows(of: $0)
+    probesOtherSpaces: @escaping @Sendable () -> Bool = { false },
+    probeWindows: @escaping @Sendable (pid_t, CGWindowID?, ContinuousClock.Instant) -> [ProbedWindow] = {
+      WindowProbe.windows(of: $0, stoppingAt: $1, until: $2)
     },
     now: @escaping @Sendable () -> ContinuousClock.Instant = { .now }
   ) {
@@ -40,7 +49,8 @@ struct WindowElementResolver: Sendable {
     self.setMessagingTimeout = setMessagingTimeout
     self.copyWindows = copyWindows
     self.copyWindowID = copyWindowID
-    self.remoteWindows = remoteWindows
+    self.probesOtherSpaces = probesOtherSpaces
+    self.probeWindows = probeWindows
     self.now = now
   }
 
@@ -58,6 +68,9 @@ struct WindowElementResolver: Sendable {
   /// timeout leaves a wide margin on both sides; borrowed from the reader,
   /// which draws the same line for the same code.
   static let unreachableAnswerCeiling = Duration.milliseconds(500)
+  /// How long the probe may look for a target the list lacks. Resolving runs
+  /// on the main actor, so this is how long a press can hang on it.
+  static let otherSpaceProbeLimit = Duration.milliseconds(500)
 
   /// Slow `cannotComplete` answers are waits, fast ones refusals.
   func waitedSince(_ instant: ContinuousClock.Instant) -> Bool {
@@ -98,10 +111,7 @@ struct WindowElementResolver: Sendable {
     if let found = firstMatch(in: elements, for: target) {
       return found
     }
-    // The list leaves out windows on Spaces no display is showing, and a
-    // row for one may be on screen.
-    return firstMatch(in: remoteWindows(target.ownerProcessIdentifier), for: target)
-      ?? .failure(.windowGone)
+    return otherSpaceElement(for: target) ?? .failure(.windowGone)
   }
 
   /// What a failed list read means. Apart so resolving stays readable:
@@ -131,8 +141,22 @@ struct WindowElementResolver: Sendable {
   private let setMessagingTimeout: @Sendable (AXUIElement, Float) -> AXError
   private let copyWindows: @Sendable (AXUIElement) -> (AXError, [AXUIElement]?)
   private let copyWindowID: @Sendable (AXUIElement) -> (AXError, CGWindowID)
-  private let remoteWindows: @Sendable (pid_t) -> [AXUIElement]
+  private let probesOtherSpaces: @Sendable () -> Bool
+  private let probeWindows: @Sendable (pid_t, CGWindowID?, ContinuousClock.Instant) -> [ProbedWindow]
   private let now: @Sendable () -> ContinuousClock.Instant
+
+  /// The target's element when it is on a Space no display is showing. The
+  /// list leaves such windows out, and a row for one may be on screen.
+  /// Nil with the setting off, which leaves the list's answer as it was.
+  private func otherSpaceElement(for target: ActivationTarget) -> Resolution? {
+    guard probesOtherSpaces(), let windowID = target.id.windowID else {
+      return nil
+    }
+    let deadline = now() + Self.otherSpaceProbeLimit
+    let found = probeWindows(target.ownerProcessIdentifier, windowID, deadline)
+      .first { $0.windowID == windowID && prepare($0.element) }
+    return found.map { .element($0.element) }
+  }
 
   /// The first element that is the target, or the abort that ended the look.
   /// Nil when none is.
@@ -176,5 +200,33 @@ struct WindowElementResolver: Sendable {
       return .skip
     }
   }
+
+}
+
+// MARK: - OtherSpacesSetting
+
+/// The "windows on all desktops" setting as the long-lived switchers read it.
+///
+/// The switcher, closer and minimizer are built once while the setting
+/// changes live, so each asks this at the time of use. A lock rather than the
+/// main actor, because the resolver they share is not isolated to it.
+final class OtherSpacesSetting: Sendable {
+
+  // MARK: Lifecycle
+
+  init(isOn: Bool) {
+    value = Mutex(isOn)
+  }
+
+  // MARK: Internal
+
+  var isOn: Bool {
+    get { value.withLock { $0 } }
+    set { value.withLock { $0 = newValue } }
+  }
+
+  // MARK: Private
+
+  private let value: Mutex<Bool>
 
 }
