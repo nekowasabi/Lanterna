@@ -51,6 +51,9 @@ struct LiveWindowCloser: WindowClosing, Sendable {
       let error = _AXUIElementGetWindow(element, &windowID)
       return (error, windowID)
     },
+    remoteWindows: @escaping @Sendable (pid_t) -> [AXUIElement] = {
+      RemoteWindowElements.windows(of: $0)
+    },
     copyChildren: @escaping @Sendable (AXUIElement) -> (AXError, [AXUIElement]?) = { element in
       var value: CFTypeRef?
       let error = AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &value)
@@ -71,6 +74,7 @@ struct LiveWindowCloser: WindowClosing, Sendable {
       setMessagingTimeout: setMessagingTimeout,
       copyWindows: copyWindows,
       copyWindowID: copyWindowID,
+      remoteWindows: remoteWindows,
       now: now
     )
     self.copyChildren = copyChildren

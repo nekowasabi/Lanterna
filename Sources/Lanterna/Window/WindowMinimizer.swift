@@ -43,12 +43,20 @@ struct LiveWindowMinimizer: WindowMinimizing, Sendable {
       let error = _AXUIElementGetWindow(element, &windowID)
       return (error, windowID)
     },
+    remoteWindows: @escaping @Sendable (pid_t) -> [AXUIElement] = {
+      RemoteWindowElements.windows(of: $0)
+    },
     setMinimized: @escaping @Sendable (AXUIElement, Bool) -> AXError = {
       AXUIElementSetAttributeValue($0, kAXMinimizedAttribute as CFString, $1 as CFTypeRef)
     },
     now: @escaping @Sendable () -> ContinuousClock.Instant = { .now }
   ) {
-    resolver = WindowElementResolver(copyWindows: copyWindows, copyWindowID: copyWindowID, now: now)
+    resolver = WindowElementResolver(
+      copyWindows: copyWindows,
+      copyWindowID: copyWindowID,
+      remoteWindows: remoteWindows,
+      now: now
+    )
     self.setMinimized = setMinimized
     self.now = now
   }

@@ -160,11 +160,17 @@ struct AXApplicationWindowReader: ApplicationWindowReading {
       let error = _AXUIElementGetWindow(element, &windowID)
       return (error, windowID)
     },
+    remoteWindows: @escaping @Sendable (pid_t, () -> Bool) -> [AXUIElement] = {
+      RemoteWindowElements.windows(of: $0, until: $1)
+    },
+    includesOtherSpaces: Bool = false,
     now: @escaping @Sendable () -> ContinuousClock.Instant = { .now }
   ) {
     self.setMessagingTimeout = setMessagingTimeout
     self.copyAttribute = copyAttribute
     self.copyWindowID = copyWindowID
+    self.remoteWindows = remoteWindows
+    self.includesOtherSpaces = includesOtherSpaces
     self.now = now
   }
 
@@ -244,6 +250,8 @@ struct AXApplicationWindowReader: ApplicationWindowReading {
   private let setMessagingTimeout: @Sendable (AXUIElement, Float) -> AXError
   private let copyAttribute: @Sendable (AXUIElement, String) -> (AXError, CFTypeRef?)
   private let copyWindowID: @Sendable (AXUIElement) -> (AXError, CGWindowID)
+  private let remoteWindows: @Sendable (pid_t, () -> Bool) -> [AXUIElement]
+  private let includesOtherSpaces: Bool
   private let now: @Sendable () -> ContinuousClock.Instant
 
   /// What a `kAXErrorCannotComplete` that took `elapsed` to come back means:
@@ -270,7 +278,36 @@ struct AXApplicationWindowReader: ApplicationWindowReading {
         droppedWithoutID += 1
       }
     }
+    if includesOtherSpaces {
+      appendOtherSpaceRecords(to: &records, of: processIdentifier, within: budget)
+    }
     return ApplicationRead(records: records, droppedWithoutID: droppedWithoutID)
+  }
+
+  /// Adds the windows the application's list left out, those on Spaces no
+  /// display is showing.
+  ///
+  /// Best effort: the list already read is a complete answer, so a budget
+  /// spent or a failure while probing keeps it instead of discarding the
+  /// application for a bonus.
+  private func appendOtherSpaceRecords(
+    to records: inout [WindowRecord],
+    of processIdentifier: pid_t,
+    within budget: ReadBudget
+  ) {
+    let known = Set(records.map(\.windowID))
+    do {
+      for window in remoteWindows(processIdentifier, { budget.isExpired(at: now()) }) {
+        guard let windowID = try windowID(of: window, within: budget), !known.contains(windowID) else {
+          continue
+        }
+        if case .record(let record) = try outcome(for: window, within: budget) {
+          records.append(record)
+        }
+      }
+    } catch {
+      return
+    }
   }
 
   /// The application's window list, empty when nothing is open.

@@ -32,12 +32,16 @@ struct WindowElementResolver: Sendable {
       let error = _AXUIElementGetWindow(element, &windowID)
       return (error, windowID)
     },
+    remoteWindows: @escaping @Sendable (pid_t) -> [AXUIElement] = {
+      RemoteWindowElements.windows(of: $0)
+    },
     now: @escaping @Sendable () -> ContinuousClock.Instant = { .now }
   ) {
     self.createApplication = createApplication
     self.setMessagingTimeout = setMessagingTimeout
     self.copyWindows = copyWindows
     self.copyWindowID = copyWindowID
+    self.remoteWindows = remoteWindows
     self.now = now
   }
 
@@ -92,17 +96,13 @@ struct WindowElementResolver: Sendable {
     default:
       return .failure(listFailure(for: windowsError, since: sentAt))
     }
-    for element in elements {
-      switch match(element, to: target) {
-      case .match:
-        return .element(element)
-      case .skip:
-        continue
-      case .abort(let failure):
-        return .failure(failure)
-      }
+    if let found = firstMatch(in: elements, for: target) {
+      return found
     }
-    return .failure(.windowGone)
+    // The list leaves out windows on Spaces no display is showing, and a
+    // row for one may be on screen.
+    return firstMatch(in: remoteWindows(target.ownerProcessIdentifier), for: target)
+      ?? .failure(.windowGone)
   }
 
   /// What a failed list read means. Apart so resolving stays readable:
@@ -132,7 +132,24 @@ struct WindowElementResolver: Sendable {
   private let setMessagingTimeout: @Sendable (AXUIElement, Float) -> AXError
   private let copyWindows: @Sendable (AXUIElement) -> (AXError, [AXUIElement]?)
   private let copyWindowID: @Sendable (AXUIElement) -> (AXError, CGWindowID)
+  private let remoteWindows: @Sendable (pid_t) -> [AXUIElement]
   private let now: @Sendable () -> ContinuousClock.Instant
+
+  /// The first element that is the target, or the abort that ended the look.
+  /// Nil when none is.
+  private func firstMatch(in elements: [AXUIElement], for target: ActivationTarget) -> Resolution? {
+    for element in elements {
+      switch match(element, to: target) {
+      case .match:
+        return .element(element)
+      case .skip:
+        continue
+      case .abort(let failure):
+        return .failure(failure)
+      }
+    }
+    return nil
+  }
 
   /// One element against the target. Most elements are somebody else's row
   /// and are skipped; an answer about the application aborts the whole

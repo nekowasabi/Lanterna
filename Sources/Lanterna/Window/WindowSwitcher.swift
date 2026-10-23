@@ -85,6 +85,9 @@ struct LiveWindowSwitcher: WindowSwitching, Sendable {
     raiseWindow: @escaping @Sendable (AXUIElement) -> AXError = {
       AXUIElementPerformAction($0, kAXRaiseAction as CFString)
     },
+    remoteWindows: @escaping @Sendable (pid_t) -> [AXUIElement] = {
+      RemoteWindowElements.windows(of: $0)
+    },
     now: @escaping @Sendable () -> ContinuousClock.Instant = { .now }
   ) {
     self.createApplication = createApplication
@@ -94,6 +97,7 @@ struct LiveWindowSwitcher: WindowSwitching, Sendable {
     self.activateApplication = activateApplication
     self.setMinimized = setMinimized
     self.raiseWindow = raiseWindow
+    self.remoteWindows = remoteWindows
     self.now = now
   }
 
@@ -173,6 +177,7 @@ struct LiveWindowSwitcher: WindowSwitching, Sendable {
   private let activateApplication: @Sendable (pid_t) -> ApplicationActivation
   private let setMinimized: @Sendable (AXUIElement, Bool) -> AXError
   private let raiseWindow: @Sendable (AXUIElement) -> AXError
+  private let remoteWindows: @Sendable (pid_t) -> [AXUIElement]
   private let now: @Sendable () -> ContinuousClock.Instant
 
   /// Slow `cannotComplete` answers are waits, fast ones refusals. The line
@@ -207,6 +212,18 @@ struct LiveWindowSwitcher: WindowSwitching, Sendable {
     default:
       return .failure(listFailure(for: windowsError, since: sentAt))
     }
+    if let found = firstMatch(in: elements, for: target) {
+      return found
+    }
+    // The list leaves out windows on Spaces no display is showing, and a
+    // row for one may be on screen.
+    return firstMatch(in: remoteWindows(target.ownerProcessIdentifier), for: target)
+      ?? .failure(.failed(.windowGone))
+  }
+
+  /// The first element that is the target, or the abort that ended the look.
+  /// Nil when none is.
+  private func firstMatch(in elements: [AXUIElement], for target: ActivationTarget) -> Resolution? {
     for element in elements {
       switch match(element, to: target) {
       case .match:
@@ -217,7 +234,7 @@ struct LiveWindowSwitcher: WindowSwitching, Sendable {
         return .failure(outcome)
       }
     }
-    return .failure(.failed(.windowGone))
+    return nil
   }
 
   /// What a failed list read means. Apart so resolving stays readable:

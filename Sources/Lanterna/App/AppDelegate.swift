@@ -412,8 +412,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     // The live pass appends this process's own windows beside the
     // regular rows. Fixture and permission-empty lists stay as is.
-    let store = WindowListStore(gather: {
-      let snapshot = await WindowEnumerator().enumerateRegularApplicationsOffMainThread()
+    // The setting is read at pass time, so a toggle applies from the next
+    // pass without a relaunch.
+    let store = WindowListStore(gather: { [weak self] in
+      let reader = AXApplicationWindowReader(
+        includesOtherSpaces: self?.currentValues.listWindowsOnAllSpaces ?? false
+      )
+      let snapshot = await WindowEnumerator(reader: reader).enumerateRegularApplicationsOffMainThread()
       return snapshot.includingOwnWindows(OwnWindows.items(
         prospects: OwnWindows.currentProspects(),
         owner: OwnWindows.currentOwner()
