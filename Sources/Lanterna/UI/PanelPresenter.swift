@@ -980,9 +980,11 @@ final class PanelPresenter {
     if closesOnCommandRelease(), !keyCommands.isFilteringActive {
       commandWatch.start()
     }
+    // The reading's own figure, not a second clock read: every read
+    // advances an injected clock, and the way out times from the next one.
     armInvocationRepeat(
       for: combinationToRepeat(combination, replay: replay),
-      elapsed: now() - startedAt
+      elapsed: measurement.elapsed
     )
   }
 
