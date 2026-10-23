@@ -35,34 +35,34 @@ struct WindowFilterTests {
   /// An empty query returns the input unchanged, without judging a row.
   @Test
   func emptyQueryReturnsTheInputUnchanged() {
-    #expect(WindowFilter.matching("", against: rows).map(\.id) == rows.map(\.id))
+    #expect(WindowFilter.matching("", against: rows, engine: MigemoEngine()).map(\.id) == rows.map(\.id))
   }
 
   /// Filtering keeps the order it found; it never sorts.
   @Test
   func matchingKeepsTheInputOrder() {
-    let matched = WindowFilter.matching("a", against: rows)
+    let matched = WindowFilter.matching("a", against: rows, engine: MigemoEngine())
     #expect(matched.map(\.id) == rows.map(\.id))
   }
 
   /// Matching ignores case.
   @Test
   func matchingIgnoresCase() {
-    #expect(WindowFilter.matching("safari", against: rows).map(\.id) == [rows[0].id])
-    #expect(WindowFilter.matching("SAF", against: rows).map(\.id) == [rows[0].id])
+    #expect(WindowFilter.matching("safari", against: rows, engine: MigemoEngine()).map(\.id) == [rows[0].id])
+    #expect(WindowFilter.matching("SAF", against: rows, engine: MigemoEngine()).map(\.id) == [rows[0].id])
   }
 
   /// Both the app name and the window title are matched.
   @Test
   func matchingReadsBothAppNameAndTitle() {
-    #expect(WindowFilter.matching("finder", against: rows).map(\.id) == [rows[1].id])
-    #expect(WindowFilter.matching("download", against: rows).map(\.id) == [rows[1].id])
+    #expect(WindowFilter.matching("finder", against: rows, engine: MigemoEngine()).map(\.id) == [rows[1].id])
+    #expect(WindowFilter.matching("download", against: rows, engine: MigemoEngine()).map(\.id) == [rows[1].id])
   }
 
   /// A query with no match yields an empty list, not an error.
   @Test
   func queryWithNoMatchYieldsAnEmptyList() {
-    #expect(WindowFilter.matching("zzz", against: rows).isEmpty)
+    #expect(WindowFilter.matching("zzz", against: rows, engine: MigemoEngine()).isEmpty)
   }
 
   /// Every occurrence is reported, ignoring case.
@@ -220,24 +220,32 @@ struct WindowFilterTests {
     #expect(WindowFilter.matching("gijiroku", against: kanji, engine: engine).isEmpty)
   }
 
+  /// Fuzzy matching still applies while the engine is open.
+  @Test
+  func fuzzyMatchingWorksThroughTheEngine() {
+    let engine = openEngineWithoutDictionary()
+    #expect(WindowFilter.matching("sfr", against: rows, engine: engine).isEmpty)
+    #expect(WindowFilter.matching("sfr", against: rows, engine: engine, fuzzy: true).map(\.id) == [rows[0].id])
+  }
+
   /// A subsequence query matches when its characters appear in order.
   @Test
   func subsequenceQueryMatchesInOrder() {
-    #expect(WindowFilter.matching("sfr", against: rows, fuzzy: true).map(\.id) == [rows[0].id])
+    #expect(WindowFilter.matching("sfr", against: rows, engine: MigemoEngine(), fuzzy: true).map(\.id) == [rows[0].id])
   }
 
   /// A query whose characters never appear in order matches nothing.
   @Test
   func outOfOrderQueryMatchesNothing() {
-    #expect(WindowFilter.matching("sdf", against: rows, fuzzy: true).isEmpty)
+    #expect(WindowFilter.matching("sdf", against: rows, engine: MigemoEngine(), fuzzy: true).isEmpty)
   }
 
   /// Fuzzy matching never narrows substring matching.
   @Test
   func fuzzyMatchingKeepsSubstringMatches() {
     for query in ["safari", "SAF", "download", "a"] {
-      let plain = WindowFilter.matching(query, against: rows).map(\.id)
-      let fuzzy = WindowFilter.matching(query, against: rows, fuzzy: true).map(\.id)
+      let plain = WindowFilter.matching(query, against: rows, engine: MigemoEngine()).map(\.id)
+      let fuzzy = WindowFilter.matching(query, against: rows, engine: MigemoEngine(), fuzzy: true).map(\.id)
       #expect(fuzzy.count >= plain.count)
       #expect(plain.allSatisfy { fuzzy.contains($0) })
     }
@@ -246,13 +254,13 @@ struct WindowFilterTests {
   /// Fuzzy matching ignores case.
   @Test
   func fuzzyMatchingIgnoresCase() {
-    #expect(WindowFilter.matching("SFR", against: rows, fuzzy: true).map(\.id) == [rows[0].id])
+    #expect(WindowFilter.matching("SFR", against: rows, engine: MigemoEngine(), fuzzy: true).map(\.id) == [rows[0].id])
   }
 
   /// An empty fuzzy query returns the input unchanged.
   @Test
   func emptyFuzzyQueryReturnsTheInputUnchanged() {
-    #expect(WindowFilter.matching("", against: rows, fuzzy: true).map(\.id) == rows.map(\.id))
+    #expect(WindowFilter.matching("", against: rows, engine: MigemoEngine(), fuzzy: true).map(\.id) == rows.map(\.id))
   }
 
   /// Subsequence ranges mark each query character where it matched.

@@ -153,14 +153,7 @@ struct DisplayModes: Equatable, Sendable {
     ordering: SearchOrdering = .mru
   ) -> (ordinary: [WindowItem], subgroups: [(DisplaySubgroup, [WindowItem])]) {
     let listed = WindowExclusion.excluding(rows, rules: exclusions)
-    let matched: [WindowItem] =
-      if RomajiMatcher.engine.isOpen {
-        WindowFilter.matching(query, against: listed, engine: RomajiMatcher.engine)
-      } else if fuzzy {
-        WindowFilter.matching(query, against: listed, fuzzy: true)
-      } else {
-        WindowFilter.matching(query, against: listed)
-      }
+    let matched = WindowFilter.matching(query, against: listed, engine: RomajiMatcher.engine, fuzzy: fuzzy)
     let (ordinary, subgroups) = sections(
       of: matched,
       modes: modes,
