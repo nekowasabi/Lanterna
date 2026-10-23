@@ -17,7 +17,7 @@ log="$evidence_dir/check-${item}.log"
 pure_items=(KR-1 KR-2 KR-3 KR-4 KR-5 KR-6)
 
 wants_pure=false
-if [[ "$item" == "all" || "$item" == KR-* ]]; then
+if [[ "$item" == "all" || "$item" =~ ^KR-[0-9]$ ]]; then
   wants_pure=true
 fi
 
