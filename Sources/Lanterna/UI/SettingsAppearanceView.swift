@@ -96,6 +96,12 @@ struct SettingsAppearanceView: View {
             caption: "Move the selection to the row under the pointer."
           )
         }
+        Toggle(isOn: $values.autoFocusSingleCandidate) {
+          SettingsFormLabel(
+            title: "Auto-focus single match",
+            caption: "Focus the only remaining row while filtering, then close the panel. On by default."
+          )
+        }
         Toggle(isOn: $values.scrollSelect) {
           SettingsFormLabel(
             title: "Scroll to select",
