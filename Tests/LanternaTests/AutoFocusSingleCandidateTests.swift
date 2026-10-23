@@ -355,6 +355,7 @@ private func returnKey() -> PanelKeystroke {
 /// The clock steps 4.8 milliseconds per read. Eighty reads is 384
 /// milliseconds, which is past the 250 millisecond stretch even after
 /// the reads the commit itself already took.
+@MainActor
 private func advancePastSwallow(_ clock: SteppingClock) {
   for _ in 0 ..< 80 {
     _ = clock.read()
