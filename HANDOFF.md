@@ -1,6 +1,6 @@
 # Handoff: Cmd+Tab key repeat
 
-The decision for a held invocation key is implemented and the pure checks pass. The presenter tests and the macOS build were not run. This VM is Linux, has no macOS SDK, and the downloaded Swift toolchain stops before compile because `libtool` is missing. Do not treat that as a product failure, and do not treat it as a pass.
+The decision for a held invocation key is implemented. The presenter tests and the macOS build were not run. This VM is Linux and has no macOS SDK. The last recorded `swift build` stopped because `libtool` is missing. Do not treat that as a product failure, and do not treat it as a pass.
 
 ## Done
 
@@ -11,13 +11,18 @@ The decision for a held invocation key is implemented and the pure checks pass. 
 
 ## Checks
 
+KR-1 through KR-6 exercise only `InvocationKeyRepeat`. They do not open a panel or read the keyboard. The list walk is KR-P plus a real Mac.
+
+Measured on this Linux host on 2026-10-23, Swift 6.2.1. KR-P and the macOS build stay blocked.
+
 | Item | Result | Meaning |
 | --- | --- | --- |
-| KR-1 .. KR-6 | exit 0 | `swiftc` harness of `InvocationKeyRepeat` on Linux |
+| KR-1 .. KR-6 | exit 0 each | `swiftc` harness of `InvocationKeyRepeat` only |
 | `bash scripts/check-cmd-tab-repeat.sh` | exit 2 | pure checks passed; KR-P did not run |
 | KR-P | exit 2 | blocked: not Darwin |
-| `swiftformat --lint` 0.63.0 | exit 0 | `Sources/Lanterna`, `Tests/`, `Package.swift`, the harness |
-| `swiftlint --strict` | not run | no Xcode SourceKit, no `nix` |
+| `swiftc -typecheck InvocationKeyRepeat.swift` | exit 0 | Linux Swift 6.2.1, Foundation only |
+| `swiftformat --lint` 0.63.0 | exit 0 | 0/333 files |
+| `swiftlint lint --strict` 0.65.1 on the changed Swift files | exit 0 | 0 violations. Official Linux zip, toolchain `sourcekit-lsp` present |
 | `swift build` / `swift test` (`arm64-apple-macosx26.0`) | exit 1 | toolchain invalid: `libtool` missing; no macOS SDK |
 
 Real keyboard behaviour on a Mac is unverified.

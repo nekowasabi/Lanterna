@@ -428,8 +428,8 @@ private func handleHotkeyEvent(
     ))
     return OSStatus(eventNotHandledErr)
   }
-  let keyCode = manager.keyCode(for: identifier.id, combination: combination)
   MainActor.assumeIsolated {
+    let keyCode = manager.keyCode(for: identifier.id, combination: combination)
     manager.onPress(combination, delay, keyCode)
   }
   return noErr

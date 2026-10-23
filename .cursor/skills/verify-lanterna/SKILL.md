@@ -58,7 +58,7 @@ Exit codes:
 - 1, an item failed. Do not weaken the item.
 - 2, the host could not run an item. Say which item, and do not call it a pass.
 
-The pure checks decide arming, direction, and timing. They do not open a panel. KR-P is the check that reads the chosen row after an injected repeat sleep. If KR-P is blocked, the selection walk is unverified.
+KR-1 through KR-6 do not prove the panel moved. A real Mac plus KR-P is what covers that behavior. If KR-P is blocked, the selection walk is unverified.
 
 ## Evidence
 

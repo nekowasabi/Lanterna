@@ -92,7 +92,7 @@ struct PanelInvocationRepeatTests {
     made.sleep.step()
     await settle()
     #expect(made.presenter.selection.chosenID == made.windows[1].id)
-    #expect(made.sleep.waits == 1)
+    #expect(made.sleep.waits == 1, "RepeatSleep.waits does not grow after the key comes up")
   }
 
   @Test
@@ -134,7 +134,7 @@ struct PanelInvocationRepeatTests {
   }
 
   @Test
-  func releasingCommandCommitsTheRowTheHoldHadReached() async {
+  func releasingCommandCommitsTheRowTheHoldHadReached() async throws {
     let made = make(flags: .maskCommand)
     made.presenter.handleHotkey(.forward, deliveryDelay: nil)
     await settle()
@@ -146,6 +146,27 @@ struct PanelInvocationRepeatTests {
     #expect(!made.surface.isPresented)
     let taken = try #require(made.switcher.targets.first)
     #expect(taken.id == made.windows[1].id)
+  }
+
+  @Test
+  func escapeClosesThePanelAndWaitsDoNotGrow() async {
+    let made = make(flags: .maskCommand)
+    made.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    await settle()
+    let waits = made.sleep.waits
+
+    _ = made.presenter.handleKeyStroke(PanelKeystroke(
+      keyCode: UInt16(kVK_Escape),
+      modifiers: [],
+      isARepeat: false
+    ))
+    await settle()
+    #expect(!made.surface.isPresented)
+    #expect(made.sleep.waits == waits, "RepeatSleep.waits does not grow after Escape closes the panel")
+
+    made.sleep.step()
+    await settle()
+    #expect(made.sleep.waits == waits, "RepeatSleep.waits does not grow after another step")
   }
 
   @Test

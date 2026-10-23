@@ -20,6 +20,8 @@ bash scripts/check-cmd-tab-repeat.sh
 
 Run one item by passing its id, for example `bash scripts/check-cmd-tab-repeat.sh KR-1`.
 
+KR-1 through KR-6 exercise only `InvocationKeyRepeat`. They do not open a panel or read the keyboard. The list walk is KR-P plus a real Mac.
+
 ### KR-1 Forward hold
 
 A forward invocation that leaves the panel walking arms a repeat. While the invocation key stays down, the first repeat waits the initial delay and each later repeat waits the interval. Each one moves forward.
@@ -52,9 +54,13 @@ The filter invocation does not arm a navigation repeat. A press that will dismis
 bash scripts/check-cmd-tab-repeat.sh KR-4
 ```
 
-### KR-5 System repeat timing
+### KR-5 Repeat timing
 
-macOS stores the initial delay and the repeat interval as sixtieths of a second. 60 and 6 become 1 second and 100 milliseconds. A zero or negative interval is raised so the repeat cannot spin. A negative initial delay becomes zero.
+`InvocationKeyRepeat.timing(initialDelay:interval:)` keeps values that are already in seconds. `.seconds(1)` and `.seconds(0.1)` stay those values. A negative initial delay becomes `.zero`. A zero or negative interval becomes `.milliseconds(1)`.
+
+A remainder is clamped through the same function. `timing(initialDelay: .seconds(1) - .seconds(0.4), interval: .seconds(0.1))` keeps a 0.6 second initial delay. `timing(initialDelay: .seconds(0.2) - .seconds(1), interval: .seconds(0.1))` has initial delay `.zero`.
+
+With a show delay, the presenter subtracts the elapsed time since the press before that clamp. The first repeat after the panel appears waits max(0, initialDelay - elapsed). It does not wait the show delay plus a full initial delay.
 
 ```bash
 bash scripts/check-cmd-tab-repeat.sh KR-5
@@ -71,6 +77,8 @@ bash scripts/check-cmd-tab-repeat.sh KR-6
 ### KR-P Presenter
 
 On macOS, with Xcode or the Command Line Tools, the presenter tests are the observable walk. They open a panel, hold the key through an injected sleep, and read the chosen row.
+
+After the invocation key is released, `RepeatSleep.waits` does not grow. After Escape closes the panel, `RepeatSleep.waits` does not grow.
 
 ```bash
 env -u SDKROOT -u DEVELOPER_DIR swift test --triple arm64-apple-macosx26.0 --filter 'InvocationKeyRepeatTests|PanelInvocationRepeatTests'

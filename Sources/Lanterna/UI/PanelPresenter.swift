@@ -980,7 +980,10 @@ final class PanelPresenter {
     if closesOnCommandRelease(), !keyCommands.isFilteringActive {
       commandWatch.start()
     }
-    armInvocationRepeat(for: combinationToRepeat(combination, replay: replay))
+    armInvocationRepeat(
+      for: combinationToRepeat(combination, replay: replay),
+      elapsed: now() - startedAt
+    )
   }
 
   /// Remembers which physical key this press used, so the repeat polls
@@ -1012,7 +1015,10 @@ final class PanelPresenter {
   }
 
   /// Arms a hold, or drops one when this press does not walk.
-  private func armInvocationRepeat(for combination: HotkeyCombination) {
+  private func armInvocationRepeat(
+    for combination: HotkeyCombination,
+    elapsed: Duration = .zero
+  ) {
     guard
       InvocationKeyRepeat.shouldArm(
         role: combination.repeatRole,
@@ -1023,7 +1029,13 @@ final class PanelPresenter {
       return
     }
     let timing = invocationRepeatTiming()
-    invocationRepeatClock.arm(after: timing.initialDelay, every: timing.interval)
+    // A show delay is already inside the time since the press, so the first
+    // tick waits only what is left.
+    let remaining = InvocationKeyRepeat.timing(
+      initialDelay: timing.initialDelay - elapsed,
+      interval: timing.interval
+    )
+    invocationRepeatClock.arm(after: remaining.initialDelay, every: remaining.interval)
   }
 
   /// One repeat tick. The decision is `InvocationKeyRepeat`. This only

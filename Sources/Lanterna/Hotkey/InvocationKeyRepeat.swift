@@ -136,14 +136,4 @@ enum InvocationKeyRepeat {
     )
   }
 
-  /// The Keyboard settings values, which macOS stores as sixtieths of a
-  /// second. `NSEvent.keyRepeatDelay` is the same quantity in seconds.
-  /// This conversion is the one a test can pin without AppKit.
-  static func timingFromSystemUnits(initialUnits: Int, intervalUnits: Int) -> Timing {
-    timing(
-      initialDelay: .milliseconds(max(0, initialUnits) * 1_000 / 60),
-      interval: .milliseconds(max(1, intervalUnits) * 1_000 / 60)
-    )
-  }
-
 }

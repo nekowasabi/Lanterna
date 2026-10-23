@@ -121,16 +121,59 @@ func run(_ failures: inout [String]) {
   }
 
   if wanted("KR-5") {
-    let timing = InvocationKeyRepeat.timingFromSystemUnits(initialUnits: 60, intervalUnits: 6)
+    let timing = InvocationKeyRepeat.timing(initialDelay: .seconds(1), interval: .seconds(0.1))
     expect(
-      timing.initialDelay == .milliseconds(1_000),
-      "KR-5 initial delay is one second",
+      timing.initialDelay == .seconds(1),
+      "KR-5 one second stays one second",
       failures: &failures
     )
-    expect(timing.interval == .milliseconds(100), "KR-5 interval is 100 ms", failures: &failures)
-    let clamped = InvocationKeyRepeat.timing(initialDelay: .seconds(-1), interval: .zero)
-    expect(clamped.initialDelay == .zero, "KR-5 negative delay becomes zero", failures: &failures)
-    expect(clamped.interval >= .milliseconds(1), "KR-5 interval cannot be zero", failures: &failures)
+    expect(
+      timing.interval == .seconds(0.1),
+      "KR-5 a tenth of a second stays a tenth of a second",
+      failures: &failures
+    )
+    let negativeDelay = InvocationKeyRepeat.timing(
+      initialDelay: .seconds(-1),
+      interval: .seconds(0.1)
+    )
+    expect(
+      negativeDelay.initialDelay == .zero,
+      "KR-5 negative delay becomes zero",
+      failures: &failures
+    )
+    let zeroInterval = InvocationKeyRepeat.timing(initialDelay: .seconds(1), interval: .zero)
+    expect(
+      zeroInterval.interval == .milliseconds(1),
+      "KR-5 a zero interval becomes one millisecond",
+      failures: &failures
+    )
+    let negativeInterval = InvocationKeyRepeat.timing(
+      initialDelay: .seconds(1),
+      interval: .seconds(-1)
+    )
+    expect(
+      negativeInterval.interval == .milliseconds(1),
+      "KR-5 a negative interval becomes one millisecond",
+      failures: &failures
+    )
+    let remainder = InvocationKeyRepeat.timing(
+      initialDelay: .seconds(1) - .seconds(0.4),
+      interval: .seconds(0.1)
+    )
+    expect(
+      remainder.initialDelay == .seconds(0.6),
+      "KR-5 a 0.6 second remainder stays",
+      failures: &failures
+    )
+    let overshot = InvocationKeyRepeat.timing(
+      initialDelay: .seconds(0.2) - .seconds(1),
+      interval: .seconds(0.1)
+    )
+    expect(
+      overshot.initialDelay == .zero,
+      "KR-5 a negative remainder becomes zero",
+      failures: &failures
+    )
   }
 
   if wanted("KR-6") {

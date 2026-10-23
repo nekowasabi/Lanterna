@@ -73,13 +73,32 @@ struct InvocationKeyRepeatTests {
   }
 
   @Test
-  func systemUnitsMatchTheKeyboardSettingsScale() {
-    let timing = InvocationKeyRepeat.timingFromSystemUnits(initialUnits: 60, intervalUnits: 6)
-    #expect(timing.initialDelay == .milliseconds(1_000))
-    #expect(timing.interval == .milliseconds(100))
-    let clamped = InvocationKeyRepeat.timing(initialDelay: .seconds(-1), interval: .zero)
-    #expect(clamped.initialDelay == .zero)
-    #expect(clamped.interval >= .milliseconds(1))
+  func secondsPassThroughAndOutOfRangeValuesClamp() {
+    let timing = InvocationKeyRepeat.timing(initialDelay: .seconds(1), interval: .seconds(0.1))
+    #expect(timing.initialDelay == .seconds(1))
+    #expect(timing.interval == .seconds(0.1))
+    let negativeDelay = InvocationKeyRepeat.timing(
+      initialDelay: .seconds(-1),
+      interval: .seconds(0.1)
+    )
+    #expect(negativeDelay.initialDelay == .zero)
+    let zeroInterval = InvocationKeyRepeat.timing(initialDelay: .seconds(1), interval: .zero)
+    #expect(zeroInterval.interval == .milliseconds(1))
+    let negativeInterval = InvocationKeyRepeat.timing(
+      initialDelay: .seconds(1),
+      interval: .seconds(-1)
+    )
+    #expect(negativeInterval.interval == .milliseconds(1))
+    let remainder = InvocationKeyRepeat.timing(
+      initialDelay: .seconds(1) - .seconds(0.4),
+      interval: .seconds(0.1)
+    )
+    #expect(remainder.initialDelay == .seconds(0.6))
+    let overshot = InvocationKeyRepeat.timing(
+      initialDelay: .seconds(0.2) - .seconds(1),
+      interval: .seconds(0.1)
+    )
+    #expect(overshot.initialDelay == .zero)
   }
 
   @Test
