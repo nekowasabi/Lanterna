@@ -173,9 +173,28 @@ struct WindowOperationTests {
     let minimizer = LiveWindowMinimizer(
       copyWindows: { _ in (.success, []) },
       copyWindowID: { _ in (.success, 0) },
+      remoteWindows: { _ in [] },
       setMinimized: { _, _ in .failure }
     )
     #expect(minimizer.minimizeWindow(target()) == .windowGone)
+  }
+
+  /// A window on another Space is missing from the list and found by the
+  /// remote lookup.
+  @Test
+  func aTargetOnAnotherSpaceIsMinimizedThroughTheRemoteLookup() {
+    let box = MinimizeBox()
+    let minimizer = LiveWindowMinimizer(
+      copyWindows: { _ in (.success, []) },
+      copyWindowID: { _ in (.success, 7) },
+      remoteWindows: { _ in [box.window] },
+      setMinimized: { element, minimized in
+        box.writes.append((element, minimized))
+        return .success
+      }
+    )
+    #expect(minimizer.minimizeWindow(target()) == nil)
+    #expect(box.writes.count == 1)
   }
 
   /// A target no application still lists is gone, not broken.
@@ -271,6 +290,7 @@ struct WindowOperationTests {
       copyWindowID: { element in
         (.success, elements.windowIDs[ObjectIdentifier(element)] ?? 0)
       },
+      remoteWindows: { _ in [] },
       copyChildren: { element in
         (.success, box.script.children[ObjectIdentifier(element)])
       },

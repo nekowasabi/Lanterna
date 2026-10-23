@@ -361,6 +361,57 @@ struct AXApplicationWindowReaderMessagingTests {
     #expect(application.attributesRead == [kAXWindowsAttribute])
   }
 
+  /// Windows on other Spaces join the list, and a window both the list and
+  /// the remote lookup hold is one row, the list's.
+  @Test
+  func otherSpaceWindowsAreMergedWithoutDuplicates() {
+    let application = FakeApplication(windowCount: 3)
+    application.listedIndices = [0, 1]
+    application.remoteIndices = [1, 2]
+
+    let read = try? application.read(includesOtherSpaces: true).get()
+    #expect(read?.records.map(\.windowID) == [100, 101, 102])
+  }
+
+  /// A remote element goes through the same rule table as a listed one.
+  @Test
+  func anOtherSpaceElementThatIsNotAWindowIsExcluded() {
+    let application = FakeApplication(windowCount: 3)
+    application.listedIndices = [0, 1]
+    application.remoteIndices = [2]
+    application.attributeResult = { index, name in
+      index == 2 && name == kAXRoleAttribute ? (.success, kAXScrollAreaRole as CFString) : nil
+    }
+
+    let read = try? application.read(includesOtherSpaces: true).get()
+    #expect(read?.records.map(\.windowID) == [100, 101])
+  }
+
+  /// With the setting off the lookup is never asked.
+  @Test
+  func theRemoteLookupIsNeverCalledWhileTheSettingIsOff() {
+    let application = FakeApplication(windowCount: 3)
+    application.listedIndices = [0, 1]
+    application.remoteIndices = [2]
+
+    let read = try? application.read().get()
+    #expect(read?.records.map(\.windowID) == [100, 101])
+    #expect(application.remoteLookups == 0)
+  }
+
+  /// The list is a whole answer already, so running out of budget while
+  /// probing keeps it rather than discarding the application.
+  @Test
+  func aBudgetSpentOnOtherSpacesKeepsTheListedWindows() {
+    let application = FakeApplication(windowCount: 3)
+    application.listedIndices = [0, 1]
+    application.remoteIndices = [2]
+    application.costOverride = { index, _ in index == 2 ? .seconds(1) : nil }
+
+    let read = try? application.read(includesOtherSpaces: true).get()
+    #expect(read?.records.map(\.windowID) == [100, 101])
+  }
+
   // MARK: Private
 
   private typealias Reader = AXApplicationWindowReader

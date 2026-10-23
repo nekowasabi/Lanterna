@@ -31,6 +31,18 @@ struct WindowSwitcherTests {
     #expect(peer.operated == [peer.identity(of: 1), peer.identity(of: 1)])
   }
 
+  /// A row for a window on another Space is not in the list, and is
+  /// found through the remote lookup instead.
+  @Test
+  func aWindowOnAnotherSpaceResolvesThroughTheRemoteLookup() {
+    let peer = ScriptedAccessibility(windowCount: 2)
+    peer.otherSpaceIndices = [1]
+    let outcome = peer.switcher().switchTo(target())
+
+    #expect(outcome == .switched)
+    #expect(peer.operated == [peer.identity(of: 1), peer.identity(of: 1)])
+  }
+
   /// A missing row ends the take before anything is touched.
   @Test
   func anUnknownIDFailsWithoutTouchingAnything() {
@@ -284,6 +296,8 @@ private final class ScriptedAccessibility: @unchecked Sendable {
   private(set) var operated = [ObjectIdentifier]()
 
   var windowsError = AXError.success
+  /// Windows the list leaves out and the remote lookup answers with.
+  var otherSpaceIndices = Set<Int>()
   /// Answers a list that is not a list.
   var malformedList = false
   /// Answers `nil` to fall through to a successful fetch of `100 + index`.
@@ -326,7 +340,8 @@ private final class ScriptedAccessibility: @unchecked Sendable {
       },
       copyWindows: { [self] _ in
         clock = clock.advanced(by: listCost)
-        return malformedList ? (windowsError, nil) : (windowsError, windows)
+        let listed = windows.indices.filter { !otherSpaceIndices.contains($0) }.map { windows[$0] }
+        return malformedList ? (windowsError, nil) : (windowsError, listed)
       },
       copyWindowID: { [self] element in
         guard let index = windows.firstIndex(where: { $0 === element }) else {
@@ -351,6 +366,7 @@ private final class ScriptedAccessibility: @unchecked Sendable {
         clock = clock.advanced(by: writeCost)
         return raiseError ?? writeError
       },
+      remoteWindows: { [self] _ in otherSpaceIndices.sorted().map { windows[$0] } },
       now: { [self] in clock }
     )
   }
