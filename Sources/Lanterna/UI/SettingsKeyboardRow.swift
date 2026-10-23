@@ -16,7 +16,7 @@ struct SettingsKeyboardRow: View {
 
   var body: some View {
     LabeledContent {
-      HStack {
+      KeyChipFlow {
         ForEach(values.keyBindings[action], id: \.self) { key in
           Button(key.displayName) {
             onCapture(values.keyBindings[action].firstIndex(of: key))
