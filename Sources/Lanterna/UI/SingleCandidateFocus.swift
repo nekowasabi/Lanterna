@@ -29,18 +29,29 @@ enum SingleCandidateFocus {
 
   /// How long the one row has to remain the one row.
   ///
-  /// Long enough for the next edit of a fast burst to widen the list
-  /// again, short enough that a pause reads as a choice.
-  static let settle = Duration.milliseconds(180)
+  /// Within-word gaps commonly fall under 300 milliseconds, so 180 can
+  /// elapse between two letters and focus the window before the word is
+  /// finished. 400 sits past that cluster and still reads as a short
+  /// pause. The figure is a choice. This repo has no measured typing trace.
+  static let settle = Duration.milliseconds(400)
 
-  /// Arms only when a non-empty filter just moved from several rows to
-  /// one. A later edit that is still one row restarts the wait. Anything
-  /// else that is no longer one row cancels. A refresh that did not
-  /// change the query leaves an armed wait alone and does not start one.
+  /// How long keystrokes stay here after an auto-commit has closed the panel.
+  ///
+  /// Covers one late letter, or Return pressed as the panel closes, without
+  /// holding the keyboard for the next word. The window does not extend.
+  /// A commit key or a click does not start it. The figure is a choice.
+  static let swallow = Duration.milliseconds(250)
+
+  /// Arms when a non-empty filter just moved from several rows to one,
+  /// when a later query edit is still one row while a wait is armed, or
+  /// when an armed wait's row is replaced by a different row. Anything
+  /// that is no longer one row cancels. A refresh that did not change
+  /// the query and finds no armed wait does not start one. A count that
+  /// arrives from zero does not arm.
   static func decision(
     queryChanged: Bool,
     previousCount: Int,
-    armed: Bool,
+    armedID: WindowItem.Identifier?,
     next: Snapshot
   ) -> Decision {
     let oneRow = next.enabled
@@ -49,12 +60,46 @@ enum SingleCandidateFocus {
       && next.count == 1
       && next.chosen != nil
     guard oneRow else { return .cancel }
-    if queryChanged, previousCount > 1 || armed {
+    if armedID != nil, armedID != next.chosen {
+      return .arm
+    }
+    if queryChanged, previousCount > 1 || armedID != nil {
       return .arm
     }
     return .leave
   }
 
+}
+
+// MARK: - PostCommitSwallow
+
+/// The short stretch after an auto-commit during which keystrokes stay here.
+struct PostCommitSwallow: Equatable, Sendable {
+  /// The instant the stretch ends, or nil when nothing is being kept.
+  private(set) var until: ContinuousClock.Instant?
+
+  /// Starts the stretch at `now`.
+  mutating func arm(at now: ContinuousClock.Instant, for duration: Duration) {
+    until = now.advanced(by: duration)
+  }
+
+  /// Whether a keystroke at `now` stays here. A key at or after the end
+  /// clears the stretch and is not kept.
+  mutating func swallows(at now: ContinuousClock.Instant) -> Bool {
+    guard let until else { return false }
+    if now < until {
+      return true
+    }
+    self.until = nil
+    return false
+  }
+
+  /// Forgets the stretch. The next panel begins this way. Ending the
+  /// panel that just auto-committed does not, because that ending is
+  /// what started the stretch.
+  mutating func reset() {
+    until = nil
+  }
 }
 
 // MARK: - PendingSingleCandidateFocus
@@ -91,7 +136,7 @@ final class PendingSingleCandidateFocus {
     switch SingleCandidateFocus.decision(
       queryChanged: queryChanged,
       previousCount: previousCount,
-      armed: armed,
+      armedID: armedID,
       next: next
     ) {
     case .arm:
@@ -109,12 +154,12 @@ final class PendingSingleCandidateFocus {
   // MARK: Private
 
   private var generation = 0
-  private var armed = false
+  private var armedID: WindowItem.Identifier?
   private var timer: Task<Void, Never>?
 
   private func retire() {
     generation += 1
-    armed = false
+    armedID = nil
     timer?.cancel()
     timer = nil
   }
@@ -123,11 +168,11 @@ final class PendingSingleCandidateFocus {
     retire()
     generation += 1
     let seen = generation
-    armed = true
+    armedID = id
     timer = Task { [weak self] in
       await self?.sleep(SingleCandidateFocus.settle)
       guard let self, !Task.isCancelled, generation == seen else { return }
-      armed = false
+      armedID = nil
       timer = nil
       generation += 1
       onFire?(id)

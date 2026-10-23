@@ -48,7 +48,7 @@ private func candidateRow(appName: String, windowTitle: String, windowID: CGWind
 
 @MainActor
 private func letter(_ character: Character) -> PanelKeystroke {
-  let code: Int32 =
+  let code: Int =
     switch character {
     case "m": kVK_ANSI_M
     case "a": kVK_ANSI_A
@@ -118,10 +118,12 @@ struct AutoFocusSingleCandidateTests {
     let fixture = openFiltering([mail, messages], sleep: sleep)
     type("mai", on: fixture.presenter)
     await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle])
     let delete = PanelKeystroke(keyCode: UInt16(kVK_Delete), modifiers: [], isARepeat: false)
     #expect(fixture.presenter.handleKeyStroke(delete) == .absorbed)
     sleep.resumeAll()
     await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle])
     #expect(fixture.switcher.targets.isEmpty)
     #expect(fixture.surface.isPresented)
     #expect(fixture.surface.updatedLists.last?.count == 2)
@@ -171,10 +173,12 @@ struct AutoFocusSingleCandidateTests {
     let fixture = openFiltering([mail, messages], sleep: sleep)
     type("mai", on: fixture.presenter)
     await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle])
     let escape = PanelKeystroke(keyCode: UInt16(kVK_Escape), modifiers: [], isARepeat: false)
     #expect(fixture.presenter.handleKeyStroke(escape) == .absorbed)
     sleep.resumeAll()
     await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle])
     #expect(fixture.switcher.targets.isEmpty)
     #expect(fixture.surface.isPresented)
     #expect(fixture.surface.updatedLists.last?.count == 2)
@@ -201,13 +205,86 @@ struct AutoFocusSingleCandidateTests {
     await settle()
     sleep.resumeAll()
     await settle()
+    let kept = fixture.presenter.handleKeyStroke(returnKey())
+    #expect(kept == .absorbed)
+    #expect(fixture.switcher.targets.count == 1)
+    advancePastSwallow(fixture.clock)
+    let later = fixture.presenter.handleKeyStroke(returnKey())
+    #expect(later == .passedThrough)
     sleep.resumeAll()
     await settle()
-    _ = fixture.presenter.handleKeyStroke(
-      PanelKeystroke(keyCode: UInt16(kVK_Return), modifiers: [], isARepeat: false, characters: "\r")
-    )
     #expect(fixture.switcher.targets.count == 1)
     #expect(fixture.switcher.targets.first?.appName == "Mail")
+    #expect(!fixture.surface.isPresented)
+  }
+
+  @Test
+  func returnDuringTheWaitCommitsOnce() async {
+    let sleep = ParkedSleep()
+    let fixture = openFiltering([mail, messages], sleep: sleep)
+    type("mai", on: fixture.presenter)
+    await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle])
+    #expect(fixture.presenter.handleKeyStroke(returnKey()) == .absorbed)
+    await settle()
+    #expect(fixture.switcher.targets.count == 1)
+    sleep.resumeAll()
+    await settle()
+    #expect(fixture.switcher.targets.count == 1)
+    #expect(fixture.presenter.handleKeyStroke(letter("l")) == .passedThrough)
+    #expect(fixture.switcher.targets.count == 1)
+  }
+
+  @Test
+  func closingDuringTheWaitDoesNotCommit() async {
+    let sleep = ParkedSleep()
+    let fixture = openFiltering([mail, messages], sleep: sleep)
+    type("mai", on: fixture.presenter)
+    await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle])
+    let cancel = PanelKeystroke(keyCode: UInt16(kVK_ANSI_Period), modifiers: .command, isARepeat: false)
+    #expect(fixture.presenter.handleKeyStroke(cancel) == .absorbed)
+    #expect(!fixture.surface.isPresented)
+    sleep.resumeAll()
+    await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle])
+    #expect(fixture.switcher.targets.isEmpty)
+  }
+
+  @Test
+  func turningTheSettingOffDuringTheWaitDoesNotCommit() async {
+    let sleep = ParkedSleep()
+    let fixture = openFiltering([mail, messages], sleep: sleep)
+    type("mai", on: fixture.presenter)
+    await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle])
+    fixture.presenter.autoFocusSingleCandidate = false
+    sleep.resumeAll()
+    await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle])
+    #expect(fixture.switcher.targets.isEmpty)
+    #expect(fixture.surface.isPresented)
+  }
+
+  @Test
+  func swappingTheSingleCandidateRearms() async {
+    let sleep = ParkedSleep()
+    let fixture = openFiltering([mail, messages], sleep: sleep)
+    type("mai", on: fixture.presenter)
+    await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle])
+    let drafts = candidateRow(appName: "Mail", windowTitle: "Drafts", windowID: 9)
+    fixture.presenter.replacePresentedList(
+      [drafts],
+      choosingWhere: ChoiceAnchor(id: mail.id, stoodIn: [mail, messages])
+    )
+    await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle, SingleCandidateFocus.settle])
+    sleep.resumeAll()
+    await settle()
+    #expect(fixture.switcher.targets.count == 1)
+    #expect(fixture.switcher.targets.first?.id == drafts.id)
+    #expect(fixture.switcher.targets.first?.displayTitle == "Drafts")
   }
 
   @Test
@@ -216,9 +293,11 @@ struct AutoFocusSingleCandidateTests {
     let fixture = openFiltering([mail, messages], sleep: sleep)
     type("mailx", on: fixture.presenter)
     await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle, SingleCandidateFocus.settle])
     let delete = PanelKeystroke(keyCode: UInt16(kVK_Delete), modifiers: [], isARepeat: false)
     #expect(fixture.presenter.handleKeyStroke(delete) == .absorbed)
     await settle()
+    #expect(sleep.durations == [SingleCandidateFocus.settle, SingleCandidateFocus.settle])
     sleep.resumeAll()
     await settle()
     #expect(fixture.switcher.targets.isEmpty)
@@ -265,4 +344,19 @@ struct AutoFocusSingleCandidateTests {
     AppConfiguration.decode(Data(text.utf8))
   }
 
+}
+
+private func returnKey() -> PanelKeystroke {
+  PanelKeystroke(keyCode: UInt16(kVK_Return), modifiers: [], isARepeat: false, characters: "\r")
+}
+
+/// Moves the fixture clock past `SingleCandidateFocus.swallow`.
+///
+/// The clock steps 4.8 milliseconds per read. Eighty reads is 384
+/// milliseconds, which is past the 250 millisecond stretch even after
+/// the reads the commit itself already took.
+private func advancePastSwallow(_ clock: SteppingClock) {
+  for _ in 0 ..< 80 {
+    _ = clock.read()
+  }
 }

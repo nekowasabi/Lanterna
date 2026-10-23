@@ -28,12 +28,13 @@ need_swift() {
   fi
   local log
   log="$(mktemp)"
-  if bash scripts/test.sh --filter "$filter" >"$log" 2>&1; then
+  bash scripts/test.sh --filter "$filter" >"$log" 2>&1
+  local code=$?
+  if [ "$code" -eq 0 ]; then
     pass "$id"
     rm -f "$log"
     return 0
   fi
-  local code=$?
   fail_item "$id" "swift test --filter $filter exited $code. Tail: $(tail -n 20 "$log" | tr '\n' ' ')"
   rm -f "$log"
   return 1
@@ -60,7 +61,10 @@ af10() {
 
 af11() {
   local missing=""
-  have Sources/Lanterna/UI/SingleCandidateFocus.swift 'Duration.milliseconds(180)' || missing="$missing settle"
+  have Sources/Lanterna/UI/SingleCandidateFocus.swift 'Duration.milliseconds(400)' || missing="$missing settle"
+  have Sources/Lanterna/UI/SingleCandidateFocus.swift 'Duration.milliseconds(250)' || missing="$missing swallow"
+  have Sources/Lanterna/UI/PanelKeyCommands.swift 'postCommitSwallow.arm' || missing="$missing arm-swallow"
+  have Sources/Lanterna/UI/PanelKeyCommands.swift 'postCommitSwallow.swallows' || missing="$missing swallow-gate"
   have Sources/Lanterna/Support/AppConfiguration.swift 'autoFocusSingleCandidate' || missing="$missing knownKeys"
   have config/ConfigSchema.pkl 'autoFocusSingleCandidate' || missing="$missing ConfigSchema.pkl"
   have config/GenJsonSchema.pkl 'autoFocusSingleCandidate' || missing="$missing GenJsonSchema.pkl"
@@ -69,12 +73,23 @@ af11() {
   have docs/src/content/docs/en/usage.mdx 'autoFocusSingleCandidate' || missing="$missing en usage"
   have docs/src/content/docs/ja/usage.mdx 'autoFocusSingleCandidate' || missing="$missing ja usage"
   have Sources/Lanterna/UI/SettingsAppearanceView.swift 'Auto-focus single match' || missing="$missing toggle"
+  local reorder_line auto_line
+  reorder_line="$(grep -n 'title: "Reorder rows"' Sources/Lanterna/UI/SettingsAppearanceView.swift | head -1 | cut -d: -f1)"
+  auto_line="$(grep -n 'title: "Auto-focus single match"' Sources/Lanterna/UI/SettingsAppearanceView.swift | head -1 | cut -d: -f1)"
+  if [ -z "$reorder_line" ] || [ -z "$auto_line" ] || [ "$reorder_line" -ge "$auto_line" ]; then
+    missing="$missing toggle-order"
+  fi
   if [ -z "$missing" ]; then
     pass AF-11
   else
     fail_item AF-11 "missing:$missing"
   fi
 }
+
+af12() { need_swift AF-12 'AutoFocusSingleCandidateTests/returnDuringTheWaitCommitsOnce'; }
+af13() { need_swift AF-13 'AutoFocusSingleCandidateTests/closingDuringTheWaitDoesNotCommit'; }
+af14() { need_swift AF-14 'AutoFocusSingleCandidateTests/turningTheSettingOffDuringTheWaitDoesNotCommit'; }
+af15() { need_swift AF-15 'AutoFocusSingleCandidateTests/swappingTheSingleCandidateRearms'; }
 
 run_one() {
   case "$1" in
@@ -89,6 +104,10 @@ run_one() {
     AF-9) af9 ;;
     AF-10) af10 ;;
     AF-11) af11 ;;
+    AF-12) af12 ;;
+    AF-13) af13 ;;
+    AF-14) af14 ;;
+    AF-15) af15 ;;
     *)
       echo "unknown item $1" >&2
       exit 2
@@ -97,7 +116,7 @@ run_one() {
 }
 
 if [ "$want" = "all" ]; then
-  for id in AF-1 AF-2 AF-3 AF-4 AF-5 AF-6 AF-7 AF-8 AF-9 AF-10 AF-11; do
+  for id in AF-1 AF-2 AF-3 AF-4 AF-5 AF-6 AF-7 AF-8 AF-9 AF-10 AF-11 AF-12 AF-13 AF-14 AF-15; do
     run_one "$id"
   done
 else

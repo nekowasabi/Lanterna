@@ -118,6 +118,7 @@ final class PanelKeyCommands {
     filter.scopeToggleKey = keyBindings[.toggleScope].first?.displayName
     numberInput.reset()
     repeatSwallow.reset()
+    postCommitSwallow.reset()
     filter.begin(fullWindows: fullWindows, filtering: filtering, activeApplication: frontmostProcessIdentifier())
     surface.showScope(filter.scopeBand)
   }
@@ -264,6 +265,9 @@ final class PanelKeyCommands {
     // the way the press that puts a panel up reads its clock before
     // asking anything.
     let startedAt = now()
+    if postCommitSwallow.swallows(at: startedAt) {
+      return .absorbed
+    }
     guard surface.isPresented else { return .passedThrough }
     if repeatSwallow.swallows(keystroke) {
       return .absorbed
@@ -361,13 +365,11 @@ final class PanelKeyCommands {
     return .absorbed
   }
 
-  /// Commits the clicked row the way a commit key would: the row is
-  /// chosen first, then the same way out and the same shortcut record
-  /// run. The span starts at the click, so the measured close covers
-  /// what this process does about the click and nothing before it.
   /// Commits the one row a filter narrowed to, the same way a commit key
   /// would. The wait has already elapsed. A panel that is down, or a
-  /// list that is no longer that one row, takes nothing.
+  /// list that is no longer that one row, takes nothing. A commit that
+  /// lands keeps the following keystrokes for `SingleCandidateFocus.swallow`,
+  /// so the rest of the burst does not type into the window that came forward.
   func commitSingleCandidate(_ id: WindowItem.Identifier) {
     guard surface.isPresented else { return }
     guard filter.shownWindows.count == 1, filter.shownWindows.contains(where: { $0.id == id }) else {
@@ -384,8 +386,15 @@ final class PanelKeyCommands {
       filter: summary
     )
     recordShortcut(query: summary.query, id: id)
+    // A commit that did not take the panel down has nothing to leak into.
+    guard !surface.isPresented else { return }
+    postCommitSwallow.arm(at: now(), for: SingleCandidateFocus.swallow)
   }
 
+  /// Commits the clicked row the way a commit key would: the row is
+  /// chosen first, then the same way out and the same shortcut record
+  /// run. The span starts at the click, so the measured close covers
+  /// what this process does about the click and nothing before it.
   func commitClickedRow(_ id: WindowItem.Identifier?) {
     guard surface.isPresented else { return }
     if let id, !filter.shownWindows.contains(where: { $0.id == id }) {
@@ -426,6 +435,10 @@ final class PanelKeyCommands {
   private var numberInput = NumberInput()
   /// The key code whose repeats read as nothing after switching.
   private var repeatSwallow = KeyRepeatSwallow()
+  /// Keystrokes kept after an auto-commit. Cleared when the next panel
+  /// begins, and left in place when this panel ends, because ending is
+  /// what the auto-commit just did.
+  private var postCommitSwallow = PostCommitSwallow()
 
   private let surface: any SwitcherSurface
   private let selection: PanelSelection
