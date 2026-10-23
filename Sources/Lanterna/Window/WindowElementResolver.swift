@@ -3,11 +3,10 @@ import PrivateAPIs
 
 /// Turns a shown row back into its accessibility element.
 ///
-/// Shared by the switcher-shaped operations — closing and minimizing read
-/// only the owning application's own window list, never a fresher one: the
-/// target is what the appearance showed. One derivation of resolving for
-/// both, so a row gone missing reads the same way in each; the switcher
-/// keeps its own copy of the same steps.
+/// Shared by the switcher-shaped operations — switching, closing and
+/// minimizing read only the owning application's own window list, never a
+/// fresher one: the target is what the appearance showed. One derivation of
+/// resolving for all three, so a row gone missing reads the same way in each.
 struct WindowElementResolver: Sendable {
 
   // MARK: Lifecycle
@@ -56,8 +55,8 @@ struct WindowElementResolver: Sendable {
 
   static let messagingTimeout: Float = 1.0
   /// Answers slower than this are waits, not refusals. Half the messaging
-  /// timeout leaves a wide margin on both sides; borrowed from the
-  /// switcher, which draws the same line for the same code.
+  /// timeout leaves a wide margin on both sides; borrowed from the reader,
+  /// which draws the same line for the same code.
   static let unreachableAnswerCeiling = Duration.milliseconds(500)
 
   /// Slow `cannotComplete` answers are waits, fast ones refusals.

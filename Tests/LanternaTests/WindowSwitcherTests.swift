@@ -324,32 +324,36 @@ private final class ScriptedAccessibility: @unchecked Sendable {
 
   func switcher() -> LiveWindowSwitcher {
     LiveWindowSwitcher(
-      createApplication: { [self] pid in
-        createPIDs.append(pid)
-        return application
-      },
-      setMessagingTimeout: { [self] element, _ in
-        prepared.append(ObjectIdentifier(element))
-        if element === application {
-          return timeoutResult
-        }
-        guard let index = windows.firstIndex(where: { $0 === element }) else {
-          return .success
-        }
-        return prepareErrors[index] ?? .success
-      },
-      copyWindows: { [self] _ in
-        clock = clock.advanced(by: listCost)
-        let listed = windows.indices.filter { !otherSpaceIndices.contains($0) }.map { windows[$0] }
-        return malformedList ? (windowsError, nil) : (windowsError, listed)
-      },
-      copyWindowID: { [self] element in
-        guard let index = windows.firstIndex(where: { $0 === element }) else {
-          return (.illegalArgument, 0)
-        }
-        clock = clock.advanced(by: idCost)
-        return idAnswers[index] ?? (.success, CGWindowID(100 + index))
-      },
+      resolver: WindowElementResolver(
+        createApplication: { [self] pid in
+          createPIDs.append(pid)
+          return application
+        },
+        setMessagingTimeout: { [self] element, _ in
+          prepared.append(ObjectIdentifier(element))
+          if element === application {
+            return timeoutResult
+          }
+          guard let index = windows.firstIndex(where: { $0 === element }) else {
+            return .success
+          }
+          return prepareErrors[index] ?? .success
+        },
+        copyWindows: { [self] _ in
+          clock = clock.advanced(by: listCost)
+          let listed = windows.indices.filter { !otherSpaceIndices.contains($0) }.map { windows[$0] }
+          return malformedList ? (windowsError, nil) : (windowsError, listed)
+        },
+        copyWindowID: { [self] element in
+          guard let index = windows.firstIndex(where: { $0 === element }) else {
+            return (.illegalArgument, 0)
+          }
+          clock = clock.advanced(by: idCost)
+          return idAnswers[index] ?? (.success, CGWindowID(100 + index))
+        },
+        remoteWindows: { [self] _ in otherSpaceIndices.sorted().map { windows[$0] } },
+        now: { [self] in clock }
+      ),
       activateApplication: { [self] _ in
         operationNames.append("activate")
         return activateAnswer
@@ -366,7 +370,6 @@ private final class ScriptedAccessibility: @unchecked Sendable {
         clock = clock.advanced(by: writeCost)
         return raiseError ?? writeError
       },
-      remoteWindows: { [self] _ in otherSpaceIndices.sorted().map { windows[$0] } },
       now: { [self] in clock }
     )
   }
