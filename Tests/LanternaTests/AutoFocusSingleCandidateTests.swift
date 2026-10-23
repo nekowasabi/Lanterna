@@ -54,7 +54,7 @@ private func letter(_ character: Character) -> PanelKeystroke {
     case "a": kVK_ANSI_A
     case "i": kVK_ANSI_I
     case "l": kVK_ANSI_L
-    case "x": kVK_ANSI_X
+    case "z": kVK_ANSI_Z
     default: kVK_ANSI_M
     }
   return PanelKeystroke(
@@ -291,7 +291,7 @@ struct AutoFocusSingleCandidateTests {
   func recoveringFromNoMatchDoesNotActivate() async {
     let sleep = ParkedSleep()
     let fixture = openFiltering([mail, messages], sleep: sleep)
-    type("mailx", on: fixture.presenter)
+    type("mailz", on: fixture.presenter)
     await settleParked()
     #expect(sleep.durations == [SingleCandidateFocus.settle, SingleCandidateFocus.settle])
     let delete = PanelKeystroke(keyCode: UInt16(kVK_Delete), modifiers: [], isARepeat: false)
