@@ -56,11 +56,141 @@ struct PanelMetricsTests {
     #expect(PanelMetrics.width == 720)
   }
 
+  /// Ten rows of 36 and the padding either side: the Cmd+Tab list at the
+  /// standard text size and the standard limit.
   @Test
-  func heightStopsAtTheCap() {
-    #expect(PanelMetrics.maximumHeight == 400)
-    #expect(PanelMetrics.height(rowCount: 11) == PanelMetrics.maximumHeight)
-    #expect(PanelMetrics.height(rowCount: 30) == PanelMetrics.maximumHeight)
+  func heightStopsAtTheRowLimit() {
+    #expect(PanelMetrics.height(rowCount: 9) == 336)
+    #expect(PanelMetrics.height(rowCount: 10) == 372)
+    #expect(PanelMetrics.height(rowCount: 11) == 372)
+    #expect(PanelMetrics.height(rowCount: 30) == 372)
+  }
+
+  @Test
+  func heightFollowsTheChosenLimit() throws {
+    let five = try #require(PanelRows(count: 5))
+    let thirty = try #require(PanelRows(count: 30))
+    #expect(PanelMetrics.height(rowCount: 40, for: .standard, rows: five) == 192)
+    #expect(PanelMetrics.height(rowCount: 3, for: .standard, rows: five) == 120)
+    #expect(PanelMetrics.height(rowCount: 40, for: .standard, rows: thirty) == 1092)
+    #expect(PanelMetrics.height(rowCount: 20, for: .standard, rows: thirty) == 732)
+  }
+
+  /// The filter panel is the same list under the filter chrome: ten rows
+  /// plus 43, and it shrinks with the rows when fewer are drawn.
+  @Test
+  func filterPanelAddsItsChromeToTheLimit() {
+    func total(_ rowCount: Int, filterActive: Bool) -> CGFloat {
+      PanelMetrics.totalHeight(
+        rowCount: rowCount,
+        query: "",
+        filterActive: filterActive,
+        notice: false,
+        for: .standard
+      )
+    }
+    #expect(total(30, filterActive: true) == 415)
+    #expect(total(10, filterActive: true) == 415)
+    #expect(total(4, filterActive: true) == 199)
+    #expect(total(30, filterActive: false) == 372)
+    #expect(total(4, filterActive: false) == 156)
+  }
+
+  /// The note and the band add to the rows shown, not to the limit's
+  /// count of rows.
+  @Test
+  func noticeAndBandAddOverTheRowsShown() {
+    #expect(
+      PanelMetrics.totalHeight(
+        rowCount: 30,
+        query: "x",
+        filterActive: true,
+        notice: true,
+        for: .standard
+      ) == 437
+    )
+    #expect(
+      PanelMetrics.totalHeight(
+        rowCount: 30,
+        query: "",
+        filterActive: false,
+        notice: false,
+        scopeBand: true,
+        for: .standard
+      ) == 404
+    )
+  }
+
+  /// At the largest text step each row is 45 and the chrome 54, so the
+  /// same ten rows stand taller and the display fit is what stops them.
+  @Test
+  func largestTextStepScalesTheRowsAndTheChrome() {
+    func total(visibleHeight: CGFloat) -> CGFloat {
+      PanelMetrics.totalHeight(
+        rowCount: 30,
+        query: "",
+        filterActive: true,
+        notice: false,
+        for: .large,
+        visibleHeight: visibleHeight
+      )
+    }
+    #expect(PanelMetrics.height(rowCount: 30, for: .large) == 462)
+    #expect(total(visibleHeight: .infinity) == 516)
+    #expect(total(visibleHeight: 1000) == 516)
+    #expect(total(visibleHeight: 500) == 460)
+  }
+
+  /// The display's visible height, less the margin, caps the total
+  /// whatever the limit asks for.
+  @Test
+  func displayHeightCapsTheTotal() throws {
+    let thirty = try #require(PanelRows(count: 30))
+    func total(visibleHeight: CGFloat) -> CGFloat {
+      PanelMetrics.totalHeight(
+        rowCount: 30,
+        query: "",
+        filterActive: true,
+        notice: false,
+        for: .standard,
+        rows: thirty,
+        visibleHeight: visibleHeight
+      )
+    }
+    #expect(total(visibleHeight: 1400) == 1135)
+    #expect(total(visibleHeight: 900) == 860)
+    #expect(total(visibleHeight: 30) == 0)
+    let size = PanelMetrics.panelSize(
+      rowCount: 30,
+      query: "",
+      filterActive: false,
+      notice: false,
+      for: .standard,
+      visibleHeight: 300
+    )
+    #expect(size.height == 260)
+    #expect(size.width == 720)
+  }
+
+  @Test
+  func fittingHeightKeepsTheMargin() {
+    #expect(PanelMetrics.fittedHeight(372, in: 1000) == 372)
+    #expect(PanelMetrics.fittedHeight(1092, in: 900) == 860)
+    #expect(PanelMetrics.fittedHeight(372, in: 30) == 0)
+    #expect(PanelMetrics.fittedHeight(372, in: .infinity) == 372)
+    #expect(PanelMetrics.availableHeight(in: 900) == 860)
+  }
+
+  /// The note grows the frame by its own height, less what the display
+  /// has no room for.
+  @Test
+  func noticeGrowthStopsAtTheDisplay() {
+    #expect(PanelMetrics.noticeGrowth(from: 372, in: 1000, for: .standard) == 22)
+    #expect(PanelMetrics.noticeGrowth(from: 372, in: .infinity, for: .standard) == 22)
+    #expect(PanelMetrics.noticeGrowth(from: 350, in: 400, for: .standard) == 10)
+    #expect(PanelMetrics.noticeGrowth(from: 360, in: 400, for: .standard) == 0)
+    #expect(PanelMetrics.noticeGrowth(from: 372, in: 400, for: .standard) == 0)
+    #expect(PanelMetrics.noticeGrowth(from: 372, in: 1000, for: .large) == 28)
   }
 }
 
@@ -93,22 +223,6 @@ extension PanelMetricsTests {
       #expect(PanelMetrics.width(for: level) == expected[level], "for \(level)")
     }
     #expect(PanelMetrics.width(for: .standard) == PanelMetrics.width)
-  }
-
-  @Test
-  func scaledHeightKeepsTheCapOverTheTotal() {
-    let chrome = PanelMetrics.filterChromeHeight(query: "x", filterActive: true, for: .large)
-    let total = PanelMetrics.height(rowCount: 30, for: .large) + chrome
-      + PanelMetrics.noticeHeight(for: .large)
-    let largeTotal = PanelMetrics.totalHeight(
-      rowCount: 30,
-      query: "x",
-      filterActive: true,
-      notice: true,
-      for: .large
-    )
-    #expect(largeTotal == PanelMetrics.maximumHeight)
-    #expect(total > PanelMetrics.maximumHeight)
   }
 
   /// Fixed points, not the formula, so a constant change fails here.
@@ -219,13 +333,11 @@ extension PanelMetricsTests {
     #expect(PanelMetrics.fittedWidth(720, in: 30) == 0)
   }
 
-  /// The padding and the cap stay put while the rows grow, so a large
-  /// step scrolls sooner rather than outgrowing the screen.
+  /// The padding stays put while the rows grow with the step.
   @Test
-  func paddingAndCapStayFixedAcrossSteps() {
+  func paddingStaysFixedAcrossSteps() {
     #expect(PanelMetrics.verticalPadding == 6)
-    #expect(PanelMetrics.maximumHeight == 400)
     #expect(PanelMetrics.height(rowCount: 0, for: .large) == 12)
-    #expect(PanelMetrics.height(rowCount: 30, for: .large) == PanelMetrics.maximumHeight)
+    #expect(PanelMetrics.height(rowCount: 30, for: .large) == 462)
   }
 }

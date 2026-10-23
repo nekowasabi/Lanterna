@@ -49,7 +49,8 @@ final class SwitcherPanel: NSPanel {
       filterActive: content.filterActive,
       notice: false,
       for: textScale,
-      step: panelWidth
+      step: panelWidth,
+      rows: panelRows
     )
     super.init(
       contentRect: NSRect(
@@ -153,6 +154,12 @@ final class SwitcherPanel: NSPanel {
   /// is following.
   var panelWidth = PanelWidth.standard
 
+  /// How many rows the panel shows before the list scrolls, read at
+  /// launch from the config file. A change takes effect on the next
+  /// appearance, never on the one already up, for the reason the width
+  /// step's does.
+  var panelRows = PanelRows.standard
+
   /// Whether hovering a row moves the selection, read at launch from
   /// the config file. A change takes effect on the next appearance,
   /// never on the one already up.
@@ -197,6 +204,10 @@ final class SwitcherPanel: NSPanel {
   /// The width step the appearance on screen opened with. Frozen at
   /// `present` beside the text step, for the same reason.
   var appearanceWidth = PanelWidth.standard
+
+  /// The row limit the appearance on screen opened with. Frozen at
+  /// `present` beside the width step, for the same reason.
+  var appearanceRows = PanelRows.standard
 
   /// The failure note on screen now, if any. Remembered here so the panel
   /// knows whether the note's height is in its frame, and clearing gives
@@ -274,6 +285,13 @@ final class SwitcherPanel: NSPanel {
     false
   }
 
+  /// The visible height of the remembered screen, which the panel's
+  /// height is fitted to. Without a remembered screen it is unbounded;
+  /// the next placement resolves one.
+  var visibleHeight: CGFloat {
+    resolvedVisibleFrame?.height ?? .infinity
+  }
+
   override func scrollWheel(with event: NSEvent) {
     guard scrollSelect else {
       super.scrollWheel(with: event)
@@ -327,6 +345,7 @@ final class SwitcherPanel: NSPanel {
     noticeGrowth = 0
     appearanceScale = textScale
     appearanceWidth = panelWidth
+    appearanceRows = panelRows
     resolvedScreenIndex = assignedScreenIndex ?? resolveFreshIndex()
     hostingView.rootView.query = ""
     hostingView.rootView.cursor = 0
@@ -419,7 +438,10 @@ final class SwitcherPanel: NSPanel {
     resolvedScreenIndex = index
     let height = contentRect(forFrameRect: frame).height
     let width = PanelMetrics.width(for: appearanceScale, step: appearanceWidth)
-    setContentSize(NSSize(width: fittedWidth(width), height: height))
+    setContentSize(NSSize(
+      width: fittedWidth(width),
+      height: PanelMetrics.fittedHeight(height, in: visibleHeight)
+    ))
     stayOnResolvedScreen()
   }
 
@@ -472,14 +494,10 @@ final class SwitcherPanel: NSPanel {
   /// on a narrow display stays on screen. Without a remembered screen
   /// the width passes through; the next placement resolves one.
   func fittedWidth(_ width: CGFloat) -> CGFloat {
-    guard let index = resolvedScreenIndex else {
+    guard let visibleFrame = resolvedVisibleFrame else {
       return width
     }
-    let screens = NSScreen.screens
-    guard screens.indices.contains(index) else {
-      return width
-    }
-    return PanelMetrics.fittedWidth(width, in: screens[index].visibleFrame.width)
+    return PanelMetrics.fittedWidth(width, in: visibleFrame.width)
   }
 
   // MARK: Private
@@ -495,6 +513,18 @@ final class SwitcherPanel: NSPanel {
   /// appearances under the same unresolved target warn only once.
   /// Cleared once a resolution lands without falling back.
   private var lastFallbackTarget: DisplayTarget?
+
+  /// The visible area of the remembered screen, when there is one.
+  private var resolvedVisibleFrame: NSRect? {
+    guard let index = resolvedScreenIndex else {
+      return nil
+    }
+    let screens = NSScreen.screens
+    guard screens.indices.contains(index) else {
+      return nil
+    }
+    return screens[index].visibleFrame
+  }
 
   /// Resolves the target over the current screens into the index the
   /// caller remembers for this appearance, or nil when no screen is

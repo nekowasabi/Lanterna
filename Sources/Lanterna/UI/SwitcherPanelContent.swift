@@ -6,6 +6,35 @@ import SwiftUI
 /// everything that swaps the list or grows the frame for a note lives
 /// here.
 extension SwitcherPanel {
+  /// The content size for a list under this appearance: its text step,
+  /// width step, row limit, and the display it sits on. Every swap and
+  /// the scope band take their size from here, so they cannot disagree.
+  func contentSize(
+    windows: [WindowItem],
+    query: String,
+    filterActive: Bool,
+    notice: Bool
+  ) -> CGSize {
+    PanelMetrics.panelSize(
+      rowCount: PanelMetrics.drawnRowCount(
+        windows,
+        modes: displayModes,
+        query: query,
+        exclusions: exclusionRules,
+        fuzzy: searchSettings.fuzzyMatchEnabled,
+        grouping: grouping
+      ),
+      query: query,
+      filterActive: filterActive,
+      notice: notice,
+      scopeBand: scopeBand != nil,
+      for: appearanceScale,
+      step: appearanceWidth,
+      rows: appearanceRows,
+      visibleHeight: visibleHeight
+    )
+  }
+
   /// One swap of the hosted list, carrying the choice, the query, the
   /// insertion point, and the chrome across. Both `update` paths funnel through here so the
   /// view the panel sizes is the view it draws.
@@ -49,21 +78,11 @@ extension SwitcherPanel {
     scopeBand = band
     hostingView.rootView.scopeBand = band
     let view = hostingView.rootView
-    let size = PanelMetrics.panelSize(
-      rowCount: PanelMetrics.drawnRowCount(
-        view.windows,
-        modes: displayModes,
-        query: view.query,
-        exclusions: exclusionRules,
-        fuzzy: searchSettings.fuzzyMatchEnabled,
-        grouping: grouping
-      ),
+    let size = contentSize(
+      windows: view.windows,
       query: view.query,
       filterActive: view.filterActive,
-      notice: notice != nil,
-      scopeBand: band != nil,
-      for: appearanceScale,
-      step: appearanceWidth
+      notice: notice != nil
     )
     var frame = frame
     frame.origin.y -= size.height - frame.height
@@ -97,23 +116,11 @@ extension SwitcherPanel {
     )
     // The height is pushed down from the window, because the hosting view
     // has no sizing options and so cannot push one up.
-    let query = hostingView.rootView.query
-    let filterActive = hostingView.rootView.filterActive
-    let size = PanelMetrics.panelSize(
-      rowCount: PanelMetrics.drawnRowCount(
-        windows,
-        modes: displayModes,
-        query: query,
-        exclusions: exclusionRules,
-        fuzzy: searchSettings.fuzzyMatchEnabled,
-        grouping: grouping
-      ),
-      query: query,
-      filterActive: filterActive,
-      notice: false,
-      scopeBand: scopeBand != nil,
-      for: appearanceScale,
-      step: appearanceWidth
+    let size = contentSize(
+      windows: windows,
+      query: hostingView.rootView.query,
+      filterActive: hostingView.rootView.filterActive,
+      notice: false
     )
     setContentSize(NSSize(width: fittedWidth(size.width), height: size.height))
     stayOnResolvedScreen()
@@ -147,22 +154,7 @@ extension SwitcherPanel {
       cursor: cursor,
       filterActive: filterActive
     )
-    let size = PanelMetrics.panelSize(
-      rowCount: PanelMetrics.drawnRowCount(
-        windows,
-        modes: displayModes,
-        query: query,
-        exclusions: exclusionRules,
-        fuzzy: searchSettings.fuzzyMatchEnabled,
-        grouping: grouping
-      ),
-      query: query,
-      filterActive: filterActive,
-      notice: false,
-      scopeBand: scopeBand != nil,
-      for: appearanceScale,
-      step: appearanceWidth
-    )
+    let size = contentSize(windows: windows, query: query, filterActive: filterActive, notice: false)
     var frame = frame
     frame.origin.y -= size.height - frame.height
     frame.size.height = size.height
@@ -185,11 +177,8 @@ extension SwitcherPanel {
     notice = text
     hostingView.rootView.notice = text
     var frame = frame
-    // The growth stops at the height limit, so a full panel stays on screen.
-    let grown = min(
-      PanelMetrics.noticeHeight(for: appearanceScale),
-      max(PanelMetrics.maximumHeight - frame.height, 0)
-    )
+    // The growth stops at the display's room, so a full panel stays on screen.
+    let grown = PanelMetrics.noticeGrowth(from: frame.height, in: visibleHeight, for: appearanceScale)
     noticeGrowth = grown
     frame.origin.y -= grown
     frame.size.height += grown
