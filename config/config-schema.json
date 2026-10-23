@@ -1006,6 +1006,12 @@
       "description": "The panel width as a multiplier over the text-scaled width: one of\nthe allowed steps. Absent means 1.0 (the text-scaled width\nunchanged). The value allowlist lives in Swift, like `textScale`.",
       "type": "number"
     },
+    "panelRows": {
+      "description": "How many rows the panel shows before the list scrolls, 5 to 30.\nAbsent means 10. Anything else falls back to 10 with a note. The\nrange lives in Swift, like `panelWidth`'s steps.",
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 30
+    },
     "showDelayMs": {
       "description": "The panel show delay in milliseconds before the panel appears.\nAbsent or zero means off. Past 1000 clamps to it with a note, and\nanything else unreadable falls back to 150 with a note. The bounds\nlive in Swift, like `panelWidth`.",
       "type": "number"
@@ -1246,6 +1252,10 @@
               "deprecated": true
             },
             "panelWidth": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "panelRows": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
               "deprecated": true
             },
@@ -1558,6 +1568,10 @@
               "deprecated": true
             },
             "panelWidth": {
+              "description": "Shared by both switchers; write it at the top level. Ignored here.",
+              "deprecated": true
+            },
+            "panelRows": {
               "description": "Shared by both switchers; write it at the top level. Ignored here.",
               "deprecated": true
             },
