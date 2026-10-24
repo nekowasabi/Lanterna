@@ -500,6 +500,8 @@ extension AppConfiguration {
       config.textScale = textScale
       let (panelWidth, panelWidthIssue) = checkedOptionalPanelWidth(dict)
       config.panelWidth = panelWidth
+      let (panelRows, panelRowsIssue) = checkedOptionalPanelRows(dict)
+      config.panelRows = panelRows
       let (showDelayMs, showDelayIssue) = checkedOptionalShowDelayMs(dict)
       config.showDelayMs = showDelayMs
       return .success(DecodedConfiguration(
@@ -508,6 +510,7 @@ extension AppConfiguration {
         keyBindingIssues: decodeIssues + resolveIssues,
         textScaleIssue: textScaleIssue,
         panelWidthIssue: panelWidthIssue,
+        panelRowsIssue: panelRowsIssue,
         showDelayIssue: showDelayIssue,
         deprecatedKeys: deprecatedKeys.filter { dict[$0] != nil }
       ))

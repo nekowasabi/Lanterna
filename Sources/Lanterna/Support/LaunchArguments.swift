@@ -40,6 +40,9 @@ enum LaunchArguments {
     var displayTarget = DisplayTarget.primary
     /// The panel width step. No flag sets it; the file covers it.
     var panelWidth = PanelWidth.standard
+    /// How many rows the panel shows before the list scrolls. No flag
+    /// sets it; the file covers it.
+    var panelRows = PanelRows.standard
     /// The panel show delay in milliseconds. Nil means off. No flag
     /// sets it; the file covers it.
     var showDelayMs: Double?

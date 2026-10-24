@@ -32,6 +32,7 @@ struct SettingsValues: Equatable, Sendable {
     hintsMode: .prefix,
     rowOrder: .none,
     panelWidth: .standard,
+    panelRows: .standard,
     showDelayMs: nil,
     windowScope: .allApps,
     grouping: GroupingPolicy(),
@@ -95,6 +96,9 @@ struct SettingsValues: Equatable, Sendable {
   /// The panel width step. Absent in the file means the standard
   /// step, the current width.
   var panelWidth: PanelWidth
+  /// How many rows the panel shows before the list scrolls. Absent in
+  /// the file means the standard limit.
+  var panelRows: PanelRows
   /// The panel show delay in milliseconds. Nil means off.
   var showDelayMs: Double?
   /// Which applications' rows each appearance starts on. Absent in the
@@ -157,6 +161,7 @@ struct SettingsValues: Equatable, Sendable {
       hintsMode: HintsMode.effective(from: config),
       rowOrder: ManualRowOrder(entries: config.rowOrder),
       panelWidth: PanelWidth.effective(from: config),
+      panelRows: PanelRows.effective(from: config),
       showDelayMs: ShowDelay.effective(config.showDelayMs).value,
       windowScope: config.windowScope ?? .allApps,
       grouping: GroupingPolicy(
@@ -224,6 +229,9 @@ struct SettingsValues: Equatable, Sendable {
     }
     if panelWidth != .standard {
       config.panelWidth = panelWidth.factor
+    }
+    if panelRows != .standard {
+      config.panelRows = panelRows.count
     }
     if hoverSelect != defaults.hoverSelect {
       config.hoverSelect = hoverSelect

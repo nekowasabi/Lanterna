@@ -75,6 +75,22 @@ struct SettingsAppearanceView: View {
         }
         LabeledContent {
           HStack {
+            Text("\(values.panelRows.count)")
+            Stepper(
+              "Visible rows",
+              value: panelRowsCount,
+              in: PanelRows.range
+            )
+            .labelsHidden()
+          }
+        } label: {
+          SettingsFormLabel(
+            title: "Visible rows",
+            caption: "Rows the panel shows before the list scrolls."
+          )
+        }
+        LabeledContent {
+          HStack {
             Text(delayText)
             Stepper(
               "Show delay",
@@ -201,6 +217,15 @@ struct SettingsAppearanceView: View {
       return "Off"
     }
     return "\(Int(milliseconds)) ms"
+  }
+
+  /// The stepper position spelling the row limit: the stepper works in
+  /// plain integers, and the range keeps every step a valid limit.
+  private var panelRowsCount: Binding<Int> {
+    Binding(
+      get: { values.panelRows.count },
+      set: { values.panelRows = PanelRows(count: $0) ?? .standard }
+    )
   }
 
   /// The width slider position spelling the step, the same way the
