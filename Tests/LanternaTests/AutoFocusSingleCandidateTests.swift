@@ -205,12 +205,8 @@ struct AutoFocusSingleCandidateTests {
     await settleParked()
     sleep.resumeAll()
     await settleParked()
-    let kept = fixture.presenter.handleKeyStroke(returnKey())
-    #expect(kept == .absorbed)
+    #expect(fixture.presenter.handleKeyStroke(returnKey()) == .passedThrough)
     #expect(fixture.switcher.targets.count == 1)
-    advancePastSwallow(fixture.clock)
-    let later = fixture.presenter.handleKeyStroke(returnKey())
-    #expect(later == .passedThrough)
     sleep.resumeAll()
     await settleParked()
     #expect(fixture.switcher.targets.count == 1)
@@ -348,16 +344,4 @@ struct AutoFocusSingleCandidateTests {
 
 private func returnKey() -> PanelKeystroke {
   PanelKeystroke(keyCode: UInt16(kVK_Return), modifiers: [], isARepeat: false, characters: "\r")
-}
-
-/// Moves the fixture clock past `SingleCandidateFocus.swallow`.
-///
-/// The clock steps 4.8 milliseconds per read. Eighty reads is 384
-/// milliseconds, which is past the 250 millisecond stretch even after
-/// the reads the commit itself already took.
-@MainActor
-private func advancePastSwallow(_ clock: SteppingClock) {
-  for _ in 0 ..< 80 {
-    _ = clock.read()
-  }
 }

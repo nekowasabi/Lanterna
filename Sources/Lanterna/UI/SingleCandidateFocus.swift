@@ -35,13 +35,6 @@ enum SingleCandidateFocus {
   /// pause. The figure is a choice. This repo has no measured typing trace.
   static let settle = Duration.milliseconds(400)
 
-  /// How long keystrokes stay here after an auto-commit has closed the panel.
-  ///
-  /// Covers one late letter, or Return pressed as the panel closes, without
-  /// holding the keyboard for the next word. The window does not extend.
-  /// A commit key or a click does not start it. The figure is a choice.
-  static let swallow = Duration.milliseconds(250)
-
   /// Arms when a non-empty filter just moved from several rows to one,
   /// when a later query edit is still one row while a wait is armed, or
   /// when an armed wait's row is replaced by a different row. Anything
@@ -69,37 +62,6 @@ enum SingleCandidateFocus {
     return .leave
   }
 
-}
-
-// MARK: - PostCommitSwallow
-
-/// The short stretch after an auto-commit during which keystrokes stay here.
-struct PostCommitSwallow: Equatable, Sendable {
-  /// The instant the stretch ends, or nil when nothing is being kept.
-  private(set) var until: ContinuousClock.Instant?
-
-  /// Starts the stretch at `now`.
-  mutating func arm(at now: ContinuousClock.Instant, for duration: Duration) {
-    until = now.advanced(by: duration)
-  }
-
-  /// Whether a keystroke at `now` stays here. A key at or after the end
-  /// clears the stretch and is not kept.
-  mutating func swallows(at now: ContinuousClock.Instant) -> Bool {
-    guard let until else { return false }
-    if now < until {
-      return true
-    }
-    self.until = nil
-    return false
-  }
-
-  /// Forgets the stretch. The next panel begins this way. Ending the
-  /// panel that just auto-committed does not, because that ending is
-  /// what started the stretch.
-  mutating func reset() {
-    until = nil
-  }
 }
 
 // MARK: - PendingSingleCandidateFocus
