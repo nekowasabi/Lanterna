@@ -166,6 +166,9 @@ final class PanelPresenter {
   /// The physical key of the invocation press now being repeated.
   var invocationRepeatKeyCode: UInt16 = 0
 
+  /// When that key went down. Set with the key code on every press.
+  var invocationRepeatPressedAt = ContinuousClock.now
+
   /// What commits take. Through to the way out, which owns the list the
   /// target is read off and is built beside the presenter.
   let switcher: any WindowSwitching
@@ -399,8 +402,8 @@ final class PanelPresenter {
       return
     }
     if surface.isPresented {
-      rememberInvocationKey(combination, heldKeyCode: heldKeyCode)
-      handlePressWhilePresented(combination)
+      rememberInvocationKey(combination, heldKeyCode: heldKeyCode, startedAt: startedAt, deliveryDelay: deliveryDelay)
+      handlePressWhilePresented(combination, at: startedAt)
       return
     }
     // The press comes in through Carbon and the release through the tap,
@@ -441,7 +444,7 @@ final class PanelPresenter {
     } else {
       commitOnCommand = true
     }
-    rememberInvocationKey(combination, heldKeyCode: heldKeyCode)
+    rememberInvocationKey(combination, heldKeyCode: heldKeyCode, startedAt: startedAt, deliveryDelay: deliveryDelay)
     // A press is already waiting for the first list and is the one that
     // will put the panel up. The panel is not up yet, so without this a
     // second press would take the same path again and two would arrive.
@@ -493,7 +496,6 @@ final class PanelPresenter {
   /// and leave the press to arrive as a panel over whatever the user had
   /// turned to. Letting the slot go is what stops it.
   func handleCommandRelease() {
-    disarmInvocationRepeat()
     let startedAt = now()
     if answerWaitingPress(forCommitOnCommand: true, since: startedAt) {
       return
@@ -504,6 +506,7 @@ final class PanelPresenter {
     if !commitOnCommand, lastModifierFlags.contains(.maskAlternate) {
       return
     }
+    disarmInvocationRepeat()
     keyCommands.resetNumberInput()
     guard !keyCommands.isFilteringActive else { return }
     wayOut.commitOnCommandRelease(naming: selection.chosenID, since: startedAt, filter: keyCommands.filterSummary())
@@ -529,12 +532,12 @@ final class PanelPresenter {
   /// The tap reports the flags-changed event's flags before the release
   /// itself, so the held flags read as the state that event left behind.
   func handleOptionRelease() {
-    disarmInvocationRepeat()
     let startedAt = now()
     if answerWaitingPress(forCommitOnCommand: false, since: startedAt) {
       return
     }
     guard !lastModifierFlags.contains(.maskCommand) else { return }
+    disarmInvocationRepeat()
     keyCommands.resetNumberInput()
     guard !keyCommands.isFilteringActive else { return }
     wayOut.commitOnOptionRelease(naming: selection.chosenID, since: startedAt, filter: keyCommands.filterSummary())
@@ -852,7 +855,10 @@ final class PanelPresenter {
   /// states differ from the first in one of them each, and both are
   /// read again on every press because either can have changed
   /// since the last.
-  private func handlePressWhilePresented(_ combination: HotkeyCombination) {
+  private func handlePressWhilePresented(
+    _ combination: HotkeyCombination,
+    at startedAt: ContinuousClock.Instant
+  ) {
     let pressMovesTheSelection = closesOnCommandRelease() && commandWatch.isLooking
     guard pressMovesTheSelection || combination == .filter else {
       disarmInvocationRepeat()
@@ -863,12 +869,12 @@ final class PanelPresenter {
     case .forward,
          .parallelForward:
       selection.moveToNext()
-      armInvocationRepeat(for: combination)
+      armInvocationRepeat(for: combination, at: startedAt)
 
     case .reverse,
          .parallelReverse:
       selection.moveToPrevious()
-      armInvocationRepeat(for: combination)
+      armInvocationRepeat(for: combination, at: startedAt)
 
     case .filter:
       switchToFiltering()
@@ -984,16 +990,21 @@ final class PanelPresenter {
     // advances an injected clock, and the way out times from the next one.
     armInvocationRepeat(
       for: combinationToRepeat(combination, replay: replay),
-      elapsed: measurement.elapsed
+      at: startedAt + measurement.elapsed
     )
   }
 
   /// Remembers which physical key this press used, so the repeat polls
-  /// that key and not whatever the combination is usually bound to.
+  /// that key and not whatever the combination is usually bound to, and
+  /// when it went down, so the hold ages from that keydown.
   private func rememberInvocationKey(
     _ combination: HotkeyCombination,
-    heldKeyCode: UInt16?
+    heldKeyCode: UInt16?,
+    startedAt: ContinuousClock.Instant,
+    deliveryDelay: Duration?
   ) {
+    // The keydown happened before Carbon handed the press over.
+    invocationRepeatPressedAt = startedAt - (deliveryDelay ?? .zero)
     if let heldKeyCode {
       invocationRepeatKeyCode = heldKeyCode
     } else {
@@ -1019,7 +1030,7 @@ final class PanelPresenter {
   /// Arms a hold, or drops one when this press does not walk.
   private func armInvocationRepeat(
     for combination: HotkeyCombination,
-    elapsed: Duration = .zero
+    at instant: ContinuousClock.Instant
   ) {
     guard
       InvocationKeyRepeat.shouldArm(
@@ -1031,10 +1042,10 @@ final class PanelPresenter {
       return
     }
     let timing = invocationRepeatTiming()
-    // A show delay is already inside the time since the press, so the first
-    // tick waits only what is left.
+    // Delivery and any show delay are already inside the time since the
+    // keydown, so the first tick waits only what is left.
     let remaining = InvocationKeyRepeat.timing(
-      initialDelay: timing.initialDelay - elapsed,
+      initialDelay: timing.initialDelay - (instant - invocationRepeatPressedAt),
       interval: timing.interval
     )
     invocationRepeatClock.arm(after: remaining.initialDelay, every: remaining.interval)

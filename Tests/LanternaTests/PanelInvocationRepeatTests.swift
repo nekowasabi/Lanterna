@@ -13,9 +13,11 @@ final class RepeatSleep {
   // MARK: Internal
 
   private(set) var waits = 0
+  private(set) var durations = [Duration]()
 
-  func sleep(_: Duration) async {
+  func sleep(_ duration: Duration) async {
     waits += 1
+    durations.append(duration)
     await withCheckedContinuation { resumes.append($0) }
   }
 
@@ -48,6 +50,18 @@ final class RepeatKeyboard {
   var down: Set<UInt16>
   var flags: CGEventFlags
 
+}
+
+// MARK: - ManualClock
+
+/// A clock that stands still until the test moves it.
+@MainActor
+final class ManualClock {
+  var current = ContinuousClock.now
+
+  func read() -> ContinuousClock.Instant {
+    current
+  }
 }
 
 // MARK: - PanelInvocationRepeatTests
@@ -186,11 +200,63 @@ struct PanelInvocationRepeatTests {
     #expect(made.presenter.selection.chosenID == made.windows[2].id)
   }
 
+  @Test
+  func aLateDeliveredPressWaitsOnlyTheRestOfTheDelay() async {
+    let clock = ManualClock()
+    let made = make(flags: .maskCommand, now: clock.read)
+    made.presenter.handleHotkey(.forward, deliveryDelay: .milliseconds(100))
+    await settle()
+    #expect(made.sleep.durations == [.milliseconds(300)])
+
+    clock.current += .seconds(1)
+    made.presenter.handleHotkey(.forward, deliveryDelay: .milliseconds(100))
+    await settle()
+    #expect(made.sleep.durations.last == .milliseconds(300))
+  }
+
+  @Test
+  func aCoalescedBurstAgesTheHoldFromTheLastKeydown() async {
+    let clock = ManualClock()
+    let gate = GatedSleep()
+    let made = make(flags: .maskCommand, now: clock.read, showDelayMs: 100, showDelaySleep: gate.sleep)
+    made.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    clock.current += .milliseconds(350)
+    made.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    clock.current += .milliseconds(100)
+    gate.open()
+    // The delay's firing and the repeat's first wait are two task hops
+    // apart, more than one settle covers.
+    for _ in 0 ..< 100 where made.sleep.waits == 0 {
+      await settle()
+    }
+
+    #expect(made.surface.isPresented)
+    #expect(made.sleep.durations == [.milliseconds(300)])
+  }
+
+  @Test
+  func releasingAnExtraOptionKeepsTheCommandHoldWalking() async {
+    let made = make(flags: .maskCommand)
+    made.presenter.handleHotkey(.forward, deliveryDelay: nil)
+    await settle()
+    made.presenter.modifierFlagsChanged([.maskCommand, .maskAlternate])
+    made.presenter.modifierFlagsChanged(.maskCommand)
+    made.presenter.handleOptionRelease()
+
+    made.sleep.step()
+    await settle()
+    #expect(made.surface.isPresented)
+    #expect(made.presenter.selection.chosenID == made.windows[2].id)
+  }
+
   // MARK: Private
 
   private func make(
     flags: CGEventFlags,
-    down: Set<UInt16> = [UInt16(kVK_Tab)]
+    down: Set<UInt16> = [UInt16(kVK_Tab)],
+    now: (@MainActor () -> ContinuousClock.Instant)? = nil,
+    showDelayMs: Double? = nil,
+    showDelaySleep: @escaping @MainActor (Duration) async -> Void = { _ in }
   ) -> (
     presenter: PanelPresenter,
     surface: FakeSurface,
@@ -208,7 +274,7 @@ struct PanelInvocationRepeatTests {
       surface: surface,
       store: WindowListStore(fixed: windows),
       ownProcessIdentifier: ownProcess,
-      now: SteppingClock(step: .microseconds(4800)).read,
+      now: now ?? SteppingClock(step: .microseconds(4800)).read,
       writeLine: { _ in },
       closesOnCommandRelease: { true },
       commandIsHeld: { true },
@@ -216,6 +282,8 @@ struct PanelInvocationRepeatTests {
       modifierFlags: { keyboard.flags },
       commandWatchInterval: .milliseconds(1),
       keyStatusWatchInterval: .milliseconds(1),
+      showDelayMs: showDelayMs,
+      showDelaySleep: showDelaySleep,
       invocationKeyIsDown: { keyboard.down.contains($0) },
       invocationRepeatTiming: {
         InvocationKeyRepeat.timing(initialDelay: .milliseconds(400), interval: .milliseconds(50))
