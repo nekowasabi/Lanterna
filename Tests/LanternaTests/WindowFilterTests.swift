@@ -281,7 +281,7 @@ struct WindowFilterTests {
   func scoreOrderPrefersContiguousMatches() {
     let scattered = filterRow(appName: "Q", windowTitle: "a--b", windowID: 41)
     let contiguous = filterRow(appName: "Q", windowTitle: "xab", windowID: 42)
-    let ordered = WindowFilter.scoreOrdered([scattered, contiguous], query: "ab")
+    let ordered = WindowFilter.scoreOrdered([scattered, contiguous], query: "ab", engine: MigemoEngine())
     #expect(ordered.map(\.id) == [contiguous.id, scattered.id])
   }
 
@@ -290,7 +290,7 @@ struct WindowFilterTests {
   func scoreOrderPrefersEarlierMatchStarts() {
     let later = filterRow(appName: "Q", windowTitle: "xab", windowID: 43)
     let earlier = filterRow(appName: "Q", windowTitle: "abx", windowID: 44)
-    let ordered = WindowFilter.scoreOrdered([later, earlier], query: "ab")
+    let ordered = WindowFilter.scoreOrdered([later, earlier], query: "ab", engine: MigemoEngine())
     #expect(ordered.map(\.id) == [earlier.id, later.id])
   }
 
@@ -299,22 +299,34 @@ struct WindowFilterTests {
   func scoreOrderKeepsTiesInInputOrder() {
     let first = filterRow(appName: "Q", windowTitle: "ab", windowID: 45)
     let second = filterRow(appName: "Q", windowTitle: "ab", windowID: 46)
-    let ordered = WindowFilter.scoreOrdered([first, second], query: "ab")
+    let ordered = WindowFilter.scoreOrdered([first, second], query: "ab", engine: MigemoEngine())
     #expect(ordered.map(\.id) == [first.id, second.id])
   }
 
   /// An empty query leaves the rows in the order they arrived in.
   @Test
   func scoreOrderWithEmptyQueryKeepsInputOrder() {
-    let ordered = WindowFilter.scoreOrdered(rows, query: "")
+    let ordered = WindowFilter.scoreOrdered(rows, query: "", engine: MigemoEngine())
     #expect(ordered.map(\.id) == rows.map(\.id))
   }
 
   /// Rows no matcher judges keep the order they arrived in.
   @Test
   func scoreOrderWithNoMatchesKeepsInputOrder() {
-    let ordered = WindowFilter.scoreOrdered(rows, query: "zzz")
+    let ordered = WindowFilter.scoreOrdered(rows, query: "zzz", engine: MigemoEngine())
     #expect(ordered.map(\.id) == rows.map(\.id))
+  }
+
+  /// With the engine open, scattered matches still rank by where they
+  /// start, after every match the engine makes.
+  @Test
+  func scoreOrderRanksScatteredMatchesThroughTheEngine() {
+    let engine = openEngineWithoutDictionary()
+    let later = filterRow(appName: "Q", windowTitle: "xxxx s-f-r", windowID: 47)
+    let earlier = filterRow(appName: "Q", windowTitle: "s-f-r", windowID: 48)
+    let contiguous = filterRow(appName: "Q", windowTitle: "xxxxxxxx sfr", windowID: 49)
+    let ordered = WindowFilter.scoreOrdered([later, earlier, contiguous], query: "sfr", engine: engine)
+    #expect(ordered.map(\.id) == [contiguous.id, earlier.id, later.id])
   }
 
   // MARK: Private

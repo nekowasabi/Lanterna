@@ -25,14 +25,15 @@ enum WindowFilter {
 
   /// The rows ordered for score mode, keeping the input order otherwise.
   ///
-  /// Contiguous substring matches come before scattered subsequence
-  /// matches; among those, an earlier match start comes first. Ties keep
+  /// Contiguous matches, through the engine when it is open, come before
+  /// scattered subsequence matches; among those, an earlier match start
+  /// comes first. Ties keep
   /// the order they arrived in (a stable sort through the index), so
   /// equal rows never change places. An empty query changes nothing.
-  static func scoreOrdered(_ rows: [WindowItem], query: String) -> [WindowItem] {
+  static func scoreOrdered(_ rows: [WindowItem], query: String, engine: MigemoEngine) -> [WindowItem] {
     rows.enumerated().map { entry in
       let target = combinedText(of: entry.element)
-      return (offset: entry.offset, quality: matchQuality(query: query, target: target), element: entry.element)
+      return (offset: entry.offset, quality: matchQuality(query: query, target: target, engine: engine), element: entry.element)
     }.sorted { left, right in
       if left.quality != right.quality {
         return left.quality < right.quality
@@ -161,8 +162,8 @@ enum WindowFilter {
 
   /// How one row ranks: contiguous matches before scattered ones, then
   /// by where the match starts. Rows no matcher judges rank last.
-  private static func matchQuality(query: String, target: String) -> (contiguous: Int, start: Int) {
-    if let first = matchedRanges(query: query, in: target).first {
+  private static func matchQuality(query: String, target: String, engine: MigemoEngine) -> (contiguous: Int, start: Int) {
+    if let first = matchedRanges(query: query, in: target, engine: engine).first {
       return (0, target.distance(from: target.startIndex, to: first.lowerBound))
     }
     if let first = subsequenceRanges(query: query, in: target).first {

@@ -220,27 +220,7 @@ struct DisplayModes: Equatable, Sendable {
   /// stand however the rows order. A romaji match counts as contiguous,
   /// ranked by where its span starts.
   private static func scoreRanked(_ rows: [WindowItem], query: String) -> [WindowItem] {
-    guard RomajiMatcher.engine.isOpen else {
-      return WindowFilter.scoreOrdered(rows, query: query)
-    }
-    return rows.enumerated().map { entry in
-      (offset: entry.offset, start: engineMatchStart(of: entry.element, query: query), row: entry.element)
-    }.sorted {
-      if $0.start != $1.start {
-        return $0.start < $1.start
-      }
-      return $0.offset < $1.offset
-    }.map(\.row)
-  }
-
-  /// Where the romaji match starts, or last when the row never matched
-  /// through the engine.
-  private static func engineMatchStart(of row: WindowItem, query: String) -> Int {
-    let text = WindowFilter.combinedText(of: row)
-    guard let first = WindowFilter.matchedRanges(query: query, in: text, engine: RomajiMatcher.engine).first else {
-      return Int.max
-    }
-    return text.distance(from: text.startIndex, to: first.lowerBound)
+    WindowFilter.scoreOrdered(rows, query: query, engine: RomajiMatcher.engine)
   }
 
 }
