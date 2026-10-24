@@ -292,6 +292,18 @@ final class SwitcherPanel: NSPanel {
     resolvedVisibleFrame?.height ?? .infinity
   }
 
+  /// The visible area of the remembered screen, when there is one.
+  var resolvedVisibleFrame: NSRect? {
+    guard let index = resolvedScreenIndex else {
+      return nil
+    }
+    let screens = NSScreen.screens
+    guard screens.indices.contains(index) else {
+      return nil
+    }
+    return screens[index].visibleFrame
+  }
+
   override func scrollWheel(with event: NSEvent) {
     guard scrollSelect else {
       super.scrollWheel(with: event)
@@ -426,23 +438,17 @@ final class SwitcherPanel: NSPanel {
   func screensChanged() {
     guard assignedScreenIndex == nil, isPresented else { return }
     resolvedScreenIndex = resolveFreshIndex()
-    stayOnResolvedScreen()
+    refitToResolvedScreen()
   }
 
-  /// Holds the panel to one display and puts it there now: the width is
-  /// fitted to that display again from the step the appearance opened
+  /// Holds the panel to one display and puts it there now: the size is
+  /// fitted to that display again from the steps the appearance opened
   /// with, and the panel centres on it. The composite calls this after
   /// the displays have been rearranged.
   func place(onScreen index: Int) {
     assignedScreenIndex = index
     resolvedScreenIndex = index
-    let height = contentRect(forFrameRect: frame).height
-    let width = PanelMetrics.width(for: appearanceScale, step: appearanceWidth)
-    setContentSize(NSSize(
-      width: fittedWidth(width),
-      height: PanelMetrics.fittedHeight(height, in: visibleHeight)
-    ))
-    stayOnResolvedScreen()
+    refitToResolvedScreen()
   }
 
   // `becomesKeyOnlyIfNeeded` is deliberately left alone. Its default is
@@ -513,18 +519,6 @@ final class SwitcherPanel: NSPanel {
   /// appearances under the same unresolved target warn only once.
   /// Cleared once a resolution lands without falling back.
   private var lastFallbackTarget: DisplayTarget?
-
-  /// The visible area of the remembered screen, when there is one.
-  private var resolvedVisibleFrame: NSRect? {
-    guard let index = resolvedScreenIndex else {
-      return nil
-    }
-    let screens = NSScreen.screens
-    guard screens.indices.contains(index) else {
-      return nil
-    }
-    return screens[index].visibleFrame
-  }
 
   /// Resolves the target over the current screens into the index the
   /// caller remembers for this appearance, or nil when no screen is

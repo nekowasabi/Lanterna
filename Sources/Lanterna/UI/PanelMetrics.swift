@@ -138,6 +138,17 @@ enum PanelMetrics {
     min(noticeHeight(for: scale), max(availableHeight(in: visibleHeight) - height, 0))
   }
 
+  /// Moves a frame up or down just enough to sit inside a visible area,
+  /// half the margin clear of each edge. A frame already inside stays
+  /// where it is; one taller than the room keeps its top on screen.
+  static func keptOnScreen(_ frame: CGRect, in visible: CGRect) -> CGRect {
+    let inset = screenMargin / 2
+    var frame = frame
+    frame.origin.y = max(frame.origin.y, visible.minY + inset)
+    frame.origin.y = min(frame.origin.y, visible.maxY - inset - frame.height)
+    return frame
+  }
+
   /// The full content height at one step: the rows shown plus chrome
   /// plus the band and the note when they show, fitted to the display
   /// as one total so a large step or a long limit never outgrows it.

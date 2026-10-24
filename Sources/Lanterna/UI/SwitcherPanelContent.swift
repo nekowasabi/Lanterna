@@ -84,9 +84,38 @@ extension SwitcherPanel {
       filterActive: view.filterActive,
       notice: notice != nil
     )
+    resizeKeepingTop(to: size.height)
+  }
+
+  /// Sizes the content to this appearance on the remembered screen from
+  /// the list on show, and centres there. A display change calls this
+  /// rather than reusing the frame on hand, whose height was cut to the
+  /// display it came from.
+  func refitToResolvedScreen() {
+    let view = hostingView.rootView
+    let size = contentSize(
+      windows: view.windows,
+      query: view.query,
+      filterActive: view.filterActive,
+      notice: false
+    )
+    if notice != nil {
+      noticeGrowth = PanelMetrics.noticeGrowth(from: size.height, in: visibleHeight, for: appearanceScale)
+    }
+    setContentSize(NSSize(width: fittedWidth(size.width), height: size.height + noticeGrowth))
+    stayOnResolvedScreen()
+  }
+
+  /// Changes the height with the top edge staying where it was, unless
+  /// that would push the panel off the remembered screen. A short panel
+  /// sits centred, so growing it to a long row limit from there would.
+  func resizeKeepingTop(to height: CGFloat) {
     var frame = frame
-    frame.origin.y -= size.height - frame.height
-    frame.size.height = size.height
+    frame.origin.y -= height - frame.height
+    frame.size.height = height
+    if let visible = resolvedVisibleFrame {
+      frame = PanelMetrics.keptOnScreen(frame, in: visible)
+    }
     setFrame(frame, display: true)
   }
 
@@ -155,10 +184,7 @@ extension SwitcherPanel {
       filterActive: filterActive
     )
     let size = contentSize(windows: windows, query: query, filterActive: filterActive, notice: false)
-    var frame = frame
-    frame.origin.y -= size.height - frame.height
-    frame.size.height = size.height
-    setFrame(frame, display: true)
+    resizeKeepingTop(to: size.height)
   }
 
   /// Redraws only the query row's insertion point, the way
@@ -176,13 +202,10 @@ extension SwitcherPanel {
     }
     notice = text
     hostingView.rootView.notice = text
-    var frame = frame
     // The growth stops at the display's room, so a full panel stays on screen.
     let grown = PanelMetrics.noticeGrowth(from: frame.height, in: visibleHeight, for: appearanceScale)
     noticeGrowth = grown
-    frame.origin.y -= grown
-    frame.size.height += grown
-    setFrame(frame, display: true)
+    resizeKeepingTop(to: frame.height + grown)
   }
 
   /// Takes the failure note down, giving its height back.

@@ -192,6 +192,21 @@ struct PanelMetricsTests {
     #expect(PanelMetrics.noticeGrowth(from: 372, in: 400, for: .standard) == 0)
     #expect(PanelMetrics.noticeGrowth(from: 372, in: 1000, for: .large) == 28)
   }
+
+  /// A frame grown downward from a kept top edge is lifted back inside
+  /// the display, and one already inside is left where it is.
+  @Test
+  func growingFrameStaysOnTheDisplay() {
+    let visible = CGRect(x: 0, y: 0, width: 1512, height: 900)
+    let inside = CGRect(x: 396, y: 300, width: 720, height: 300)
+    #expect(PanelMetrics.keptOnScreen(inside, in: visible) == inside)
+    let below = CGRect(x: 396, y: -400, width: 720, height: 860)
+    #expect(PanelMetrics.keptOnScreen(below, in: visible).minY == 20)
+    let above = CGRect(x: 396, y: 700, width: 720, height: 300)
+    #expect(PanelMetrics.keptOnScreen(above, in: visible).maxY == 880)
+    let tooTall = CGRect(x: 396, y: -100, width: 720, height: 1000)
+    #expect(PanelMetrics.keptOnScreen(tooTall, in: visible).maxY == 880)
+  }
 }
 
 extension PanelMetricsTests {
