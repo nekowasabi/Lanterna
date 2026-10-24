@@ -119,8 +119,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // press handler, and the manager by this delegate.
     let (panel, presenter) = makePanelAndPresenter(windowList: windowList)
     self.panel = panel
-    let hotkeys = HotkeyManager { combination, deliveryDelay in
-      presenter.handleHotkey(combination, deliveryDelay: deliveryDelay)
+    let hotkeys = HotkeyManager { combination, deliveryDelay, keyCode in
+      presenter.handleHotkey(
+        combination,
+        deliveryDelay: deliveryDelay,
+        heldKeyCode: keyCode
+      )
     }
     self.hotkeys = hotkeys
     self.presenter = presenter

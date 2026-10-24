@@ -23,6 +23,7 @@ extension PanelPresenter {
       noteSwitchReturned: { [weak self] in self?.tracker.noteSwitchReturned() },
       onPanelGone: { [weak self] in
         self?.commandWatch.stop()
+        self?.disarmInvocationRepeat()
         self?.selection.end()
         self?.keyCommands.endFiltering()
         self?.operations.end()
