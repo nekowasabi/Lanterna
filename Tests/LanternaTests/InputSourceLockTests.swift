@@ -18,7 +18,7 @@ private final class FakeInputSources {
   // MARK: Internal
 
   var current: String?
-  let installed: Set<String>
+  var installed: Set<String>
   private(set) var selects = [String]()
   private(set) var lines = [String]()
 
@@ -133,6 +133,34 @@ struct InputSourceLockTests {
     #expect(lock.state == .idle)
     #expect(sources.selects.isEmpty)
     #expect(sources.lines.count == 1)
+  }
+
+  @Test
+  func aFailedRestoreKeepsTheOriginalForTheNextRelease() {
+    let sources = FakeInputSources(current: "hiragana")
+    let lock = sources.makeLock(target: "abc")
+    lock.engage()
+    sources.installed.remove("hiragana")
+    lock.release()
+    #expect(sources.current == "abc")
+    sources.installed.insert("hiragana")
+    lock.release()
+    #expect(sources.current == "hiragana")
+    #expect(lock.state == .idle)
+  }
+
+  @Test
+  func anUnreadableSourceAtReleaseKeepsTheOriginalForTheNextRelease() {
+    let sources = FakeInputSources(current: "hiragana")
+    let lock = sources.makeLock(target: "abc")
+    lock.engage()
+    sources.current = nil
+    lock.release()
+    sources.current = "abc"
+    lock.release()
+    #expect(sources.selects == ["abc", "hiragana"])
+    #expect(sources.current == "hiragana")
+    #expect(lock.state == .idle)
   }
 
   @Test

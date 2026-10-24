@@ -85,21 +85,30 @@ final class InputSourceLock {
   }
 
   /// Gives the original back if the forced source is still the one in
-  /// place. A source the user picked by hand while the panel was up stays:
-  /// it is a newer choice than the one this would restore.
+  /// place. A source other than the forced one stays: it is a newer choice
+  /// than the one this would restore. Only the source in place at release
+  /// is compared, so a hand pick that ends back on the forced source is
+  /// indistinguishable from no pick and is restored over.
+  ///
+  /// Stays holding when the restore cannot happen, so the next release (the
+  /// next panel exit, or quit) tries again instead of losing the original.
   func release() {
     guard case .holding(let original, let forced) = state else { return }
-    state = .idle
-    let current = currentSourceID()
-    guard current == forced else {
-      writeLine(LogLine(.info, .panel, "input source left at \(current ?? "unknown"); not restoring \(original)"))
+    guard let current = currentSourceID() else {
+      writeLine(LogLine(.info, .panel, "input source unreadable; \(original) restore deferred"))
       return
     }
-    if selectSource(original) {
-      writeLine(LogLine(.info, .panel, "input source restored \(forced) -> \(original)"))
-    } else {
-      writeLine(LogLine(.info, .panel, "input source \(original) could not be restored; left \(forced)"))
+    guard current == forced else {
+      state = .idle
+      writeLine(LogLine(.info, .panel, "input source left at \(current); not restoring \(original)"))
+      return
     }
+    guard selectSource(original) else {
+      writeLine(LogLine(.info, .panel, "input source \(original) could not be restored; left \(forced)"))
+      return
+    }
+    state = .idle
+    writeLine(LogLine(.info, .panel, "input source restored \(forced) -> \(original)"))
   }
 
   // MARK: Private
