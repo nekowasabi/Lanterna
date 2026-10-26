@@ -46,6 +46,11 @@ typealias RomajiScope = "kana"|"kanji"
 @Allowed { values { "kana" "kanji" } }
 romajiScope: RomajiScope? = null
 
+/// The input source ID (such as "com.apple.keylayout.ABC") selected while
+/// the panel is up; the user's own comes back when it goes. Absent means
+/// off. An empty string invalidates the whole file.
+forcedInputSource: String? = null
+
 /// How many characters of a query the shortcut memory covers: a longer
 /// query is neither recorded nor applied. 0 means off. Absent means 5.
 /// Values above 5 invalidate the whole file (mirrored by the Swift
@@ -56,6 +61,10 @@ shortcutMemoryLength: Int? = null
 /// Whether the filter also matches subsequence queries, not only
 /// substrings. Absent means on.
 fuzzyMatchEnabled: Boolean? = null
+
+/// Whether the list also reads windows on desktops no display is
+/// showing, which takes longer. Absent means off.
+listWindowsOnAllSpaces: Boolean? = null
 
 /// The order the narrowed rows draw in: recent use first, or best match
 /// first.
@@ -403,9 +412,13 @@ open class SwitcherMain {
   /// Shared by both switchers; write it at the top level. Ignored here.
   fuzzyMatchEnabled: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
+  listWindowsOnAllSpaces: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
   appearanceMode: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   romajiScope: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  forcedInputSource: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   launchAtLogin: Any? = null
   /// Retired. Ignored here.
@@ -511,9 +524,13 @@ open class SwitcherParallel {
   /// Shared by both switchers; write it at the top level. Ignored here.
   fuzzyMatchEnabled: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
+  listWindowsOnAllSpaces: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
   appearanceMode: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   romajiScope: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  forcedInputSource: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   launchAtLogin: Any? = null
   /// Retired. Ignored here.

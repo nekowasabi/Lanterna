@@ -50,6 +50,8 @@ final class PanelPresenter {
       try? await Task.sleep(for: duration)
     },
     switcher: any WindowSwitching = LiveWindowSwitcher(),
+    closer: any WindowClosing = LiveWindowCloser(),
+    minimizer: any WindowMinimizing = LiveWindowMinimizer(),
     tracker: MRUTracker = MRUTracker()
   ) {
     self.surface = surface
@@ -74,6 +76,8 @@ final class PanelPresenter {
     self.invocationRepeatTiming = invocationRepeatTiming
     self.invocationRepeatSleep = invocationRepeatSleep
     self.switcher = switcher
+    self.closer = closer
+    self.minimizer = minimizer
     self.tracker = tracker
     keyCommands.onRowOrderChanged = { [weak self] order in self?.didReorderRows(order) }
   }
@@ -172,6 +176,10 @@ final class PanelPresenter {
   /// What commits take. Through to the way out, which owns the list the
   /// target is read off and is built beside the presenter.
   let switcher: any WindowSwitching
+
+  /// What the close and minimize keys send, through to the operations.
+  let closer: any WindowClosing
+  let minimizer: any WindowMinimizing
 
   /// What commits and appearances consult for the order rows are drawn in,
   /// owned here so recording and sorting share one memory.
@@ -278,6 +286,10 @@ final class PanelPresenter {
   /// after it closes. Read by the commit and the diagnostics; each
   /// appearance sets it as it goes up.
   private(set) var activeSwitcher = SwitcherIdentity.main
+
+  /// Taken while the panel is up, given back on every way out and at quit.
+  /// The settings set its target; a change lands at the next appearance.
+  let inputSourceLock = InputSourceLock()
 
   /// Whether a filter that narrows to one row focuses that row.
   /// On unless the setting says otherwise. A change lands on the
@@ -979,6 +991,9 @@ final class PanelPresenter {
     // next change.
     lastModifierFlags = modifierFlags()
     pushNumberedRows()
+    // Before the keys, so the first keystroke already arrives under the
+    // forced source.
+    inputSourceLock.engage()
     let becameKey = surface.takeKeys()
     wayOut.nowShowing(ordered, startedAt: startedAt)
     let measurement = HotkeyMeasurement(

@@ -55,6 +55,9 @@ extension AppConfiguration {
     if let otherSpaceMode = config.otherSpaceMode {
       entries.append(encodedString(key: "otherSpaceMode", value: otherSpaceMode.rawValue))
     }
+    if let forcedInputSource = config.forcedInputSource {
+      entries.append(encodedString(key: "forcedInputSource", value: escaped(forcedInputSource)))
+    }
     if let romajiScope = config.romajiScope {
       entries.append(encodedString(key: "romajiScope", value: romajiScope.rawValue))
     }
@@ -288,6 +291,9 @@ extension AppConfiguration {
     var lines = [String]()
     if let fuzzyMatchEnabled = config.fuzzyMatchEnabled {
       lines.append(encodedBool(key: "fuzzyMatchEnabled", value: fuzzyMatchEnabled))
+    }
+    if config.listWindowsOnAllSpaces == true {
+      lines.append(encodedBool(key: "listWindowsOnAllSpaces", value: true))
     }
     if let resultOrder = config.resultOrder {
       lines.append(encodedString(key: "resultOrder", value: resultOrder))

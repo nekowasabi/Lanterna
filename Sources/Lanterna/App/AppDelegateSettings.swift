@@ -134,6 +134,9 @@ extension AppDelegate {
     }
     composite.refreshPool()
     composite.syncMirrors(from: panel)
+    // One resolver for all three, reading the setting at the time of use:
+    // they are built once and the setting changes live.
+    let resolver = WindowElementResolver(probesOtherSpaces: { [otherSpaces] in otherSpaces.isOn })
     let presenter = PanelPresenter(
       surface: composite,
       store: windowList,
@@ -146,7 +149,9 @@ extension AppDelegate {
         CGEventSource.flagsState(.combinedSessionState).contains(.maskAlternate)
       },
       showDelayMs: options.showDelayMs,
-      switcher: OwnWindowSwitcher(wrapped: LiveWindowSwitcher())
+      switcher: OwnWindowSwitcher(wrapped: LiveWindowSwitcher(resolver: resolver)),
+      closer: LiveWindowCloser(resolver: resolver),
+      minimizer: LiveWindowMinimizer(resolver: resolver)
     )
     presenter.windowScope = currentValues.windowScope
     presenter.grouping = currentValues.grouping
@@ -155,6 +160,7 @@ extension AppDelegate {
     presenter.hoverSelect = options.hoverSelect
     presenter.scrollSelect = options.scrollSelect
     presenter.autoFocusSingleCandidate = options.autoFocusSingleCandidate
+    presenter.inputSourceLock.target = currentValues.forcedInputSource
     presenter.numberJump = options.numberJump
     presenter.numberReorder = options.numberReorder
     presenter.numberScope = currentValues.numberScope
@@ -218,6 +224,7 @@ extension AppDelegate {
     presenter?.hoverSelect = values.hoverSelect
     presenter?.scrollSelect = values.scrollSelect
     presenter?.autoFocusSingleCandidate = values.autoFocusSingleCandidate
+    presenter?.inputSourceLock.target = values.forcedInputSource
     presenter?.numberJump = values.numberJump
     presenter?.numberReorder = values.numberReorder
     presenter?.numberScope = values.numberScope
