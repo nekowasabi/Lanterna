@@ -32,6 +32,7 @@ enum AppConfiguration {
     "windowlessAppMode",
     "appearanceMode",
     "romajiScope",
+    "forcedInputSource",
     "launchAtLogin",
     "logLevel",
     "saveLogsToDisk",
@@ -190,6 +191,9 @@ struct ValidConfiguration: Equatable, Sendable {
   var windowlessAppMode: DisplayMode?
   var appearanceMode: AppearanceMode?
   var romajiScope: RomajiScope?
+  /// The input source ID selected while the panel is up. Nil means
+  /// absent, which means off.
+  var forcedInputSource: String?
   var launchAtLogin: Bool?
   /// Whether each launch's log lines are kept on disk. Nil means absent,
   /// which means on.
@@ -716,6 +720,7 @@ extension AppConfiguration {
     return checkedSearchSettings(dict, into: &config)
       .flatMap { checkedListing(dict, into: &config) }
       .flatMap { checkedDisplayTarget(dict, into: &config) }
+      .flatMap { checkedForcedInputSource(dict, into: &config) }
       .map { _ in config }
   }
 
