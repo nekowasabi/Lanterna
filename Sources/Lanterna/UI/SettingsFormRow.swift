@@ -30,17 +30,21 @@ struct SettingsFormLabel: View {
 // MARK: - View + settingsBackground
 
 extension View {
-  /// The gray behind grouped settings content.
+  /// The background behind grouped settings content.
+  ///
+  /// The window background rather than the under-page color: the latter
+  /// is the mid gray behind document pages, which turned the whole
+  /// content area dark in light appearance.
   func settingsBackground() -> some View {
     scrollContentBackground(.hidden)
-      .background(Color(nsColor: .underPageBackgroundColor))
+      .background(Color(nsColor: .windowBackgroundColor))
   }
 
   /// The sidebar gray, a touch darker than the detail.
   func settingsSidebarBackground() -> some View {
     scrollContentBackground(.hidden)
       .background {
-        Color(nsColor: .underPageBackgroundColor)
+        Color(nsColor: .windowBackgroundColor)
           .overlay(Color.black.opacity(0.04))
       }
   }

@@ -46,6 +46,7 @@ enum AppConfiguration {
     "textScale",
     "displayTarget",
     "panelWidth",
+    "panelRows",
     "showDelayMs",
     "hoverSelect",
     "scrollSelect",
@@ -108,6 +109,7 @@ struct ValidConfiguration: Equatable, Sendable {
     textScale: Double? = nil,
     displayTarget: DisplayTarget? = nil,
     panelWidth: Double? = nil,
+    panelRows: Int? = nil,
     showDelayMs: Double? = nil,
     hoverSelect: Bool? = nil,
     scrollSelect: Bool? = nil,
@@ -152,6 +154,7 @@ struct ValidConfiguration: Equatable, Sendable {
     self.textScale = textScale
     self.displayTarget = displayTarget
     self.panelWidth = panelWidth
+    self.panelRows = panelRows
     self.showDelayMs = showDelayMs
     self.hoverSelect = hoverSelect
     self.scrollSelect = scrollSelect
@@ -219,6 +222,10 @@ struct ValidConfiguration: Equatable, Sendable {
   /// count; anything else falls back with a note instead of
   /// invalidating the file.
   var panelWidth: Double?
+  /// How many rows the panel shows before the list scrolls. Nil means
+  /// absent, which means 10. Only counts of 5 to 30 count; anything
+  /// else falls back with a note instead of invalidating the file.
+  var panelRows: Int?
   /// The panel show delay in milliseconds. Nil means absent, which
   /// means off. Zero reads as absent; past the maximum clamps to it
   /// with a note, and anything else unreadable falls back to the
@@ -340,6 +347,9 @@ struct DecodedConfiguration: Equatable, Sendable {
   /// The fallback note when the panel width was present but invalid.
   /// Nil means absent or valid, which means nothing to report.
   var panelWidthIssue: String?
+  /// The fallback note when the panel row count was present but invalid.
+  /// Nil means absent or valid, which means nothing to report.
+  var panelRowsIssue: String?
   /// The fallback note when the show delay was present but invalid.
   /// Nil means absent or valid, which means nothing to report.
   var showDelayIssue: String?
@@ -479,6 +489,7 @@ extension AppConfiguration {
       textScale: TextScaleLevel.effective(from: file),
       displayTarget: DisplayTarget.effective(from: file),
       panelWidth: PanelWidth.effective(from: file),
+      panelRows: PanelRows.effective(from: file),
       showDelayMs: ShowDelay.effective(file.showDelayMs).value,
       hoverSelect: file.hoverSelect ?? false,
       scrollSelect: file.scrollSelect ?? false,

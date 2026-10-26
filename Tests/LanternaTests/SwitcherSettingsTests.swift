@@ -451,6 +451,7 @@ struct SwitcherSettingsTests {
     ("groupHeadingStyle", #""groupHeadingStyle": "name""#),
     ("displayTarget", #""displayTarget": "cursor""#),
     ("panelWidth", #""panelWidth": 1.2"#),
+    ("panelRows", #""panelRows": 12"#),
     ("textScale", #""textScale": 1.0"#),
     ("showDelayMs", #""showDelayMs": 0"#),
     ("hintsMode", #""hintsMode": "numbers""#),

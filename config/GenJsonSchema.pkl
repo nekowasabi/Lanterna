@@ -79,8 +79,8 @@ local sharedSwitcherKeys = new Listing<String> {
   "saveLogsToDisk"; "updateCheckEnabled"; "updateChannel"; "exclusions";
   "shortcutMemoryLength"; "keybindings"; "sampleCount"; "stopMonitorEvery";
   "rowOrder"; "groupNames"; "groupAssignments"; "resultOrder"; "grouping";
-  "groupCount"; "groupHeadingStyle"; "displayTarget"; "panelWidth"; "textScale";
-  "showDelayMs"; "hintsMode"; "numberJump"; "numberReorder"; "numberScope";
+  "groupCount"; "groupHeadingStyle"; "displayTarget"; "panelWidth"; "panelRows";
+  "textScale"; "showDelayMs"; "hintsMode"; "numberJump"; "numberReorder"; "numberScope";
   "hoverSelect"; "scrollSelect"; "fuzzyMatchEnabled"; "listWindowsOnAllSpaces"
 }
 
