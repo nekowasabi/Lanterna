@@ -109,7 +109,6 @@ struct SettingsKeyboardView: View {
           .listRowBackground(Color.clear)
         }
       }
-      .settingsSidebarBackground()
     }
     .frame(width: 170)
     .settingsSidebarBackground()
@@ -157,7 +156,6 @@ struct SettingsKeyboardView: View {
         }
       }
       .formStyle(.grouped)
-      .settingsBackground()
       HStack {
         Button("Reset all") {
           values.keyBindings = .defaults
@@ -182,7 +180,7 @@ struct SettingsKeyboardView: View {
       .padding(.horizontal, 20)
       .padding(.bottom, 8)
     }
-    .background(Color(nsColor: .underPageBackgroundColor))
+    .settingsBackground()
   }
 
   /// One action's row, wired to the capture below.

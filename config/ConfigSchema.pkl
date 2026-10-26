@@ -236,6 +236,13 @@ textScale: Number? = null
 /// unchanged). The value allowlist lives in Swift, like `textScale`.
 panelWidth: Number? = null
 
+/// How many rows the panel shows before the list scrolls, 5 to 30.
+/// Absent means 10. Anything else falls back to 10 with a note. The
+/// range lives in Swift, like `panelWidth`'s steps.
+@Minimum { value = 5 }
+@Maximum { value = 30 }
+panelRows: Int? = null
+
 /// The panel show delay in milliseconds before the panel appears.
 /// Absent or zero means off. Past 1000 clamps to it with a note, and
 /// anything else unreadable falls back to 150 with a note. The bounds
@@ -374,6 +381,8 @@ open class SwitcherMain {
   /// Shared by both switchers; write it at the top level. Ignored here.
   panelWidth: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
+  panelRows: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
   textScale: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   showDelayMs: Any? = null
@@ -479,6 +488,8 @@ open class SwitcherParallel {
   displayTarget: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   panelWidth: Any? = null
+  /// Shared by both switchers; write it at the top level. Ignored here.
+  panelRows: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.
   textScale: Any? = null
   /// Shared by both switchers; write it at the top level. Ignored here.

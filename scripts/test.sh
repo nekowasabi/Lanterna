@@ -8,12 +8,14 @@
 #
 # The triple is pinned; CONTRIBUTING.md says why.
 #
-# The extra flags are added whenever the Command Line Tools directory holds
-# Testing.framework, whether or not Xcode is installed as well: CLT ships Swift
-# Testing outside the toolchain's default search paths, and DYLD_* variables are
+# The extra flags are added only when the active developer directory is the
+# Command Line Tools and it holds Testing.framework: CLT ships Swift Testing
+# outside the toolchain's default search paths, and DYLD_* variables are
 # stripped from the SIP-protected test helper, so the framework and its interop
-# dylib have to be baked in as rpaths at link time. Without that directory the
-# flags stay empty.
+# dylib have to be baked in as rpaths at link time. With Xcode selected, its
+# compiler already finds its own Swift Testing; pointing it at the CLT copy
+# pairs a newer @Test macro with an older framework and the suite fails to
+# compile.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -22,11 +24,13 @@ cd "$(dirname "$0")/.."
 # is already current (see generate-version.sh).
 bash scripts/generate-version.sh --dev >/dev/null
 
-CLT_FRAMEWORKS=/Library/Developer/CommandLineTools/Library/Developer/Frameworks
-CLT_LIB=/Library/Developer/CommandLineTools/Library/Developer/usr/lib
+CLT=/Library/Developer/CommandLineTools
+CLT_FRAMEWORKS=$CLT/Library/Developer/Frameworks
+CLT_LIB=$CLT/Library/Developer/usr/lib
 
 flags=()
-if [ -d "$CLT_FRAMEWORKS/Testing.framework" ]; then
+if [ "$(env -u DEVELOPER_DIR /usr/bin/xcode-select -p 2>/dev/null)" = "$CLT" ] \
+    && [ -d "$CLT_FRAMEWORKS/Testing.framework" ]; then
     flags=(
         -Xswiftc -F"$CLT_FRAMEWORKS"
         -Xlinker -F"$CLT_FRAMEWORKS"

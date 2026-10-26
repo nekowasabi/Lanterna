@@ -2,6 +2,13 @@
 
 - (MUST) Write in English for all documents, including comments in source
 - (MUST) Use .gitmessage for commit template
+- (MUST) Open an issue before opening a pull request, and link it from the pull request (e.g. `Closes #0`). Pull requests without a linked issue may be closed without review
+
+## Pull Requests
+
+1. Open an issue describing the bug or the change you want, using one of the issue templates
+2. Wait for the maintainer to agree on the direction in the issue before starting larger work
+3. Open the pull request and fill in `.github/pull_request_template.md`
 
 ## Prerequisites
 
