@@ -21,6 +21,7 @@ struct SettingsValues: Equatable, Sendable {
     exclusions: [],
     shortcutMemoryLength: 5,
     fuzzyMatchEnabled: true,
+    listWindowsOnAllSpaces: false,
     resultOrder: .mru,
     textScale: .standard,
     displayTarget: .primary,
@@ -63,6 +64,9 @@ struct SettingsValues: Equatable, Sendable {
   /// Whether subsequence queries match as well as substrings. Absent in
   /// the file means on.
   var fuzzyMatchEnabled: Bool
+  /// Whether the list also reads windows on desktops no display is
+  /// showing. Absent in the file means off.
+  var listWindowsOnAllSpaces: Bool
   /// The ordering the narrowed rows draw in. Absent in the file means
   /// recent use first.
   var resultOrder: SearchOrdering
@@ -150,6 +154,7 @@ struct SettingsValues: Equatable, Sendable {
       exclusions: config.exclusions ?? [],
       shortcutMemoryLength: config.shortcutMemoryLength ?? 5,
       fuzzyMatchEnabled: config.fuzzyMatchEnabled ?? true,
+      listWindowsOnAllSpaces: config.listWindowsOnAllSpaces ?? false,
       resultOrder: SearchOrdering.effective(from: config),
       textScale: TextScaleLevel.effective(from: config),
       displayTarget: DisplayTarget.effective(from: config),
@@ -216,6 +221,9 @@ struct SettingsValues: Equatable, Sendable {
     }
     if fuzzyMatchEnabled != defaults.fuzzyMatchEnabled {
       config.fuzzyMatchEnabled = fuzzyMatchEnabled
+    }
+    if listWindowsOnAllSpaces != defaults.listWindowsOnAllSpaces {
+      config.listWindowsOnAllSpaces = listWindowsOnAllSpaces
     }
     if resultOrder != defaults.resultOrder {
       config.resultOrder = resultOrder.rawValue
