@@ -450,6 +450,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         prospects: OwnWindows.currentProspects(),
         owner: OwnWindows.currentOwner()
       ))
+      .unhidingApplications(when: TonikakuCompat.isRunning)
     })
     store.start()
     return store
